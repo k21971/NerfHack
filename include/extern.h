@@ -1116,7 +1116,7 @@ extern void signal_whereis(int);
 #ifdef DEBUG
 extern boolean debugcore(const char *, boolean);
 #endif
-extern void reveal_paths(void);
+extern void reveal_paths(int);
 extern boolean read_tribute(const char *, const char *, int, char *, int,
                             unsigned);
 #ifdef EXTRAINFO_FN
@@ -1124,6 +1124,7 @@ extern void mk_dgl_extrainfo(void);
 #endif
 extern boolean Death_quote(char *, int) NONNULLARG1;
 extern void livelog_add(long ll_type, const char *) NONNULLARG2;
+ATTRNORETURN extern void do_deferred_showpaths(int) NORETURN;
 
 /* ### fountain.c ### */
 
@@ -3537,6 +3538,7 @@ extern void append_slash(char *) NONNULLARG1;
 extern boolean check_user_string(const char *) NONNULLARG1;
 extern char *get_login_name(void);
 extern unsigned long sys_random_seed(void);
+ATTRNORETURN extern void after_opt_showpaths(const char *) NORETURN;
 #endif /* UNIX */
 
 /* ### unixtty.c ### */
