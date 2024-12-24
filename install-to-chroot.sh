@@ -8,7 +8,7 @@
 
 # autonamed chroot directory. Can rename.
 DATESTAMP=`date +%Y%m%d-%H%M%S`
-NAO_CHROOT="/opt/nerfhack/chroot"
+NAO_CHROOT="/opt/nethack/chroot"
 NETHACK_GIT="/home/build/NerfHack"
 # the user & group from dgamelaunch config file.
 USRGRP="games:games"
@@ -16,10 +16,10 @@ USRGRP="games:games"
 COMPRESSBIN="/bin/gzip"
 # fixed data to copy (leave blank to skip)
 NH_GIT="/home/build/NerfHack"
-# HACKDIR from include/config.h; aka nerfhack subdir inside chroot
-NHSUBDIR="nh370.101-hdf"
+# HACKDIR from include/config.h; aka nethack subdir inside chroot
+NHSUBDIR="nerfhack-2.0.0"
 # VAR_PLAYGROUND from include/unixconf.h
-NH_VAR_PLAYGROUND="/nh370.101-hdf/var/"
+NH_VAR_PLAYGROUND="/nerfhack-2.0.0/var/"
 # END OF CONFIG
 ##############################################################################
 
@@ -44,10 +44,10 @@ set -e
 umask 022
 
 echo "Creating inprogress and extrainfo directories"
-mkdir -p "$NAO_CHROOT/dgldir/inprogress-nh370.101-hdf"
-chown "$USRGRP" "$NAO_CHROOT/dgldir/inprogress-nh370.101-hdf"
-mkdir -p "$NAO_CHROOT/dgldir/extrainfo-nh370"
-chown "$USRGRP" "$NAO_CHROOT/dgldir/extrainfo-nh370"
+mkdir -p "$NAO_CHROOT/dgldir/inprogress-nerfhack-2.0.0"
+chown "$USRGRP" "$NAO_CHROOT/dgldir/inprogress-nerfhack-2.0.0"
+mkdir -p "$NAO_CHROOT/dgldir/extrainfo-nerfhack"
+chown "$USRGRP" "$NAO_CHROOT/dgldir/extrainfo-nerfhack"
 
 echo "Making $NAO_CHROOT/$NHSUBDIR"
 mkdir -p "$NAO_CHROOT/$NHSUBDIR"
@@ -117,11 +117,11 @@ echo "Copying libraries:" $LIBS
 for lib in $LIBS; do
         mkdir -p "$NAO_CHROOT`dirname $lib`"
         if [ -f "$NAO_CHROOT$lib" ]
-  then
-    echo "$NAO_CHROOT$lib already exists - skipping."
-  else
-    cp $lib "$NAO_CHROOT$lib"
-  fi
+	then
+		echo "$NAO_CHROOT$lib already exists - skipping."
+	else
+		cp $lib "$NAO_CHROOT$lib"
+	fi
 done
 
 echo "Finished."

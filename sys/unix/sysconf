@@ -1,4 +1,4 @@
-# NetHack 3.7 sysconf $NHDT-Date: 1646322470 2022/03/03 15:47:50 $ $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.41 $
+# NetHack 3.7 sysconf $NHDT-Date: 1704043695 2023/12/31 17:28:15 $ $NHDT-Branch: keni-luabits2 $:$NHDT-Revision: 1.44 $
 # Copyright (c) 2015 by Kenneth Lorber, Kensington, Maryland
 # NetHack may be freely redistributed.  See license for details.
 #
@@ -8,14 +8,12 @@
 # program.
 #
 # This file can also be used to set local system defaults for run-time
-# options, using the same syntax as an individual user's ./nerfhackrc file.
+# options, using the same syntax as an individual user's ./nethackrc file.
 
 # Which users can use debug mode (aka wizard mode; accessed via '-D' command
 # line flag or OPTIONS=playmode:debug in the runtime options config file).
 # A value of * allows anyone to enter debugging mode.
-
-WIZARDS=*
-#WIZARDS=root games
+WIZARDS=root games
 
 # Which users can use explore mode (aka discover mode; accessed via '-X'
 # command line flag or OPTIONS=playmode:explore in runtime options file or
@@ -46,9 +44,9 @@ EXPLORERS=*
 
 # Use the player name for matching WIZARDS, EXPLORERS and SHELLERS,
 # instead of the user's login name.
-#CHECK_PLNAME=1
+CHECK_PLNAME=1
 
-# Limit the number of simultaneous games (see also nerfhack.sh).
+# Limit the number of simultaneous games (see also nethack.sh).
 # Valid values are 0-25.
 # Commenting this out or setting the value to 0 constructs lock files
 # with UID and playername, so each user may have one game at a time,
@@ -59,7 +57,7 @@ MAXPLAYERS=0
 
 # If not null, added to string "To get local support, " in the support
 # information help.
-SUPPORT=Contact hackemslashem on Libera irc channel #hardfought
+SUPPORT=Contact @hackemslashem on Libera irc channel #hardfought
 
 # If not null, displayed at the end of a panic-save sequence.
 #RECOVER=Run the recover program.
@@ -90,7 +88,7 @@ POINTSMIN=1
 #PERS_IS_UID=1
 
 # Help menu control; 0 - include "command line usage" entry in help menu;
-# 1 - suppress it from the menu.  Does not affect 'nerfhack --usage' when
+# 1 - suppress it from the menu.  Does not affect 'nethack --usage' when
 # player has access to the command line.
 #HIDEUSAGE=0
 
@@ -98,8 +96,8 @@ POINTSMIN=1
 MAX_STATUENAME_RANK=50
 
 # Use "Live logging" for important events (achievements, wishes, etc)
-# Only available if NerfHack was compiled with LIVELOG.
-# Only really meaningful for public servers.
+# Only available if NetHack was compiled with LIVELOG.
+# Only really meaningful for public servers or debugging.
 # See the log in-game with #chronicle -command.
 # Bitmask for kinds of things you want to log - combine the following values
 # as desired.
@@ -119,12 +117,8 @@ MAX_STATUENAME_RANK=50
 # 0x1000 - Log 'minor' achievements - can be spammy [bit 4096]
 # 0x2000 - Spoiler event; can include in livelog but hidden from #chronicle [bit 8192]
 # 0x4000 - Include as 'major' event in dumplog; can be hidden from livelog [bit 16384]
-# 0x8000 - Livelog debug msgs (currently only 'enter new level') [bit 32768]
+# 0x8000 - Livelog debug msgs [bit 32768]
 LIVELOG=0x0FFF
-
-# Do not livelog breaking of conducts before this turncount
-# Cuts down on spam
-#LLC_TURNS=3000
 
 # Show debugging information originating from these source files.
 # Use '*' for all, or list source files separated by spaces.
@@ -144,12 +138,12 @@ LIVELOG=0x0FFF
 #   %D current time, YYYYMMDDhhmmss format
 #   %n player name
 #   %N first character of player name
-DUMPLOGFILE=/dgldir/userdata/%N/%n/nethack/dumplog/%t.nerfhack.txt
+DUMPLOGFILE=/dgldir/userdata/%N/%n/nerfhack/dumplog/%t.nerf.txt
 
 # End of game HTML dump.
-# Only available if NerfHack was compiled with DUMPHTML
+# Only available if NetHack was compiled with DUMPHTML
 # Allows placeholders as above.
-DUMPHTMLFILE=/dgldir/userdata/%N/%n/nethack/dumplog/%t.nerfhack.html
+DUMPHTMLFILE=/dgldir/userdata/%N/%n/nerfhack/dumplog/%t.nerf.html
 
 # Number of bones file pools.
 # The pool you belong to is determined at game start. You will
@@ -178,8 +172,8 @@ PANICTRACE_LIBC=2
 #CRASHREPORTURL=https://nethack.org/links/cr-37BETA.html
 
 # 'portable_device_paths' is only supported for Windows.  Starting with
-# 3.6.3, nethack on Windows treats the folder containing nerfhack.exe and
-# nerfhackW.exe as read-only and puts data files which are generated or
+# 3.6.3, nethack on Windows treats the folder containing nethack.exe and
+# nethackW.exe as read-only and puts data files which are generated or
 # modified during play or by the user in assorted folders derived from
 # user name.  3.6.4 added PORTABLE_DEVICE_PATHS to allow reverting to
 # the old behavior of having the run-time configuration file and other
@@ -191,39 +185,19 @@ PANICTRACE_LIBC=2
 # Ordinary run-time options can be set here to override the builtin-in
 # default values.  Unlike all the SYSCF values above, individual users
 # can override the overridden options set here by choosing their own
-# option settings via NERFHACKOPTIONS in their environment or via
-# ~/.nerfhackrc run-time configuration file.
-#OPTIONS=!autopickup,fruit:tomato,symset:DECgraphics
-OPTIONS=bones
-OPTIONS=color
-OPTIONS=lit_corridor
-OPTIONS=dark_room
-OPTIONS=autodig
-OPTIONS=autoopen
+# option settings via NETHACKOPTIONS in their environment or via
+# ~/.nethackrc run-time configuration file.
+
+# Basic options
 OPTIONS=disclose:yi ya yv yg yc yo
-OPTIONS=boulder:0
-OPTIONS=!autopickup
-OPTIONS=pickup_burden:unencumbered
-OPTIONS=hilite_pet
-OPTIONS=hilite_pile
-OPTIONS=msg_window:reversed
-OPTIONS=number_pad:0
-OPTIONS=sortloot:full
-OPTIONS=time
+OPTIONS=bones,color,lit_corridor,dark_room,autodig,autoopen
+OPTIONS=boulder:0,pickup_burden:unencumbered
+OPTIONS=!autopickup,hilite_pet,hilite_pile,time,use_darkgray
+OPTIONS=msg_window:reversed,number_pad:0,sortloot:full
+OPTIONS=menu_objsyms,perm_invent,hitpointbar,quick_farsight
 
-# For fuzzing
-BIND=~:wizmakemap
+# Various MSGTYPE examples
+MSGTYPE=hide "Unknown command *"
+MSGTYPE=alert "The (couatl|.*eel|kraken) swings itself around you!"
 
-# For bug-finding
-OPTIONS=sanity_check
-
-# Make testing curses easier
-#OPTIONS=windowtype:curses
-#OPTIONS=align_message:top
-#OPTIONS=align_status:bottom
-#OPTIONS=perm_invent
-
-# Options that make dev and testing much more painful, but should probably be enabled on public servers
-OPTIONS=!cmdassist
-OPTIONS=!safe_wait
 #eof

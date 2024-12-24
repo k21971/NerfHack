@@ -43,6 +43,14 @@ endif
 GAMEUID  = games
 GAMEGRP  = games
 
+# This gives better backtraces by making all core functions global; this
+# works around a limitation in glibc's backtrace(3) function.
+# This will be turned on automatically with CRASHREPROT.
+# 1 to enable, 0 to disable
+USE_NOSTATICFN = 1
+# If you want CRASHREPORT but absolutely don't want NOSTATICFN, define this:
+#USE_NONOSTATICFN = 1
+
 #-----------------------------------------------------------------------------
 #-INCLUDE cross-pre1.370
 
@@ -77,6 +85,9 @@ endif  # WANT_WIN_QT5
 ifdef WANT_WIN_QT6
 #if your Qt6 is elsewhere, change this to match
 QTDIR=/usr/local/qt6
+ifeq "$(GPPGTEQ14)" "1"
+CCXXFLAGS += -Wno-template-id-cdtor
+endif    # g++ greater than or equal to 14
 endif   # WANT_WIN_QT6
 endif  # WANT_WIN_QT
 
@@ -88,6 +99,11 @@ endif  # WANT_WIN_QT
 ifeq "$(USE_ASAN)" "1"
 CFLAGS+=-fsanitize=address
 LFLAGS+=-fsanitize=address
+endif
+
+ifeq "$(USE_UBSAN)" "1"
+CFLAGS+=-fsanitize=undefined
+LFLAGS+=-fsanitize=undefined
 endif
 
 ifdef WANT_WIN_TTY
@@ -160,6 +176,7 @@ NHCFLAGS+=-DDGAMELAUNCH
 NHCFLAGS+=-DDUMPLOG
 NHCFLAGS+=-DDUMPHTML
 NHCFLAGS+=-DUSE_GENERAL_ALTAR_COLORS
+#NHCFLAGS+=-DCHANGE_COLOR
 NHCFLAGS+=-DSELF_RECOVER
 ifdef WANT_WIN_CURSES
 ifeq "$(HAVE_NCURSESW)" "1"
@@ -301,12 +318,16 @@ VARDATND += $(sort $(VARDATND0))
 
 GIT_HASH := $(shell echo `git rev-parse --verify HEAD` 2>&1)
 GIT_BRANCH := $(shell echo `git rev-parse --abbrev-ref HEAD` 2>&1)
+GIT_PREFIX := $(shell echo `git config nethack.substprefix` 2>&1)
 
 ifdef GIT_HASH
 GITHASH = -DNETHACK_GIT_SHA=\"$(GIT_HASH)\"
 endif
 ifdef GIT_BRANCH
 GITBRANCH = -DNETHACK_GIT_BRANCH=\"$(GIT_BRANCH)\"
+endif
+ifdef GIT_PREFIX
+GITPREFIX = -DNETHACK_GIT_PREFIX=\"$(GIT_PREFIX)\"
 endif
 
 ifdef WANT_LIBNH
@@ -340,7 +361,7 @@ SYSCONFENSURE = (if ! test -f $(INSTDIR)/sysconf ; then \
 PREFIX=/opt/nethack/chroot
 
 # this is the dir where NetHack is inside the chroot
-HACKDIR=/nh370.101-hdf
+HACKDIR=/nerfhack-2.0.0
 INSTDIR=$(PREFIX)$(HACKDIR)
 VARDIR =$(INSTDIR)/var
 
@@ -353,6 +374,14 @@ ifneq "$(CCISCLANG)" ""
 # relevant lines in sysconf.
 POSTINSTALL+= sed -i -e 's;^GDBPATH=/usr/bin/gdb;\#GDBPATH=/usr/bin/gdb;' \
 		-e 's;PANICTRACE_GDB=1;PANICTRACE_GDB=0;' $(INSTDIR)/sysconf;
+endif
+
+ifeq 'USENONOSTATICFN' '1'
+CFLAGS += -DNONOSTATICFN
+else
+ifeq 'USE_NOSTATICFN' '1'
+CFLAGS += -DNOSTATICFN
+endif
 endif
 
 # Lua
