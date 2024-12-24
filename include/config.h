@@ -687,7 +687,7 @@ typedef unsigned char uchar;
    dgamelaunch-based server play */
 /* #define DGAMELAUNCH */
 #ifdef DGAMELAUNCH
-#define EXTRAINFO_FN    "/dgldir/extrainfo-nh370/%n.extrainfo"
+#define EXTRAINFO_FN    "/dgldir/extrainfo-nerfhack/%n.extrainfo"
 #define MAILCKFREQ 5    /* SIMPLE_MAIL is in unixconf.h */
 #define WHEREIS_FILE    "whereis/%n.whereis" /* Write out player's current location to player.whereis */
 
@@ -704,8 +704,8 @@ typedef unsigned char uchar;
 #endif /* NO_CHRONICLE */
 #endif /* DGAMELAUNCH */
 
-#define DUMPLOG   /* End-of-game dump logs */
-#define DUMPHTML  /* End-of-game HTML dumps */
+/*#define DUMPLOG*/   /* End-of-game dump logs */
+/*#define DUMPHTML*/  /* End-of-game HTML dumps */
 
 #define USE_ISAAC64 /* Use cross-platform, bundled RNG */
 
