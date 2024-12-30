@@ -200,7 +200,7 @@ hitval(struct obj *otmp, struct monst *mon)
     boolean Is_weapon = (otmp->oclass == WEAPON_CLASS || is_weptool(otmp));
 
     if (Is_weapon)
-        tmp += (otmp->spe > 0) ? rn2(otmp->spe + 1) : otmp->spe;
+        tmp += (otmp->spe > 0) ? rnd(otmp->spe) : otmp->spe;
 
     /* Put weapon specific "to hit" bonuses in below: */
     tmp += objects[otmp->otyp].oc_hitbon;
@@ -1212,7 +1212,9 @@ abon(void)
     /* Game tuning kludge: make it a bit easier for a low level character to
      * hit */
     sbon += (u.ulevel < 3) ? 1 : 0;
-
+    /* Be a little more generous for NerfHack early game too */
+    sbon += (u.ulevel < 6) ? 1 : 0;
+    
     if (dex < 4)
         return (sbon - 3);
     else if (dex < 6)

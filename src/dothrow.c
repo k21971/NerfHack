@@ -2361,12 +2361,8 @@ thitmonst(
                 } else
                     (void) mpickobj(mon, obj);
                 return 1;
-            } else {
-                /* Thrown projectiles above +7 have a high chance of dulling. */
-                if (obj->spe > 7 && rn2(obj->spe))
-                    obj->spe -= (obj->spe > 10 ? 2 : 1);
+            } else 
                 passive_obj(mon, obj, (struct attack *) 0);
-            }
         } else {
             tmiss(obj, mon, TRUE);
             if (hmode == HMON_APPLIED)
@@ -2669,7 +2665,6 @@ breakobj(
             pline_The("altar is stained with blood.");
             if (!Is_astralevel(&u.uz)) {
                 levl[x][y].altarmask = AM_CHAOTIC;
-                crackaltar();
             }
             angry_priest();
         } else if (next2u(x, y)) {
