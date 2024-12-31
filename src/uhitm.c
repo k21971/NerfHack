@@ -4415,7 +4415,7 @@ mhitm_ad_wthr(struct monst *magr, struct attack *mattk,
             (nonliving(mdef->data) /* This could use is_fleshy(), but that would
                                   make a large set of monsters immune like
                                   fungus, blobs, and jellies. */
-             || is_vampshifter(mdef)
+             || is_vampire(mdef->data)
              || (magr != &gy.youmonst && magr->mcan)
              || !(rn2(10) >= 3 * armpro));
     boolean lose_maxhp = (withertime >= 8); /* if already withering */
@@ -5130,7 +5130,7 @@ mhitm_ad_were(
     } else if (mdef == &gy.youmonst) {
         /* mhitu */
         hitmsg(magr, mattk);
-        if (!rn2(4) && u.ulycn == NON_PM && is_vampire(gy.youmonst.data)
+        if (!rn2(4) && u.ulycn == NON_PM && !is_vampire(gy.youmonst.data)
             && !Protection_from_shape_changers && !defends(AD_WERE, uwep)
             && !mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
             urgent_pline("You feel feverish.");

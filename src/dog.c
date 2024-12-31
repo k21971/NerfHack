@@ -1206,6 +1206,8 @@ tamedog(
     boolean givemsg)
 {
     boolean blessed_scroll = FALSE;
+    boolean taming_familiar = Race_if(PM_VAMPIRE) 
+                              && mtmp->data == &mons[PM_FAMILIAR];
 
     /* Spell of charm monster is limited at unskilled and basic -
      * it can only pacify. */
@@ -1323,7 +1325,8 @@ tamedog(
            [note: the various mextra structures don't actually conflict
            with each other anymore] */
         || mtmp->isshk || mtmp->isgd || mtmp->ispriest || mtmp->isminion
-        || is_covetous(mtmp->data) || is_human(mtmp->data)
+        || is_covetous(mtmp->data) 
+        || (is_human(mtmp->data) && !taming_familiar)
         || (is_demon(mtmp->data) && !is_demon(gy.youmonst.data))
         || (obj && dogfood(mtmp, obj) >= MANFOOD))
         return FALSE;
@@ -1612,7 +1615,7 @@ void
 check_dogs(void)
 {
     /* The Astral Plane is still very unfriendly to pets. */
-    int numdogs = 0, maxdogs = ACURR(A_CHA) / (Is_astralevel(&u.uz) ? 8 : 4);
+    int numdogs = 0, maxdogs = ACURR(A_CHA) / 3;
     struct Node* head = NULL;
 
     /* Create a linked list of all pets */
