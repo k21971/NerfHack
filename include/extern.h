@@ -2613,7 +2613,7 @@ extern aligntyp mon_aligntyp(struct monst *) NONNULLARG1;
 extern char *priestname(struct monst *, int, boolean, char *) NONNULLARG1;
 extern boolean p_coaligned(struct monst *) NONNULLARG1;
 extern struct monst *findpriest(char);
-extern void intemple(int);
+extern boolean intemple(int);
 extern void forget_temple_entry(struct monst *) NONNULLARG1;
 extern void priest_talk(struct monst *) NONNULLARG1;
 extern struct monst *mk_roamer(struct permonst *, aligntyp, coordxy, coordxy,
@@ -3750,6 +3750,7 @@ extern int vms_get_saved_games(const char *, char ***);
 
 /* ### weapon.c ### */
 
+extern const char kebabable[];
 extern const char *weapon_descr(struct obj *) NONNULLARG1;
 extern int hitval(struct obj *, struct monst *) NONNULLARG12;
 extern struct damage_info_t dmgval_info(struct obj*);

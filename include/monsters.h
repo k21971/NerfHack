@@ -1192,15 +1192,15 @@
         M2_HOSTILE | M2_STRONG, 0,
         NO_RACE, 12, HI_LORD, GIANT_MIMIC),
     MON(NAM("killer mimic"), S_MIMIC,
-        LVL(14, 12, 7, 20, 0), (G_GENO | 2),
-        A(ATTK(AT_BITE, AD_STCK, 3, 12),
-          ATTK(AT_BITE, AD_STCK, 3, 12),
+        LVL(10, 12, 7, 20, 0), (G_GENO | 2),
+        A(ATTK(AT_BITE, AD_STCK, 3, 4),
+          ATTK(AT_BITE, AD_STCK, 3, 4),
           NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
         SIZ(600, 400, MS_SILENT, MZ_LARGE), MR_ACID, 0,
         M1_CLING | M1_BREATHLESS | M1_AMORPHOUS | M1_HIDE | M1_ANIMAL
             | M1_NOEYES | M1_NOHEAD | M1_NOLIMBS | M1_THICK_HIDE
             | M1_CARNIVORE,
-        M2_HOSTILE | M2_STRONG, 0,
+        M2_HOSTILE | M2_STRONG | M2_FLANK, 0,
         NO_RACE, 14, CLR_GREEN, KILLER_MIMIC),
     /*
      * nymphs
@@ -4124,7 +4124,7 @@
         MH_HUMAN, 18, CLR_YELLOW, SHOPKEEPER),
     /* vault guard */
     MON(NAM("guard"), S_HUMAN,
-        LVL(12, 12, 10, 40, 10), G_NOGEN,
+        LVL(14, 12, 10, 40, 10), G_NOGEN,
         A(ATTK(AT_WEAP, AD_PHYS, 4, 10),
           NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
         SIZ(WT_HUMAN, 400, MS_GUARD, MZ_HUMAN), 0, 0,
@@ -4132,7 +4132,7 @@
         M2_NOPOLY | M2_MERC | M2_PEACEFUL | M2_STRONG
             | M2_COLLECT | M2_FLANK,
         M3_INFRAVISIBLE,
-        MH_HUMAN, 14, CLR_BLUE, GUARD),
+        MH_HUMAN, 15, CLR_BLUE, GUARD),
     /* familiar is the vampires starting pet */
     MON(NAM("familiar"), S_HUMAN,
         LVL(5, 12, 10, 10, 0), (G_GENO | 2),

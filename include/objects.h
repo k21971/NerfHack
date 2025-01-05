@@ -1151,7 +1151,7 @@ FOOD("tin",                  75,  0, 10, 1, METAL,   0, HI_METAL, TIN),
 #define POTION(name,desc,mgc,power,prob,cost,color,sn) \
     OBJECT(OBJ(name, desc),                                             \
            BITS(0, 1, 0, 0, mgc, 0, 0, 0, 0, 0, 0, P_NONE, GLASS),      \
-           power, POTION_CLASS, prob, 0, 20, cost, 0, 0, 0, 0, 10, color, sn)
+           power, POTION_CLASS, prob, 0, 10, cost, 0, 0, 0, 0, 10, color, sn)
 POTION("gain ability",           "ruby",  1, 0, 40, 200, CLR_RED,
                                                         POT_GAIN_ABILITY),
 POTION("reflection",         "metallic",  1, REFLECTING, 10, 200, CLR_GRAY,
@@ -1351,7 +1351,7 @@ SPELL("fireball",        "ragged",
 SPELL("cone of cold",    "dog eared",
       P_ATTACK_SPELL,      10,  7, 4, 1, RAY, HI_PAPER, SPE_CONE_OF_COLD),
 SPELL("sleep",           "mottled",
-      P_ENCHANTMENT_SPELL, 30,  1, 3, 1, RAY, HI_PAPER, SPE_SLEEP),
+      P_ENCHANTMENT_SPELL, 30,  1, 2, 1, RAY, HI_PAPER, SPE_SLEEP),
 SPELL("finger of death", "stained",
       P_ATTACK_SPELL,       5, 10, 7, 1, RAY, HI_PAPER, SPE_FINGER_OF_DEATH),
 SPELL("light",           "cloth",
@@ -1655,17 +1655,17 @@ MARKER(LAST_GLASS_GEM, WORTHLESS_VIOLET_GLASS)
  * that is currently everything between luckstones and flint
  * (inclusive).
  */
-ROCK("luckstone", "gray",  0,   2,  25, 60, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
+ROCK("luckstone", "gray",  0,   2,  10, 60, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
                                                                     LUCKSTONE),
-ROCK("healthstone", "gray",0 , 10,  25, 60, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
+ROCK("healthstone", "gray",0 , 10,  10, 60, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
                                                                   HEALTHSTONE),
-ROCK("whetstone", "gray",  0,  10,  25, 45, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
+ROCK("whetstone", "gray",  0,  10,  10, 45, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
                                                                     WHETSTONE),
-ROCK("foulstone", "gray",  0,  10,  25,  0, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
+ROCK("foulstone", "gray",  0,  10,  10,  0, 3, 3, 1, 10, 7, MINERAL, CLR_GRAY,
                                                                     FOULSTONE),
 ROCK("loadstone", "gray",  0,  10, 500,  1, 3, 3, 1, 10, 6, MINERAL, CLR_GRAY,
                                                                     LOADSTONE),
-ROCK("touchstone", "gray", 0,  10,  25, 45, 3, 3, 1, 10, 6, MINERAL, CLR_GRAY,
+ROCK("touchstone", "gray", 0,  10,  10, 45, 3, 3, 1, 10, 6, MINERAL, CLR_GRAY,
                                                                   TOUCHSTONE),
 ROCK("flint", "gray",      0,  20,   2,  1, 6, 6, 0, 10, 7, MINERAL, CLR_GRAY,
                                                                     FLINT),

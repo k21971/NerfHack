@@ -17,6 +17,7 @@ staticfn void steal_it(struct monst *, struct attack *) NONNULLARG1;
 staticfn void mhitm_ad_slow_core(struct monst *, struct monst *);
 staticfn boolean should_cleave(void);
 staticfn boolean should_skewer(int);
+staticfn boolean can_skewer(struct monst *);
 /* hitum_cleave() has contradictory information. There's a comment
  * beside the 1st arg 'target' stating non-null, but later on there
  * is a test for 'target' being null */
@@ -446,10 +447,10 @@ find_roll_to_hit(
 
     /* Some races really don't like wearing other racial armor, if they
      * do they get a severe to-hit penalty */
-    tmp -= count_hated_items() * 5;
+    tmp -= d(count_hated_items(), 5);
 
     /* Feedback for wearing items your race hates. */
-    if (tmp && !rn2(5)) {
+    if (tmp > 4 && !rn2(10)) {
         switch (rnd(7)) {
         case 1:
             if (uarm && hates_item(&gy.youmonst, uarm->otyp))
@@ -926,12 +927,12 @@ hitum_cleave(
     return (target && DEADMONSTER(target)) ? FALSE : TRUE;
 }
 
-
 /* return TRUE iff no peaceful target is found behind the target space
  * assumes u.dx and u.dy have been set */
 staticfn boolean
 should_skewer(int range)
 {
+    struct monst *mtmp;
     boolean bystanders = FALSE;
     int dir = xytod(u.dx, u.dy);
     int i;
@@ -939,12 +940,16 @@ should_skewer(int range)
         impossible("should_skewer: unknown target direction");
         return FALSE; /* better safe than sorry */
     }
-
+    
+    mtmp = m_at(u.ux + u.dx, u.uy + u.dy);
+    if (mtmp && !can_skewer(mtmp))
+        return FALSE;
+    
     for (i = 0; i < range; i++) {
         /* The +2 gets us one spot beyond the first monster. */
         int x = u.ux + u.dx * (i + 2);
         int y = u.uy + u.dy * (i + 2);
-        struct monst *mtmp;
+        
         if (!isok(x, y))
             return FALSE;
 
@@ -955,7 +960,9 @@ should_skewer(int range)
                 bystanders = TRUE;
         } else if (!cansee(x, y)) {
             bystanders = TRUE;
-        }
+        } else if (mtmp && !can_skewer(mtmp))
+            return FALSE;
+        
     }
     if (bystanders) {
         if (!svc.context.forcefight)
@@ -964,6 +971,24 @@ should_skewer(int range)
     return TRUE;
 }
 
+/* We can always skewer through unsolid monsters, but fleshy monsters
+ * need to be fairly low health (under 20%). This idea was adapted 
+ * from some ideas aosdict had in IRC.
+ */
+staticfn boolean
+can_skewer(struct monst *mtmp)
+{
+     if (unsolid(mtmp->data) || amorphous(mtmp->data)
+        /* Most blobs are not amorphous for some reason */
+        || mtmp->data->mlet == S_BLOB
+        || mtmp->data->mlet == S_FUNGUS 
+        /* Why wouldn't we use kebabable here?!? */
+        || strchr(kebabable, mtmp->data->mlet)
+        || (is_fleshy(mtmp->data) && mtmp->mhp < (mtmp->mhpmax / 5)))
+        return TRUE;
+     return FALSE;
+}
+    
 /* hit the monster next to you and the monster behind;
    return False if the primary target is killed, True otherwise
    This was copied and adapted from hitum_cleave.
@@ -1081,12 +1106,12 @@ hitum(struct monst *mon, struct attack *uattk)
       * Handle this first so that vampires always have the chance
       * to feed first before the victim expires. */
     if (!DEADMONSTER(mon) && m_at(x, y) == mon 
-            && Race_if(PM_VAMPIRE) && !Upolyd) {
-        if ((uwep || (u.twoweap && uswapwep)) &&
-            maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE)) &&
-                (is_rider(mon->data)
+        && maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
+        if ((is_rider(mon->data)
                 || mon->data == &mons[PM_GREEN_SLIME]
-                || touch_petrifies(mon->data))) {
+                || (touch_petrifies(mon->data) && !Stone_resistance))
+            /* ... unless they are impaired */
+            && (!Stunned && !Confusion && !Hallucination)) {
             ; /* Don't attack - move onto weapon attacks */
         } else {
             tmp = find_roll_to_hit(mon, AT_BITE, (struct obj *) 0, &attknum,
@@ -1121,7 +1146,7 @@ hitum(struct monst *mon, struct attack *uattk)
         && (uwep->cursed || should_cleave()))
         return hitum_cleave(mon, uattk);
 
-    /* Spears at expert (and tridents at skilled) can skewer through
+    /* Spears at skilled (and tridents at basic) can skewer through
      * the enemy, hitting the one behind.
      * We'll grant this ability solely to the player for now.
      * We are using thitmonst, which is also used for throwing items, but maybe
@@ -1129,8 +1154,8 @@ hitum(struct monst *mon, struct attack *uattk)
      */
     if (uwep && !u.twoweap && !u.uswallow && !u.ustuck
         && ((wtype = uwep_skill_type()) != P_NONE)
-        && ((is_spear(uwep) && P_SKILL(wtype) >= P_EXPERT)
-            || (uwep->otyp == TRIDENT && P_SKILL(wtype) >= P_SKILLED))
+        && ((is_spear(uwep) && P_SKILL(wtype) >= P_SKILLED)
+            || (uwep->otyp == TRIDENT && P_SKILL(wtype) >= P_BASIC))
         /* If the weapon is cursed, it doesn't care about who it hits */
         && (uwep->cursed || should_skewer(1))) {
         return hitum_skewer(mon, uwep, uattk);
@@ -1141,8 +1166,8 @@ hitum(struct monst *mon, struct attack *uattk)
     if (uwep && uwep->otyp == SPETUM
         && u.usteed && !u.uswallow && !u.ustuck
         && ((wtype = uwep_skill_type()) != P_NONE
-            && P_SKILL(wtype) >= P_SKILLED)
-        /* If the spear is cursed, it doesn't care about who it hits */
+            && P_SKILL(wtype) >= P_BASIC)
+        /* If the weapon is cursed, it doesn't care about who it hits */
         && (uwep->cursed || should_skewer(2))) {
         return hitum_skewer(mon, uwep, uattk);
     }
@@ -3012,10 +3037,10 @@ mhitm_ad_drli(
     /* Bonus for attacking susceptible victims */
     boolean vulnerable;
     if (mdef == &gy.youmonst)
-	    vulnerable = u.usleep || gm.multi || Confusion || u.utrap || u.ustuck;
+        vulnerable = u.usleep || gm.multi || Confusion || u.utrap || u.ustuck;
     else
-	    vulnerable = mdef->msleeping || !mdef->mcanmove || mdef->mfrozen
-                || mdef->mconf || mdef->mtrapped;
+        vulnerable = mdef->msleeping || !mdef->mcanmove || mdef->mfrozen
+            || mdef->mconf || mdef->mtrapped;
 
     boolean success = vulnerable ? rn2(3) : !rn2(3);
 
@@ -3028,10 +3053,11 @@ mhitm_ad_drli(
 
             /* Vampire draining bite. Player vampires are smart enough not
              * to feed while biting if they might have trouble getting it down
-             */
-            if (maybe_polyd(is_vampire(gy.youmonst.data),
-                Race_if(PM_VAMPIRE)) && mattk->aatyp == AT_BITE &&
-                has_blood(mdef->data) && u.uhunger <= 1420) {
+             * NOTE: This code might be redundant... 
+             * */
+            if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))
+                && mattk->aatyp == AT_BITE
+                && has_blood(mdef->data) && u.uhunger <= 1420) {
                 /* For the life of a creature is in the blood
                 (Lev 17:11) */
                 if (flags.verbose) {
@@ -7035,12 +7061,13 @@ passive(
     int mhit = mhitb ? M_ATTK_HIT : M_ATTK_MISS;
     int malive = maliveb ? M_ATTK_HIT : M_ATTK_MISS;
 
+#if 0
     if (mhit && aatyp == AT_BITE
           && maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
         if (bite_monster(mon))
 	        return 2; /* lifesaved */
     }
-
+#endif
     for (i = 0;; i++) {
         if (i >= NATTK)
             return (malive | mhit); /* no passive attacks */
@@ -7213,7 +7240,7 @@ passive(
                 pline("A cloud of spores surrounds you!");
             }
         } else if (malive && canseemon(mon))
-            pline_mon(mon, "puffs out a cloud of spores!");
+            pline_mon(mon, "%s puffs out a cloud of spores!", Monnam(mon));
         break;
      case AD_SLEE:
         /* passive sleep attack for orange jelly */
@@ -7235,7 +7262,7 @@ passive(
                 pline("A cloud of spores surrounds you!");
             }
         } else if (malive && canseemon(mon))
-            pline_mon(mon, "puffs out a cloud of spores!");
+            pline_mon(mon, "%s puffs out a cloud of spores!", Monnam(mon));
         break;
      case AD_DISE: /* specifically gray fungus */
         if (m_next2u(mon)) {
@@ -7246,7 +7273,7 @@ passive(
                 pline("A cloud of spores surrounds you!");
             }
         } else if (malive && canseemon(mon))
-            pline_mon(mon, "puffs out a cloud of spores!");
+            pline_mon(mon, "%s puffs out a cloud of spores!", Monnam(mon)); 
         break;
     case AD_QUIL: {
         boolean spikes = is_orc(mon->data);
@@ -7811,7 +7838,7 @@ bite_monster(struct monst *mon)
     switch(monsndx(mon->data)) {
     case PM_LIZARD:
         if (Stoned)
-	        fix_petrification();
+	    fix_petrification();
         break;
     case PM_DEATH:
     case PM_PESTILENCE:
@@ -7831,7 +7858,7 @@ bite_monster(struct monst *mon)
         /*FALLTHRU*/
     default:
         if (acidic(mon->data) && Stoned)
-	        fix_petrification();
+	    fix_petrification();
         break;
     }
     return FALSE;

@@ -1694,7 +1694,7 @@ peffect_blood(struct obj *otmp)
         lesshungry(amt);
 
         if (otmp->otyp == POT_VAMPIRE_BLOOD && otmp->blessed) {
-            int num = newhp();
+            int num = newhp() * (otmp->odiluted ? 1 : 2);
             if (Upolyd) {
                 u.mhmax += num;
                 u.mh += num;
@@ -2148,7 +2148,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                 losehp(Maybe_Half_Phys(dmg), "potion of acid", KILLED_BY_AN);
                 if (!rn2(3))
                     erode_armor(&gy.youmonst, ERODE_CORRODE);
-                if (!rn2(3))
+                else if (!rn2(3))
                     dmg += destroy_items(&gy.youmonst, AD_ACID, dmg);
             }
             break;
@@ -2340,10 +2340,10 @@ potionhit(struct monst *mon, struct obj *obj, int how)
         case POT_ACID:
             dmg = d(obj->cursed ? 2 : 1, obj->blessed ? 4 : 8);
             if (!rn2(3))
-                erode_armor(mon, ERODE_CORRODE);
-            if (!rn2(3))
                 acid_damage(MON_WEP(mon));
             if (!rn2(3))
+                erode_armor(mon, ERODE_CORRODE);
+            else if (!rn2(3))
                 dmg += destroy_items(mon, AD_ACID, dmg);
 
             if (!resists_acid(mon) && !resist(mon, POTION_CLASS, 0, NOTELL)) {
@@ -3296,7 +3296,10 @@ potion_dip(struct obj *obj, struct obj *potion)
         /* Mixing potions is dangerous...
            KMH, balance patch -- acid is particularly unstable */
         if (obj->cursed || potion->cursed || obj->otyp == POT_ACID
-            || mixture == ACID_VENOM || !rn2(10)) {
+            /* ACID_VENOM is a kludge for mixtures guaranteed to explode */
+            || mixture == ACID_VENOM 
+            /* decrease the chance of non-magical mixtures of exploding */
+            || (magic ? !rn2(10) : !rn2(20))) {
             /* it would be better to use up the whole stack in advance
                of the message, but we can't because we need to keep it
                around for potionbreathe() [and we can't set obj->in_use

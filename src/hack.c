@@ -2437,6 +2437,7 @@ boolean
 u_maybe_impaired(void)
 {
     return (Stunned || (Confusion && !rn2(5))
+                    || (is_wanderer(gy.youmonst.data) && !rn2(8))
                     || (Rabid && !rn2(11)));
 }
 
@@ -3699,7 +3700,8 @@ check_special_room(boolean newlev)
                 interesting_room();
             break;
         case TEMPLE:
-            intemple(roomno + ROOMOFFSET);
+            if (!intemple(roomno + ROOMOFFSET))
+                break;
             FALLTHROUGH;
             /*FALLTHRU*/
         default:

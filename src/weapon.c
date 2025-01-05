@@ -114,7 +114,7 @@ static NEARDATA const char *const barehands_or_martial[] = {
                : odd_skill_names[-skill_names_indices[type]])
 
 /* targets that provide attacker with small to-hit bonus when using a spear */
-static NEARDATA const char kebabable[] = {
+const char kebabable[] = {
     S_XORN, S_DRAGON, S_JABBERWOCK, S_NAGA, S_GIANT,  '\0'
 };
 
@@ -2056,7 +2056,7 @@ skill_init(const struct def_skill *class_skill)
             P_SKILL(P_HEALING_SPELL) = P_BASIC;
         else if (carrying(SPE_PROTECTION))
             P_SKILL(P_CLERIC_SPELL) = P_BASIC;
-        else if (carrying(SPE_CONFUSE_MONSTER))
+        else if (carrying(SPE_CONFUSE_MONSTER) || carrying(SPE_SLEEP))
             P_SKILL(P_ENCHANTMENT_SPELL) = P_BASIC;
     }
 

@@ -63,13 +63,16 @@ static struct trobj Barbarian[] = {
     { 0, 0, 0, 0, 0 }
 };
 static struct trobj Cartomancer[] = {
+#define C_DECK 8 /* playing card deck or deck of fate */
     { RAZOR_CARD, 2, WEAPON_CLASS, 40, 1 },
     { HAWAIIAN_SHIRT, 0, ARMOR_CLASS, 1, UNDEF_BLESS },
     { MEAT_STICK, 0, FOOD_CLASS, 2, 0 },
     { CANDY_BAR, 0, FOOD_CLASS, 2, 0 },
     { SCR_CREATE_MONSTER, 0, SCROLL_CLASS, 7, UNDEF_BLESS },
     { UNDEF_TYP, UNDEF_SPE, SPBOOK_CLASS, 1, UNDEF_BLESS },
+    { POT_PHASING, 0, POTION_CLASS, 4, UNDEF_BLESS },
     { SACK, 0, TOOL_CLASS, 1, 0 },
+    { PLAYING_CARD_DECK, 0, TOOL_CLASS, 1, 0 },
     { 0, 0, 0, 0, 0 }
 };
 static struct trobj Cave_man[] = {
@@ -114,6 +117,7 @@ static struct trobj Monk[] = {
     { UNDEF_TYP, UNDEF_SPE, SPBOOK_CLASS, 1, 1 },
     { UNDEF_TYP, UNDEF_SPE, SCROLL_CLASS, 1, UNDEF_BLESS },
     { POT_HEALING, 0, POTION_CLASS, 3, UNDEF_BLESS },
+    { POT_REFLECTION, 0, POTION_CLASS, 1, UNDEF_BLESS },
     { FOOD_RATION, 0, FOOD_CLASS, 3, 0 },
     { APPLE, 0, FOOD_CLASS, 5, UNDEF_BLESS },
     { ORANGE, 0, FOOD_CLASS, 5, UNDEF_BLESS },
@@ -214,8 +218,6 @@ static struct trobj Lamp[] = { { OIL_LAMP, 1, TOOL_CLASS, 1, 0 },
 static struct trobj OilPotion[] = { { POT_OIL, 0, POTION_CLASS, 1, 0 },
                                { 0, 0, 0, 0, 0 } };
 static struct trobj PoisonPotion[] = { { POT_SICKNESS, 0, POTION_CLASS, 2, 0 },
-                                       { 0, 0, 0, 0, 0 } };
-static struct trobj PhasePotion[] = { { POT_PHASING, 0, POTION_CLASS, 1, 0 },
                                        { 0, 0, 0, 0, 0 } };
 static struct trobj Blindfold[] = { { BLINDFOLD, 0, TOOL_CLASS, 1, 0 },
                                     { 0, 0, 0, 0, 0 } };
@@ -699,6 +701,8 @@ u_init_role(void)
         skill_init(Skill_B);
         break;
     case PM_CARTOMANCER:
+        if (rn2(100) >= 50) /* see above comment */
+            Cartomancer[C_DECK].trotyp = DECK_OF_FATE;
         /* Cards only weigh 1 for Cartomancers */
         for (int s = SCR_ENCHANT_ARMOR; s < SCR_STINKING_CLOUD; s++)
             objects[s].oc_weight = 1;
@@ -709,8 +713,6 @@ u_init_role(void)
         objects[SCR_CREATE_MONSTER].oc_prob *= 2;
 
         ini_inv(Cartomancer);
-        if (!rn2(3))
-            ini_inv(PhasePotion);
         skill_init(Skill_Car);
         knows_object(PLAYING_CARD_DECK, FALSE);
         knows_object(DECK_OF_FATE, FALSE);
@@ -736,6 +738,11 @@ u_init_role(void)
         knows_object(HEALTHSTONE, FALSE);	/* KMH */
         knows_object(POT_BLOOD, FALSE);
         knows_object(POT_VAMPIRE_BLOOD, FALSE);
+        /* Naturally familiar with healing items in their work */
+        knows_object(POT_SICKNESS, FALSE);
+        knows_object(POT_PARALYSIS, FALSE);
+        knows_object(POT_SLEEPING, FALSE);
+        knows_object(POT_RESTORE_ABILITY, FALSE);
         skill_init(Skill_H);
         break;
     case PM_KNIGHT:
@@ -748,10 +755,10 @@ u_init_role(void)
         break;
     case PM_MONK: {
         static short M_spell[] = {
-            SPE_HEALING, SPE_PROTECTION, SPE_CONFUSE_MONSTER
+            SPE_HEALING, SPE_PROTECTION, SPE_CONFUSE_MONSTER, SPE_SLEEP
         };
 
-        Monk[M_BOOK].trotyp = M_spell[rn2(90) / 30]; /* [0..2] */
+        Monk[M_BOOK].trotyp = M_spell[rn2(120) / 30]; /* [0..3] */
         ini_inv(Monk);
         ini_inv(Magicmarker);
         if (!rn2(10))
@@ -1304,7 +1311,16 @@ ini_inv_mkobj_filter(int oclass, boolean got_level1_spellbook)
            || otyp == RIN_SLEEPING
            || otyp == RIN_WITHERING
            || otyp == WAN_NOTHING
-           /* orcs start with poison resistance */
+           || (Race_if(PM_VAMPIRE) &&
+               /* vampirics start with regeneration */
+               (otyp == RIN_REGENERATION
+               /* vampirics start with flying */
+                || otyp == RIN_LEVITATION
+               /* vampirics don't eat */
+                || otyp == SPE_DETECT_FOOD || otyp == SCR_FOOD_DETECTION
+               /* vampires don't like silver */
+                || objects[otyp].oc_material == SILVER))
+           /* orcs/vampires start with poison resistance */
            || (otyp == RIN_POISON_RESISTANCE &&
 	       (Race_if(PM_ORC) || Race_if(PM_VAMPIRE)))
            /* Monks don't use weapons */
@@ -1313,11 +1329,6 @@ ini_inv_mkobj_filter(int oclass, boolean got_level1_spellbook)
            || (otyp == SPE_FORCE_BOLT && Role_if(PM_WIZARD))
            /* Make them hunt for it!*/
            || (otyp == SPE_MAGIC_MISSILE && Role_if(PM_WIZARD))
-           /* vampirics start with regeneration */
-           || (otyp == RIN_REGENERATION && Race_if(PM_VAMPIRE))
-           /* items that will be silver for vampirics (rings/wands perhaps)
-           * that can't become iron */
-           || (Race_if(PM_VAMPIRE) && objects[otyp].oc_material == SILVER)
            /* powerful spells are either useless to
               low level players or unbalancing; also
               spells in restricted skill categories */
@@ -1508,7 +1519,7 @@ ini_inv(struct trobj *trop)
 
         otyp = ini_inv_obj_substitution(trop, obj);
 
-	    /* Set up cartomancer cards */
+	/* Set up cartomancer cards */
         if (Role_if(PM_CARTOMANCER) && obj->otyp == SCR_CREATE_MONSTER) {
             obj->corpsenm = PM_RAVEN;
             bless(obj);
