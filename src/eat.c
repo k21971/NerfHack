@@ -1001,6 +1001,13 @@ should_givit(int type, struct permonst *ptr)
 
     /* some intrinsics are easier to get than others */
     switch (type) {
+    case POISON_RES:
+        if ((ptr == &mons[PM_KILLER_BEE] || ptr == &mons[PM_SCORPION])
+            && !rn2(4))
+            chance = 1;
+        else
+            chance = 15;
+        break;
     case TELEPORT:
         chance = 10;
         break;
@@ -1014,10 +1021,11 @@ should_givit(int type, struct permonst *ptr)
         chance = 1;
         break;
     default:
-        chance = 1; /* the rest use the new system, give it to them all the time */
+        chance = 15;
         break;
     }
-    return (ptr->mlevel <= rn2(chance));
+
+    return (ptr->mlevel > rn2(chance));
 }
 
 
@@ -1406,6 +1414,7 @@ cpostfx(int pm)
         if (!Passes_walls)
             You("feel %s!", Hallucination ? "phasey" : "hazy");
         incr_itimeout(&HPasses_walls, (long) (d(4, 4) + 6)); /* 8..20 */
+        check_intrinsics = TRUE;
         break;
     case PM_DISENCHANTER:
         /* picks an intrinsic at random and removes it; there's

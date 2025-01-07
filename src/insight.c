@@ -1889,7 +1889,7 @@ attributes_enlightenment(
         enlght_halfdmg(HALF_PHDAM, final);
     if (Half_spell_damage)
         enlght_halfdmg(HALF_SPDAM, final);
-    if (Half_gas_damage)
+    if (No_gas_damage)
         enl_msg(You_, "take", "took", " reduced poison gas damage", "");
     /* polymorph and other shape change */
     if (Protection_from_shape_changers)
@@ -1977,6 +1977,8 @@ attributes_enlightenment(
         you_have("steadfastness", " from Load Brand");
     else if (uarms && uarms->oartifact == ART_PRIDWEN)
         you_have("steadfastness", " from Pridwen");
+    else if (uarmg && uarmg->otyp == GAUNTLETS_OF_FORCE)
+        you_have("steadfastness", " from your gauntlets of force");
     else if (m_carrying(&gy.youmonst, LOADSTONE))
         you_have("steadfastness", " from a loadstone");
 
@@ -2194,7 +2196,6 @@ attributes_enlightenment(
      * no good checks for those yet.  */
     if (defended(&gy.youmonst, AD_BLND))
         enl_msg(You_, "resist", "resisted", " blinding effects", "");
-
 }
 
 /* ^X command */

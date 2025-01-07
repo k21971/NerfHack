@@ -2441,7 +2441,7 @@ potionbreathe(struct obj *obj)
     /* wearing a wet towel protects both eyes and breathing, even when
        the breath effect might be beneficial; we still pass down to the
        naming opportunity in case potion was thrown at hero by a monster */
-    switch (Half_gas_damage ? TOWEL : obj->otyp) {
+    switch (No_gas_damage ? TOWEL : obj->otyp) {
     case TOWEL:
         pline("Some vapor passes harmlessly around you.");
         break;
@@ -3418,6 +3418,17 @@ potion_dip(struct obj *obj, struct obj *potion)
             Your("%s dissolves in the %s!", xname(obj), xname(potion));
             useup(obj);
         }
+    }
+    boolean draconic = (Is_dragon_scales(obj) && uarmc && obj == uarmc);
+    
+    if (potion->otyp == POT_PHASING && draconic) {
+        poof(potion);
+        struct obj pseudo;
+        pseudo = cg.zeroobj;
+        pseudo.otyp = SCR_ENCHANT_ARMOR;
+        /* don't use seffects, that would allow armor choice */
+        (void) maybe_merge_scales(&pseudo, uarmc);
+        return ECMD_TIME;
     }
 
     if (potion->otyp == POT_OIL) {

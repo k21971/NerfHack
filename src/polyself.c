@@ -84,7 +84,8 @@ set_uasmon(void)
                         || dmgtype(mdat, AD_RBRE)));
     PROPSET(SICK_RES, (mdat->mlet == S_FUNGUS || is_ghoul(mdat)));
 
-    PROPSET(STUNNED, (mdat == &mons[PM_STALKER] || is_bat(mdat)));
+    PROPSET(STUNNED, (mdat == &mons[PM_STALKER]
+                      || (is_bat(mdat)&& mdat != &mons[PM_VAMPIRE_BAT])));
     PROPSET(HALLUC_RES, dmgtype(mdat, AD_HALU));
     PROPSET(SEE_INVIS, perceives(mdat));
     PROPSET(TELEPAT, telepathic(mdat));
@@ -1090,10 +1091,8 @@ polymon(int mntmp)
             pline(use_thec, monsterc, "shriek");
         if (uptr->msound == MS_ATHOL) /* worthless, actually */
             pline(use_thec, monsterc, "athool");
-#if 0 /* Vampshifting disabled */
         if (is_vampire(uptr) || is_vampshifter(&gy.youmonst))
             pline(use_thec, monsterc, "change shape");
-#endif
         if (lays_eggs(uptr) && flags.female
             && !(uptr == &mons[PM_GIANT_EEL]
                  || uptr == &mons[PM_ELECTRIC_EEL]))
@@ -1971,8 +1970,6 @@ dopoly(void)
     if (is_vampire(gy.youmonst.data) || is_vampshifter(&gy.youmonst)) {
         polyself(POLY_MONSTER);
         if (savedat != gy.youmonst.data) {
-            You("transform into %s.",
-                an(pmname(gy.youmonst.data, Ugender)));
             newsym(u.ux, u.uy);
         }
     }

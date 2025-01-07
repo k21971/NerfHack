@@ -2236,8 +2236,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                 if (mtmp->mcan && mtmp->data == &mons[PM_ARCHON] && rn2(5))
                     react = -1;
             } else if (defended(&gy.youmonst, AD_BLND)) {
-                Your("armor protects you from %s gaze.",
-                    s_suffix(mon_nam(mtmp)));
+                You("are unaffected.");
             } else if (!resists_blnd(&gy.youmonst)) {
                 int blnd = d((int) mattk->damn, (int) mattk->damd);
 
@@ -2976,9 +2975,6 @@ passiveum(
             /* by_you==True: passive counterattack to hero's action
                is hero's fault */
             (void) drain_item(mon_currwep, TRUE);
-            /* Possibly remove erodeproofing */
-            if (mon_currwep && mon_currwep->oerodeproof && !rn2(2))
-                mon_currwep->oerodeproof = 0;
             /* No message */
         }
         return M_ATTK_HIT;

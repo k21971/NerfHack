@@ -250,6 +250,11 @@ mkobj_erosions(struct obj *otmp)
     if (otmp->oclass == POTION_CLASS && otmp->otyp != POT_WATER
         && svm.moves > 1L && !rn2(27))
         otmp->odiluted = 1;
+    /* Wands can sometimes generate pre-charged. */
+    if (otmp->oclass == WAND_CLASS
+        && svm.moves > 1L && !rn2(23))
+        otmp->recharged = 1;
+        
 
 }
 
@@ -1172,6 +1177,7 @@ mksobj_init(struct obj *otmp, boolean artif)
         }
         break;
     case WAND_CLASS:
+        otmp->recharged = 0; /* used to control recharging */
         if (otmp->otyp == WAN_WISHING) {
             /* The Castle wand is always (1:2) to guarantee 3 wishes. */
             otmp->spe = 2;
@@ -1183,7 +1189,6 @@ mksobj_init(struct obj *otmp, boolean artif)
         } else
             otmp->spe = rn1(5, (objects[otmp->otyp].oc_dir == NODIR) ? 11 : 4);
         blessorcurse(otmp, 17);
-        otmp->recharged = 0; /* used to control recharging */
         break;
     case RING_CLASS:
         if (objects[otmp->otyp].oc_charged) {
@@ -2048,10 +2053,11 @@ weight(struct obj *obj)
          *  The macro DELTA_CWT in pickup.c also implements these
          *  weight equations.
          */
-        if (obj->otyp == BAG_OF_HOLDING)
+        if (obj->otyp == BAG_OF_HOLDING) {
             cwt = obj->cursed ? (cwt * 2)
                   : obj->blessed ? ((cwt + 3) / 4)
                     : ((cwt + 1) / 2); /* uncursed */
+        }
 
         return wt + cwt;
     }
@@ -2817,6 +2823,11 @@ add_to_container(struct obj *container, struct obj *obj)
     obj->ocontainer = container;
     obj->nobj = container->cobj;
     container->cobj = obj;
+    
+    /* There might be a more efficient way to identify this... */
+    if (container->otyp == BAG_OF_HOLDING && carried(container)) {
+       makeknown_msg(BAG_OF_HOLDING);
+    }
     return obj;
 }
 
