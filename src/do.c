@@ -1851,13 +1851,11 @@ goto_level(
                 if (u.usteed)
                     dismount_steed(DISMOUNT_FELL);
                 else
-                    losehp(Maybe_Half_Phys(d(2, 3)),
+                    losehp(Maybe_Half_Phys(rn1(10, 10)),
                            ga.at_ladder ? "falling off a ladder"
                                      : "tumbling down a flight of stairs",
                            KILLED_BY);
-
                 maybe_fall_onto_weapon();
-
                 selftouch("Falling, you");
             } else { /* ordinary descent */
                 if (flags.verbose)
@@ -2674,7 +2672,7 @@ maybe_fall_onto_weapon(void)
         if (!is_slash(uwep) && !is_pierce(uwep))
             return;
 
-        if (Fumbling || rnd(8) > ACURR(A_DEX)) {
+        if (Fumbling || rnd(20) > ACURR(A_DEX)) {
             You("fumble and fall onto %s", yname(uwep));
             losehp(Maybe_Half_Phys(dmgval(uwep, &gy.youmonst)),
                 "falling onto your own weapon", KILLED_BY);
@@ -2684,7 +2682,7 @@ maybe_fall_onto_weapon(void)
         if (!is_slash(uswapwep) && !is_pierce(uswapwep))
             return;
 
-        if (Fumbling || rnd(8) > ACURR(A_DEX)) {
+        if (Fumbling || rnd(20) > ACURR(A_DEX)) {
             You("fumble and fall onto %s", yname(uswapwep));
             losehp(Maybe_Half_Phys(dmgval(uswapwep, &gy.youmonst)),
                 "falling onto your own weapon", KILLED_BY);
