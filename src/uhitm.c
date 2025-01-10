@@ -4783,6 +4783,8 @@ mhitm_ad_calm(struct monst *magr, struct attack *mattk,
                 if (gv.vis)
                     pline("%s looks calmer.", Monnam(mdef));
                 mdef->mpeaceful = 1;
+                if (mdef == u.usteed)
+                    dismount_steed(DISMOUNT_THROWN);
             }
             mdef->mtame = mhm->damage = 0;
         }
@@ -7082,13 +7084,12 @@ passive(
     int mhit = mhitb ? M_ATTK_HIT : M_ATTK_MISS;
     int malive = maliveb ? M_ATTK_HIT : M_ATTK_MISS;
 
-#if 0
     if (mhit && aatyp == AT_BITE
           && maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
         if (bite_monster(mon))
 	        return 2; /* lifesaved */
     }
-#endif
+
     for (i = 0;; i++) {
         if (i >= NATTK)
             return (malive | mhit); /* no passive attacks */
