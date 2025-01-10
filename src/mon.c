@@ -371,7 +371,7 @@ zombie_maker(struct monst *mon)
     switch (pm->mlet) {
     case S_ZOMBIE:
         /* Z-class monsters that aren't actually zombies go here */
-        if (is_ghoul(pm) || pm == &mons[PM_SKELETON])
+        if (is_not_zombie(pm))
             return FALSE;
         return TRUE;
     case S_LICH:
@@ -3506,8 +3506,6 @@ logdeadmon(struct monst *mtmp, int mndx)
 
     if (mndx == PM_MEDUSA && howmany == 1) {
         record_achievement(ACH_MEDU); /* also generates a livelog event */
-    } else if (mndx == PM_CERBERUS && howmany == 1) {
-        record_achievement(ACH_CERB); /* also generates a livelog event */
     } else if ((unique_corpstat(mtmp->data)
                 && (mndx != PM_HIGH_CLERIC || !mtmp->mrevived))
                || (mtmp->isshk && !mtmp->mrevived)) {
@@ -4314,7 +4312,7 @@ xkilled(
                            uhis(), pmname(mdat, Mgender(mtmp)));
         }
     } else if (mtmp->mpeaceful) {
-        if (!Uevil) {
+        if (u.ualign.type != A_CHAOTIC) {
             if (canspotmon(mtmp))
                 You_feel("guilty.");
             else

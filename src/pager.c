@@ -1146,6 +1146,7 @@ add_mon_info(winid datawin, struct permonst * pm)
     APPENDC(is_reviver(pm), "reviving");
     APPENDC(is_floater(pm), "floating");
     APPENDC(pm->mmove == 0, "stationary");
+    APPENDC(is_wanderer(pm), "wanders");
     APPENDC(pm_invisible(pm), "invisible");
     APPENDC(is_undead(pm), "undead");
     if (!is_undead(pm))
@@ -4313,7 +4314,10 @@ corpse_conveys(char *buf, struct permonst * pm)
     /* acid, stone, and psionic resistance aren't currently conveyable */
     if (*buf)
         Strcat(buf, " resistance");
-    APPENDC(intrinsic_possible(TELEPORT, pm), "teleportation");
+    /* If we have many more corpses like this that have exceptions, implement 
+     * official handling in eat.c */
+    APPENDC(intrinsic_possible(TELEPORT, pm)
+                && pm != &mons[PM_QUANTUM_MECHANIC], "teleportation");
     APPENDC(intrinsic_possible(TELEPORT_CONTROL, pm), "teleport control");
     APPENDC(intrinsic_possible(TELEPAT, pm), "telepathy");
     APPENDC(pm == &mons[PM_MIND_FLAYER] || pm == &mons[PM_MASTER_MIND_FLAYER],
