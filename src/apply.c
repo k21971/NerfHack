@@ -5176,15 +5176,15 @@ check_mon_jump(struct monst *mtmp, int x, int y)
 static const int GOOD_CARDS = 12;
 static NEARDATA const char *tarotnames[] = {
     "the Tower",            /* 1 - bad */
-    "the Wheel of Fortune", /* 2 - meh, +3-5 cards */
-    "the Devil",            /* 3 - bad, stop */
+    "the Wheel of Fortune", /* 2 - meh, +2 cards */
+    "the Devil",            /* 3 - bad, stop drawing*/
     "the Fool",             /* 4 - bad */
-    "Death",                /* 5 - bad, stop */
+    "Death",                /* 5 - bad, stop drawing */
     "Judgment",             /* 6 - bad */
     "the Emperor",          /* 7 - bad */
     "the Hermit",           /* 8 - meh? */
     "the Hanged Man",       /* 9 - meh? */
-    "Justice",              /* 10 - bad */
+    "Justice",              /* 10 - bad, maybe stop drawing  */
     "Temperance",           /* 11 - bad */
     "the Lovers",           /* 12 - good */
     "the Magician",         /* 13 - good */
@@ -5195,8 +5195,8 @@ static NEARDATA const char *tarotnames[] = {
     "the Chariot",          /* 18 - good */
     "the Sun",              /* 19 - good */
     "the Moon",             /* 20 - good */
-    "the Star",             /* 21 - good */
-    "the World"             /* 22 - good, stop */
+    "the World",            /* 21 - good */
+    "the Star"              /* 22 - good, stop drawing */
 };
 
 staticfn void
@@ -5211,7 +5211,10 @@ deck_of_fate(struct obj *obj)
         Your("%s are occupied!", makeplural(body_part(HAND)));
         return;
     }
-
+    /* We need some way to make turn 1 cartomancer wishes not
+     * as crazy overpowered... message for this? */
+    u.ualign.record = -1;
+    
     if (obj->cursed) {
         badcards = TRUE;
     } else if (obj->blessed || Role_if(PM_CARTOMANCER)) {
@@ -5241,14 +5244,13 @@ deck_of_fate(struct obj *obj)
 
         switch (index) {
         case 1: /* The Tower */
-            explode(u.ux, u.uy, BZ_U_SPELL(ZT_LIGHTNING), rnd(30), TOOL_CLASS, EXPL_MAGICAL);
-            explode(u.ux, u.uy, BZ_U_SPELL(ZT_ACID), rnd(30), TOOL_CLASS, EXPL_WET);
+            explode(u.ux, u.uy, BZ_U_SPELL(ZT_FIRE), rnd(30), TOOL_CLASS, EXPL_FIERY);
+            explode(u.ux, u.uy, BZ_U_SPELL(ZT_MAGIC_MISSILE), rnd(30), TOOL_CLASS, EXPL_MAGICAL);
+            (void) cancel_monst(&gy.youmonst, obj, TRUE, FALSE, TRUE);
             break;
         case 2: /* The Wheel of Fortune */
             draws += 2;
-            if (Role_if(PM_CARTOMANCER))
-                draws += rnd(3);
-            pline("%ld more cards flip out of the deck.", draws);
+            pline("Two more cards flip out of the deck.");
             break;
         case 3: { /* The Devil */
             draws = 0;
@@ -5262,17 +5264,19 @@ deck_of_fate(struct obj *obj)
                 if (dnum != NON_PM)
                     mtmp = makemon(&mons[dnum], u.ux, u.uy, NO_MM_FLAGS);
             }
-
-            if (!Blind && mtmp) {
+          
+            if (mtmp && !Blind) {
                 pline("%s appears from a cloud of noxious smoke!", Monnam(mtmp));
                 newsym(mtmp->mx, mtmp->my);
-            } else if (olfaction(gy.youmonst.data))
+            } else if (mtmp && olfaction(gy.youmonst.data))
                 pline("Something stinks!");
             break;
         }
         case 4: /* The Fool */
             (void) adjattrib(A_INT, -rnd(3), FALSE);
             (void) adjattrib(A_WIS, -rnd(3), FALSE);
+            incr_itimeout(&HAggravate_monster, rn1(725, 1500));
+            aggravate();
             break;
         case 5: /* Death */
             draws = 0;
@@ -5327,10 +5331,10 @@ deck_of_fate(struct obj *obj)
             break;
         case 8: /* The Hermit */
             You_feel("like hiding!");
-            tele();
-            incr_itimeout(&HInvis, rn1(500, 500));
+            int amt = rn1(500, 1000);
+            incr_itimeout(&HInvis, amt);
+            incr_itimeout(&HTeleportation, amt / 2);
             newsym(u.ux, u.uy);
-            aggravate();
             break;
         case 9: /* The Hanged Man */
             mtmp = makemon(&mons[PM_ROPE_GOLEM], u.ux, u.uy, NO_MM_FLAGS);
@@ -5339,12 +5343,13 @@ deck_of_fate(struct obj *obj)
             change_luck(-1);
             break;
         case 10: /* Justice */
-            if (u.ualign.abuse < (unsigned) -13 || u.ualign.record < 0) {
+            if (u.ualign.abuse > (unsigned) 13 || Luck <= 0) {
                 if (!Blind)
                     You("are frozen by the power of Justice!");
                 else
                     You("can't seem to move!");
                 nomul(-(rn1(30, 20)));
+                draws = 0;
             } else {
                 You("will be rewarded for your loyalty!");
                 if (Punished)
@@ -5372,8 +5377,10 @@ deck_of_fate(struct obj *obj)
         case 12: /* The Lovers */
             for (n = 0; n < 2; n++) {
                 mtmp = makemon(&mons[PM_AMOROUS_DEMON], u.ux, u.uy, NO_MM_FLAGS);
-                if (mtmp)
+                if (mtmp) {
                     mtmp->mpeaceful = 1;
+                    newsym(mtmp->mx, mtmp->my);
+                }
             }
             if (!Deaf && mtmp)
                 You_hear("infernal giggling.");
@@ -5392,13 +5399,13 @@ deck_of_fate(struct obj *obj)
             (void) adjattrib(A_STR, rn1(5, 4), FALSE);
             break;
         case 15: /* The High Priestess */
-            You_feel("more devout.");
-            u.ualign.abuse = 0; /* Clear past sins! */
-            adjalign(10);
+            /* You_feel("more devout."); */
+            (void) adjattrib(A_CHA, 1, FALSE);
+            incr_itimeout(&HTelepat, rn1(750, 1250));
             break;
         case 16: /* The Hierophant */
             terr = levl[u.ux][u.uy].typ;
-            if (terr == ROOM) {
+            if (terr == ROOM || terr == CORR || terr == GRASS) {
                 if (!Blind)
                     pline_The("%s beneath you reshapes itself into an altar!",
                                 surface(u.ux, u.uy));
@@ -5410,8 +5417,12 @@ deck_of_fate(struct obj *obj)
                 You_feel("a twinge of anxiety.");
             break;
         case 17: /* The Empress */
+            if (Luck < 0) {
+                mtmp = makemon(&mons[PM_ELVEN_MONARCH], u.ux, u.uy, MM_FEMALE);
+                break;
+            }
             terr = levl[u.ux][u.uy].typ;
-            if (terr == ROOM || terr == CORR) {
+            if (terr == ROOM || terr == CORR || terr == GRASS) {
                 if (!Blind)
                     Your("throne arrives.");
                 levl[u.ux][u.uy].typ = THRONE;
@@ -5419,8 +5430,7 @@ deck_of_fate(struct obj *obj)
                 You_feel("quite lordly.");
             break;
         case 18: /* The Chariot */
-            incr_itimeout(&HTeleport_control, 1);
-            level_tele();
+            tele();
             break;
         case 19: /* The Sun */
             You("are bathed in warmth."); /* as praying */
@@ -5440,10 +5450,10 @@ deck_of_fate(struct obj *obj)
             else
                 You("feel lucky!");
             break;
-        case 21: /* The Star */
+        case 21: /* The World */
             identify_pack(0, FALSE);
             break;
-        case 22: /* The World */
+        case 22: /* The Star */
             draws = 0;
             makewish();
             break;

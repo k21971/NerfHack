@@ -2104,7 +2104,7 @@ seffect_cloning(struct obj **sobjp)
         if (otmp2->otyp == SLIME_MOLD)
             otmp2->spe = svc.context.current_fruit;
 
-        /* Prevent exploits */
+        /* Prevent wishing exploits */
         if (otmp2->otyp == WAN_WISHING) {
             otmp2->otyp = WAN_WONDER;
             otmp2->spe = rn1(10, 15);
@@ -2114,6 +2114,8 @@ seffect_cloning(struct obj **sobjp)
             otmp2->otyp = OIL_LAMP;
         } else if (otmp2->otyp == SCR_CLONING) {
             otmp2->otyp = SCR_BLANK_PAPER;
+        } else if (otmp2->otyp == DECK_OF_FATE) {
+            otmp2->otyp = PLAYING_CARD_DECK;
         } else if (otmp2->otyp == MAGIC_MARKER) {
             otmp2->otyp = ATHAME;
             if (sblessed)
@@ -2545,7 +2547,7 @@ seffect_knowledge(struct obj **sobjp)
         learned_something = TRUE;
     }
 
-       /* Get a random bonus based on luck. */
+    /* Get a random bonus based on luck. */
     if (sblessed && rnl(5) == 0 && (learnabout = learnme())) {
         You("now know more about %s.", makeplural(simple_typename(learnabout)));
         learned_something = TRUE;
