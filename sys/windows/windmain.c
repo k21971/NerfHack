@@ -629,13 +629,8 @@ early_options(int argc, char *argv[])
                 break;
             } else
                 raw_printf("\nUnknown switch: %s", argv[0]);
-<<<<<<< HEAD
-            FALLTHROUGH;
-        /* FALLTHRU */
-=======
         FALLTHROUGH;
 	/*FALLTHRU*/
->>>>>>> fc416534f38cda19d608ffeacd2a5738076e8445
         case '?':
             nhusage();
             nethack_exit(EXIT_SUCCESS);
