@@ -1,4 +1,4 @@
-/* NetHack 3.7	files.c	$NHDT-Date: 1717449127 2024/06/03 21:12:07 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.399 $ */
+/* NetHack 3.7	files.c	$NHDT-Date: 1737346561 2025/01/19 20:16:01 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.416 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Derek S. Ray, 2015. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -367,7 +367,6 @@ fname_decode(char quotechar, char *s, char *callerbuf, int bufsz)
     sp = s;
     op = callerbuf;
     *op = '\0';
-    calc = 0;
 
     while (*sp) {
         /* Do we have room for one more character? */
@@ -1229,6 +1228,7 @@ create_savefile(void)
         nhfp->mode = WRITING;
         if (program_state.in_self_recover || do_historical) {
             do_historical = TRUE;       /* force it */
+            nhUse(do_historical);
             nhfp->structlevel = TRUE;
             nhfp->fieldlevel = FALSE;
             nhfp->addinfo = FALSE;
@@ -1283,6 +1283,7 @@ open_savefile(void)
         nhfp->mode = READING;
         if (program_state.in_self_recover || do_historical) {
             do_historical = TRUE;       /* force it */
+            nhUse(do_historical);
             nhfp->structlevel = TRUE;
             nhfp->fieldlevel = FALSE;
             nhfp->addinfo = FALSE;
@@ -1433,8 +1434,10 @@ get_saved_games(void)
     {
         char *foundfile;
         const char *fq_save;
+#if 0
         const char *fq_new_save;
         const char *fq_old_save;
+#endif
         char **files = 0;
         int i, count_failures = 0;
 
@@ -1472,6 +1475,12 @@ get_saved_games(void)
                 r = plname_from_file(files[i], SUPPRESS_WAITSYNCH_PERFILE);
 
                 if (r) {
+                    /* this renaming of the savefile is not compatible
+                     * with 1f36b98b,  'selectsaved' extension from
+                     * Oct 10, 2024. Disable the renaming for the time
+                     * being.
+                     */
+#if 0
                     /* rename file if it is not named as expected */
                     Strcpy(svp.plname, r);
                     set_savefile_name(TRUE);
@@ -1481,7 +1490,7 @@ get_saved_games(void)
                     if (strcmp(fq_old_save, fq_new_save) != 0
                         && !file_exists(fq_new_save))
                         (void) rename(fq_old_save, fq_new_save);
-
+#endif
                     result[j++] = r;
                 } else {
                     count_failures++;
@@ -4724,7 +4733,9 @@ debugcore(const char *filename, boolean wildcards)
 void
 reveal_paths(int code)
 {
+#if defined(SYSCF)
     boolean skip_sysopt = FALSE;
+#endif
     const char *fqn, *nodumpreason;
 
     char buf[BUFSZ];
@@ -4878,6 +4889,7 @@ reveal_paths(int code)
     }
 #endif /* ?DUMPLOG */
 
+#ifdef SYSCF
 #ifdef WIN32
     if (!skip_sysopt) {
         if (sysopt.portable_device_paths) {
@@ -4892,6 +4904,7 @@ reveal_paths(int code)
             }
         }
     }
+#endif
 #endif
 
     /* personal configuration file */
@@ -4949,6 +4962,12 @@ reveal_paths(int code)
     raw_print("");
 #if defined(WIN32) && !defined(WIN32CON)
     wait_synch();
+#endif
+#ifndef DUMPLOG
+#ifdef SYSCF
+    nhUse(skip_sysopt);
+#endif
+    nhUse(nodumpreason);
 #endif
 }
 

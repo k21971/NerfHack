@@ -1,4 +1,4 @@
-/* NetHack 3.7	windows.c	$NHDT-Date: 1700012891 2023/11/15 01:48:11 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.109 $ */
+/* NetHack 3.7	windows.c	$NHDT-Date: 1737345149 2025/01/19 19:52:29 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.138 $ */
 /* Copyright (c) D. Cohrs, 1993. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -621,8 +621,6 @@ static struct window_procs hup_procs = {
 #endif
     hup_get_color_string,
 #endif /* CHANGE_COLOR */
-    hup_void_ndecl,                                   /* start_screen */
-    hup_void_ndecl,                                   /* end_screen */
     hup_outrip, genl_preference_update, genl_getmsghistory,
     genl_putmsghistory,
     hup_void_ndecl,                                   /* status_init */
@@ -1044,6 +1042,8 @@ genl_status_update(
                 Strcpy(nb = eos(nb), " Fly");
             if (cond & BL_MASK_RIDE)
                 Strcpy(nb = eos(nb), " Ride");
+            if (cond & BL_MASK_PHASE)
+                Strcpy(nb = eos(nb), " Phasing");
             break;
         default:
             Sprintf(status_vals[idx],
@@ -1711,6 +1711,7 @@ dump_render_status(void)
         { BL_MASK_LEV,       "Lev"      },
         { BL_MASK_FLY,       "Fly"      },
         { BL_MASK_RIDE,      "Ride"     },
+        { BL_MASK_PHASE,     "Phasing"  },
         { BL_MASK_WITHER,    "Wither"   },
         { BL_MASK_RABID,     "Rabid"    }
     };
@@ -2556,12 +2557,11 @@ choose_classes_menu(const char *prompt,
     char buf[BUFSZ];
     const char *text = 0;
     boolean selected;
-    int ret, i, n, next_accelerator, accelerator;
+    int ret, i, n, next_accelerator, accelerator = 0;
     int clr = NO_COLOR;
 
     if (!class_list || !class_select)
         return 0;
-    accelerator = 0;
     next_accelerator = 'a';
     any = cg.zeroany;
     win = create_nhwindow(NHW_MENU);

@@ -1,4 +1,4 @@
-/* NetHack 3.7	apply.c	$NHDT-Date: 1720128162 2024/07/04 21:22:42 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.449 $ */
+/* NetHack 3.7	apply.c	$NHDT-Date: 1737275719 2025/01/19 00:35:19 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.464 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -206,8 +206,7 @@ use_towel(struct obj *obj)
     } else if (GreasedFeet || GreasedBoots) {
         pline("You've got the goop off your %s.",
               uarmf ? xname(uarmf) : makeplural(body_part(FOOT)));
-        HFumbling &= ~I_SPECIAL;
-        HFumbling = 0;
+        make_fumbling(0);
         if (uarmf)
             uarmf->greased = 0;
         if (!rn2(5) && !obj->greased) {
@@ -301,8 +300,7 @@ its_dead(coordxy rx, coordxy ry, int *resp, struct obj *stethoscope)
             /* (most corpses don't retain the monster's sex, so
                we're usually forced to use generic pronoun here) */
             if (mtmp) {
-                mptr = mtmp->data = &mons[mtmp->mnum];
-                /* TRUE: override visibility check--it's not on the map */
+                mtmp->data = &mons[mtmp->mnum];
                 gndr = pronoun_gender(mtmp, PRONOUN_NO_IT);
             } else {
                 mptr = &mons[corpse->corpsenm];
@@ -444,7 +442,7 @@ use_stethoscope(struct obj *obj)
             cant_reach_floor(u.ux, u.uy, (u.dz < 0), TRUE);
     } else if (its_dead(u.ux, u.uy, &res, obj)) {
             ; /* message already given */
-        } else if (Is_lethe_gate(&u.uz)) {
+        } else if (Is_stronghold(&u.uz)) {
             Soundeffect(se_crackling_of_hellfire, 35);
             You_hear("the crackling of hellfire.");
         } else {
@@ -546,6 +544,7 @@ use_stethoscope(struct obj *obj)
         Soundeffect(se_hollow_sound, 100);
         You_hear(hollow_str, "door");
         cvt_sdoor_to_door(lev); /* ->typ = DOOR */
+        recalc_block_point(rx, ry);
         feel_newsym(rx, ry);
         return res;
     case SCORR:
@@ -1228,8 +1227,12 @@ use_mirror(struct obj *obj)
         if (vis)
             pline("%s doesn't have a reflection.", Monnam(mtmp));
     } else if (monable && mtmp->data == &mons[PM_MEDUSA]) {
-        if (mon_reflects(mtmp, "The gaze is reflected away by %s %s!"))
-            return ECMD_TIME;
+        const char* monreflector = mon_reflectsrc(mtmp);
+        if (monreflector) {
+            pline_mon(mtmp, "The gaze is reflected away by %s %s!",
+                     s_suffix(mon_nam(mtmp)), monreflector);
+                return ECMD_TIME;
+        }
         if (vis)
             pline("%s is turned to stone!", Monnam(mtmp));
         gs.stoned = TRUE;
@@ -2186,7 +2189,8 @@ jump(int magic) /* 0=Physical, otherwise skill level */
         }
         You("cannot escape from %s!", mon_nam(u.ustuck));
         return ECMD_OK;
-    } else if (Levitation || Is_airlevel(&u.uz) || Is_waterlevel(&u.uz)) {
+    } else if (Levitation || Flying 
+               || Is_airlevel(&u.uz) || Is_waterlevel(&u.uz)) {
         if (magic) {
             You("flail around a little.");
             return ECMD_TIME;
@@ -2372,7 +2376,7 @@ use_tinning_kit(struct obj *obj)
                   corpse_name);
             Sprintf(kbuf, "trying to tin %s without gloves", corpse_name);
         }
-        instapetrify(kbuf);
+        make_stoned(5L, (char *) 0, KILLED_BY, kbuf);
     }
     if (is_rider(mptr)) {
         if (revive_corpse(corpse, FALSE))
@@ -2926,7 +2930,7 @@ use_grease(struct obj *obj)
                       fingers_or_gloves(TRUE));
             }
             if (otmp == uarmf && uarmf->greased)
-                make_feet_greasy();
+                make_fumbling((HFumbling & TIMEOUT) + rnd(3));
         } else {
             make_glib(oldglib + rn1(11, 5)); /* + 5..15 */
             You("coat your %s with grease.", fingers_or_gloves(TRUE));
@@ -3723,14 +3727,14 @@ use_whip(struct obj *obj)
 
                         Strcpy(kbuf, (otmp->quan == 1L) ? an(onambuf)
                                                         : onambuf);
-                        pline("Snatching %s is a fatal mistake.", kbuf);
+//                        pline("Snatching %s is a fatal mistake.", kbuf);
                         /* corpse probably has a rot timer but is now
                            OBJ_FREE; end of game cleanup will panic if
                            it isn't part of current level; plus it would
                            be missing from bones, so put it on the floor */
                         place_object(otmp, u.ux, u.uy); /* but don't stack */
 
-                        instapetrify(kbuf);
+                        make_stoned(5L, (char *) 0, KILLED_BY, kbuf);
                         /* life-saved; free the corpse again */
                         obj_extract_self(otmp);
                     }
@@ -4392,6 +4396,18 @@ broken_wand_explode(struct obj *obj, int dmg, int expltype)
     discard_broken_wand();
 }
 
+/* if x,y has lava or water, dunk any boulders at that location into it */
+void
+maybe_dunk_boulders(coordxy x, coordxy y)
+{
+    struct obj *otmp;
+
+    while (is_pool_or_lava(x, y) && (otmp = sobj_at(BOULDER, x, y)) != 0) {
+        obj_extract_self(otmp);
+        (void) boulder_hits_pool(otmp, x,y, FALSE);
+    }
+}
+
 /* return 1 if the wand is broken, hence some time elapsed */
 staticfn int
 do_break_wand(struct obj *obj)
@@ -4577,8 +4593,9 @@ void exploding_wand_efx(struct obj *obj)
 
         if (obj->otyp == WAN_DIGGING) {
             schar typ;
+            enum digcheck_result dcres = dig_check(BY_OBJECT, x, y);
 
-            if (dig_check(BY_OBJECT, x, y) < DIGCHECK_FAILED) {
+            if (dcres < DIGCHECK_FAILED || dcres == DIGCHECK_FAIL_BOULDER) {
                 if (IS_WALL(levl[x][y].typ) || IS_DOOR(levl[x][y].typ)) {
                     /* normally, pits and holes don't anger guards, but they
                      * do if it's a wall or door that's being dug */
@@ -4606,6 +4623,9 @@ void exploding_wand_efx(struct obj *obj)
                                        && !levl[x][y].candig)) ? PIT : HOLE);
                 }
             }
+            fill_pit(x, y);
+            maybe_dunk_boulders(x, y);
+            recalc_block_point(x, y);
             continue;
         } else if (obj->otyp == WAN_CREATE_MONSTER) {
             /* u.ux,u.uy creates it near you--x,y might create it in rock */
@@ -5266,10 +5286,11 @@ deck_of_fate(struct obj *obj)
             }
           
             if (mtmp && !Blind) {
-                pline("%s appears from a cloud of noxious smoke!", Monnam(mtmp));
+                pline("%s appears from a cloud of noxious smoke!", Amonnam(mtmp));
                 newsym(mtmp->mx, mtmp->my);
             } else if (mtmp && olfaction(gy.youmonst.data))
                 pline("Something stinks!");
+            change_luck(-7);
             break;
         }
         case 4: /* The Fool */
@@ -5280,6 +5301,13 @@ deck_of_fate(struct obj *obj)
             break;
         case 5: /* Death */
             draws = 0;
+            /* Magic resistance does not protect against this! */
+            if (Luck >= 7 && rn2(13) && !Unchanging) {
+                pline("A great change starts to ripple though you!");
+                polyself(POLY_NOFLAGS);
+                break;
+            }
+
             if (!Blind)
                 pline("A skeletal hand appears upon the deck, stopping your draws.");
             else

@@ -1105,7 +1105,7 @@ nh_timeout(void)
                 if (HFumbling & I_SPECIAL && !rn2(20)) {
                     pline_The("goop wears off of your %s.",
                                 makeplural(body_part(FOOT)));
-                    HFumbling &= ~I_SPECIAL;
+                    make_fumbling(0);
                 }
 
                 if (Fumbling)
@@ -1511,7 +1511,7 @@ slip_or_trip(void)
             && touch_petrifies(&mons[otmp->corpsenm]) && !Stone_resistance) {
             Sprintf(svk.killer.name, "tripping over %s corpse",
                     an(mons[otmp->corpsenm].pmnames[NEUTRAL]));
-            instapetrify(svk.killer.name);
+            make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
         }
     } else if ((HFumbling & FROMOUTSIDE) || (is_ice(u.ux, u.uy) && !rn2(3))) {
         /* is fumbling from ice alone? */

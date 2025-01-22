@@ -68,6 +68,9 @@ suit or piece of armor
 	Lying there on the mud mortally wounded, I learned what true armor
 	class was that day."
 		[ When Help Collides, by J.D. Berry ]
+acidfall
+    This sword was said to have been quenched in the heart of an acidic
+    geyser, where it absorbed the essence of Gehennom itself.
 aclys
 aklys
 thonged club
@@ -771,9 +774,6 @@ brigit
 	Bring me my cross of gold,
 	As a talisman.
 		[ "Broadsword" (refrain), by Ian Anderson ]
-buer
-	This demon often manifests in the form of a lion's head surrounded
-	by five clawed limbs.
 bugbear
 	Bugbears are relatives of goblins, although they tend to be
 	larger and more hairy.  They are aggressive carnivores and
@@ -975,6 +975,14 @@ centipede
 	biped that ruins their peace.
 		[ Travels and Researches in South Africa,
 			by Dr. David Livingstone ]
+cerastes
+	This has four movable little horns; so, when it wants to feed,
+	it hides under leaves all of its body except these little horns
+	which, as they move, seem to the birds to be some small worms at play.
+	Then they immediately swoop down to pick them and the Cerastes
+	suddenly twines round them and encircles and devours them.
+		[ Humorous Writings (taken from The Notebooks of Leonardo da Vinci),
+			by Jean Paul Richter (ed.).]
 cerberus
 kerberos
 	Cerberus, (or Kerberos in Greek), was the three-headed dog
@@ -1392,11 +1400,6 @@ cyclops
 	I see thee yet, in form as palpable
 	As this which now I draw.
 		[ Macbeth, by William Shakespeare ]
-malcanthet
-lord of the foocubi
-	For love is no part of the dreamworld. Love belongs to Desire,
-	and Desire is always cruel.
-		[ The Sandman, by Neil Gaiman ]
 * of the cards
 dal z*
 	Kaiba: Draw your last pathetic card so I can end this, Yugi!
@@ -1451,6 +1454,10 @@ deepest one
 	they would rest; but some day, if they remembered, they would
 	rise again for the tribute Great Cthulhu craved.
 		[ The Shadow Over Innsmouth, by H.P. Lovecraft ]
+maggot
+	Your worm is your only emperor for diet; we fat all creatures
+	else to fat us, and we fat ourselves for maggots.
+		[ William Shakespeare ]
 demogorgon
 	A terrible deity, whose very name was capable of producing the
 	most horrible effects.  He is first mentioned by the 4th-century
@@ -1783,6 +1790,10 @@ giant eel
 	rather than dead creatures and are not habitual eaters of
 	carrion.
 	    [ Freshwater Fishes of Canada, by Scott and Crossman ]
+giant fly
+	These enormous insects are little threat to experienced
+	dungeoneers. The maddening buzz of their wings is quickly
+	silenced by the strike of a blade.
 egg
 	But I asked why not keep it and let the hen sit on it till it
 	hatched, and then we could see what would come out of it.
@@ -2659,7 +2670,6 @@ hell hound*
 ~helm of *
 ~crystal helmet
 helm*
-dented pot
 * helmet
 	A piece of armor designed to protect the head.
 	(What were you expecting?)
@@ -2827,6 +2837,11 @@ horned devil
 barbed devil
 	These devils lack any real special abilities, though they
 	are quite difficult to kill.
+barghest
+	Few have seen these mysterious black dogs and lived to tell
+	the tale. Some believe that they are an omen of bad luck,
+	while others believe the barghest to be a shapeshifter or
+	some type of gremlin.
 ~horsem*
 *horse
 	King Richard III: A horse! a horse! my kingdom for a horse!
@@ -3983,7 +3998,6 @@ gnomish mines
 	armor and weapons (_wondrous_).
 	  [ The Tough Guide to Fantasyland, by Diana Wynne Jones ]
 minotaur
-baphomet
 	The Minotaur was a monster, half bull, half human, the
 	offspring of Minos' wife Pasiphae and a wonderfully beautiful
 	bull. ...  When the Minotaur was born Minos did not kill him.

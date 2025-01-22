@@ -1,4 +1,4 @@
-/* NetHack 3.7	dog.c	$NHDT-Date: 1725227804 2024/09/01 21:56:44 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.164 $ */
+/* NetHack 3.7	dog.c	$NHDT-Date: 1737287993 2025/01/19 03:59:53 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.178 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2011. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -219,7 +219,6 @@ struct monst *
 makedog(void)
 {
     struct monst *mtmp;
-    struct obj *otmp;
     const char *petname;
     int pettype;
 
@@ -252,7 +251,12 @@ makedog(void)
     if (!*petname && pettype == PM_FAMILIAR)
         petname = "Guillermo"; /* What We Do in the Shadows */
 
-    mtmp = makemon(&mons[pettype], u.ux, u.uy, MM_EDOG);
+    /* specifying NO_MINVENT prevents makemon() from having a 1% chance
+       of creating a pony with an already worn saddle; dogs and cats
+       aren't affected because they don't have any initial inventory
+       [if anybody adds stranger pets that are expected to have such,
+       they'll need to modify this] */
+    mtmp = makemon(&mons[pettype], u.ux, u.uy, MM_EDOG | NO_MINVENT);
 
     if (!mtmp)
         return ((struct monst *) 0); /* pets were genocided [how?] */
@@ -260,13 +264,11 @@ makedog(void)
     if (!svc.context.startingpet_mid) {
         svc.context.startingpet_mid = mtmp->m_id;
         if (!u.uroleplay.pauper) {
-            /* initial horses already wear saddle (unless hero is a pauper) */
-            if (pettype == PM_PONY
-                && (otmp = mksobj(SADDLE, TRUE, FALSE)) != 0) {
-                /* pseudo initial inventory; saddle is not actually in hero's
-                 * invent so assume that update_inventory() isn't needed */
-                fully_identify_obj(otmp);
-                put_saddle_on_mon(otmp, mtmp);
+            /* initial horses start wearing a saddle (pauper hero excluded) */
+            if (pettype == PM_PONY) {
+                /* NULL obj arg means put_saddle_on_mon()
+                 * will carry out the saddle creation */
+                put_saddle_on_mon((struct obj *) 0, mtmp);
             }
         }
     } else {
@@ -555,6 +557,7 @@ mon_arrive(struct monst *mtmp, int when)
                    && (stway = stairway_find_dir(!builds_up(&u.uz))) != 0) {
             /* debugfuzzer returns from or enters another branch */
             xlocale = stway->sx, ylocale = stway->sy;
+            break;
         } else if (!(u.uevent.qexpelled
                      && (Is_qstart(&u.uz0) || Is_qstart(&u.uz)))) {
             impossible("mon_arrive: no corresponding portal?");
@@ -740,14 +743,9 @@ mon_catchup_elapsed_time(
     }
 
     /* recover lost hit points */
-    if (!mtmp->mwither) {
-        if (!mon_prop(mtmp, REGENERATION))
-            imv /= 20;
-        if (mtmp->mhp + imv >= mtmp->mhpmax)
-            mtmp->mhp = mtmp->mhpmax;
-        else
-            mtmp->mhp += imv;
-    }
+    if (!regenerates(mtmp->data))
+        imv /= 20;
+    healmon(mtmp, imv, 0);
 
     set_mon_lastmove(mtmp);
 }
@@ -835,7 +833,7 @@ keepdogs(
             finish_meating(mtmp);
             mtmp->msleeping = 0;
             mtmp->mfrozen = 0;
-            mtmp->mcanmove = 1;
+            maybe_moncanmove(mtmp);
         }
         if (((monnear(mtmp, u.ux, u.uy) && levl_follower(mtmp))
              /* the wiz will level t-port from anywhere to chase
@@ -1062,7 +1060,7 @@ dogfood(struct monst *mon, struct obj *obj)
             return TABU;
         if ((obj->otyp == CORPSE || obj->otyp == EGG)
             && flesh_petrifies(fptr) /* c*ckatrice or Medusa */
-            && !resists_ston(mon))
+            && !(resists_ston(mon) || defended(mon, AD_STON)))
             return POISON;
         if (obj->otyp == LUMP_OF_ROYAL_JELLY
             && mon->data == &mons[PM_KILLER_BEE]) {
@@ -1095,6 +1093,11 @@ dogfood(struct monst *mon, struct obj *obj)
             return TABU;
         }
 
+        /* lizards cure stoning. ghouls won't eat them even then, though,
+          just like elves prefer starvation to cannibalism. */
+        if (obj->otyp == CORPSE && fptr == &mons[PM_LIZARD] && mon->mstone)
+            return DOGFOOD;
+        
 	/* vampires only "eat" very fresh corpses ...
 	 * Assume meat -> blood */
 	if (is_vampire(mptr)) {
@@ -1207,13 +1210,13 @@ tamedog(
 {
     boolean blessed_scroll = FALSE;
     boolean taming_familiar = Race_if(PM_VAMPIRE) 
-                              && mtmp->data == &mons[PM_FAMILIAR];
+                              && (mtmp->data == &mons[PM_FAMILIAR]
+                                  || mtmp->data->mlet == S_VAMPIRE);
 
     /* Spell of charm monster is limited at unskilled and basic -
      * it can only pacify. */
-    boolean unskilled_charmer = obj
-        && obj->otyp == SPE_CHARM_MONSTER
-        && P_SKILL(P_ENCHANTMENT_SPELL) < P_SKILLED;
+    boolean unskilled_charmer = obj && obj->otyp == SPE_CHARM_MONSTER
+        && P_SKILL(P_ENCHANTMENT_SPELL) < P_BASIC;
 
     if (obj && (obj->oclass == SCROLL_CLASS || obj->oclass == SPBOOK_CLASS)) {
         blessed_scroll = obj->blessed ? TRUE : FALSE;
@@ -1236,8 +1239,9 @@ tamedog(
         return FALSE;
     }
 
-    /* Vampires can only tame familiars, no pacifying anything else */
-    if (Race_if(PM_VAMPIRE) && mtmp->data != &mons[PM_FAMILIAR])
+    /* Vampires can only tame familiars and other vampire */
+    if (Race_if(PM_VAMPIRE) && !(mtmp->data == &mons[PM_FAMILIAR]
+                                  || mtmp->data->mlet == S_VAMPIRE))
         return FALSE;
 
     /* worst case, at least it'll be peaceful. */
@@ -1335,8 +1339,10 @@ tamedog(
         return FALSE;
 
     /* add the pet extension */
-    newedog(mtmp);
-    initedog(mtmp);
+    if (!has_edog(mtmp)) {
+        newedog(mtmp);
+        initedog(mtmp);
+    }
 
     if (obj) { /* thrown food */
         /* defer eating until the edog extension has been set up */

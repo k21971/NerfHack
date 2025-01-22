@@ -1,4 +1,4 @@
-/* NetHack 3.7	dothrow.c	$NHDT-Date: 1709969638 2024/03/09 07:33:58 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.285 $ */
+/* NetHack 3.7	dothrow.c	$NHDT-Date: 1737343372 2025/01/19 19:22:52 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.300 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2013. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -148,7 +148,7 @@ throw_obj(struct obj *obj, int shotlimit)
             makeplural(body_part(HAND)));
         Sprintf(svk.killer.name, "throwing %s bare-handed",
                 killer_xname(obj));
-        instapetrify(svk.killer.name);
+        make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
     }
     if (welded(obj)) {
         weldmsg(obj);
@@ -257,6 +257,7 @@ throw_obj(struct obj *obj, int shotlimit)
     gm.m_shot.n = multishot;
     for (gm.m_shot.i = 1; gm.m_shot.i <= gm.m_shot.n; gm.m_shot.i++) {
         twoweap = u.twoweap;
+        assert(obj != NULL); /* m_shot.i <= m_shot.n guarantees this */
         /* split this object off from its slot if necessary */
         if (obj->quan > 1L) {
             otmp = splitobj(obj, 1L);
@@ -881,11 +882,15 @@ hurtle_step(genericptr_t arg, coordxy x, coordxy y)
             && !uarmu && !uarm && !uarmc) {
             Sprintf(svk.killer.name, "bumping into %s",
                     an(pmname(mon->data, NEUTRAL)));
-            instapetrify(svk.killer.name);
+            make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
         }
         if (touch_petrifies(gy.youmonst.data)
+            && !(resists_ston(mon) || defended(mon, AD_STON))
             && !which_armor(mon, W_ARMU | W_ARM | W_ARMC)) {
-            minstapetrify(mon, TRUE);
+            if (!mon->mstone) {
+                mon->mstone = 5;
+                mon->mstonebyu = TRUE;
+            }
         }
         wake_nearto(x, y, 10);
         return FALSE;
@@ -1039,15 +1044,21 @@ mhurtle_step(genericptr_t arg, coordxy x, coordxy y)
         wakeup(mtmp, !svc.context.mon_moving);
         /* check whether 'mon' is turned to stone by touching 'mtmp' */
         if (touch_petrifies(mtmp->data)
+            && !(resists_ston(mtmp) || defended(mtmp, AD_STON))
             && !which_armor(mon, W_ARMU | W_ARM | W_ARMC)) {
-            minstapetrify(mon, !svc.context.mon_moving);
-            newsym(mon->mx, mon->my);
+            if (!mon->mstone) {
+                mon->mstone = 5;
+                mon->mstonebyu = !svc.context.mon_moving;
+            }
         }
         /* and whether 'mtmp' is turned to stone by being touched by 'mon' */
         if (touch_petrifies(mon->data)
-            && !which_armor(mtmp, W_ARMU | W_ARM | W_ARMC)) {
-            minstapetrify(mtmp, !svc.context.mon_moving);
-            newsym(mtmp->mx, mtmp->my);
+            && !which_armor(mtmp, W_ARMU | W_ARM | W_ARMC)
+            && !(resists_ston(mtmp) || defended(mtmp, AD_STON))) {
+            if (!mtmp->mstone) {
+                mtmp->mstone = 5;
+                mtmp->mstonebyu = TRUE;
+            }
         }
     } else if (u_at(x, y)) {
         /* a monster has caused 'mon' to hurtle against hero */
@@ -1055,10 +1066,13 @@ mhurtle_step(genericptr_t arg, coordxy x, coordxy y)
         stop_occupation();
         /* check whether 'mon' is turned to stone by touching poly'd hero */
         if (Upolyd && touch_petrifies(gy.youmonst.data)
+            && !(resists_ston(mtmp) || defended(mtmp, AD_STON))
             && !which_armor(mon, W_ARMU | W_ARM | W_ARMC)) {
             /* give poly'd hero credit/blame despite a monster causing it */
-            minstapetrify(mon, TRUE);
-            newsym(mon->mx, mon->my);
+            if (!mtmp->mstone) {
+                mtmp->mstone = 5;
+                mtmp->mstonebyu = TRUE;
+            }
         }
         /* and whether hero is turned to stone by being touched by 'mon' */
         if (touch_petrifies(mon->data) && !(uarmu || uarm || uarmc)) {
@@ -1067,8 +1081,8 @@ mhurtle_step(genericptr_t arg, coordxy x, coordxy y)
                      /* combine m_monnam() and noname_monnam():
                         "{your,a} hurtling cockatrice" w/o assigned name */
                      x_monnam(mon, mon->mtame ? ARTICLE_YOUR : ARTICLE_A,
-                              "hurtling", EXACT_NAME | SUPPRESS_NAME, FALSE));
-            instapetrify(svk.killer.name);
+                              "hurtling", EXACT_NAME | SUPPRESS_NAME, FALSE));;
+            make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
             newsym(u.ux, u.uy);
         }
     }
@@ -1964,8 +1978,8 @@ omon_adj(struct monst *mon, struct obj *obj, boolean mon_notices)
     if (!mon->mcanmove || !mon->data->mmove) {
         tmp += 4;
         if (mon_notices && mon->data->mmove && !rn2(10)) {
-            mon->mcanmove = 1;
             mon->mfrozen = 0;
+            maybe_moncanmove(mon);
         }
     }
     /* some objects are more likely to hit than others */
@@ -2207,6 +2221,7 @@ thitmonst(
                 if (!next2u)
                     sho_obj_return_to_u(obj);
                 obj = addinv(obj); /* back into your inventory */
+                nhUse(obj);
                 (void) encumber_msg();
             }
             return 1; /* caller doesn't need to place it */
@@ -2421,12 +2436,17 @@ thitmonst(
         wakeup(mon, TRUE);
         if (obj->otyp == CORPSE && touch_petrifies(&mons[obj->corpsenm])) {
             if (is_animal(md)) {
-                minstapetrify(u.ustuck, TRUE);
+                if (!u.ustuck->mstone) {
+                    u.ustuck->mstone = 5;
+                    u.ustuck->mstonebyu = TRUE;
+                }
+#if 0 /* Disabled this for delayed stoning */
                 /* Don't leave a cockatrice corpse available in a statue */
                 if (!u.uswallow) {
                     delobj(obj);
                     return 1;
                 }
+#endif
             }
         }
         Strcpy(trail,
@@ -2794,7 +2814,7 @@ breakmsg(struct obj *obj, boolean in_view)
     to_pieces = "";
     switch (obj->oclass == POTION_CLASS ? POT_WATER : obj->otyp) {
     default: /* glass or crystal wand */
-        if (obj->oclass != WAND_CLASS)
+        if (obj->oclass != WAND_CLASS && obj->oclass != RING_CLASS)
             impossible("breaking odd object (%d)?", obj->otyp);
         FALLTHROUGH;
         /*FALLTHRU*/

@@ -1,4 +1,4 @@
-/* NetHack 3.7	mklev.c	$NHDT-Date: 1728168518 2024/10/05 22:48:38 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.191 $ */
+/* NetHack 3.7	mklev.c	$NHDT-Date: 1737387068 2025/01/20 07:31:08 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.194 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Alex Smith, 2017. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -95,7 +95,10 @@ door_into_nonjoined(coordxy x, coordxy y)
 }
 
 staticfn boolean
-finddpos(coord *cc, coordxy xl, coordxy yl, coordxy xh, coordxy yh)
+finddpos(
+    coord *cc,
+    coordxy xl, coordxy yl,
+    coordxy xh, coordxy yh)
 {
     coordxy x, y;
 
@@ -114,8 +117,8 @@ finddpos(coord *cc, coordxy xl, coordxy yl, coordxy xh, coordxy yh)
             if (IS_DOOR(levl[x][y].typ) || levl[x][y].typ == SDOOR)
                 goto gotit;
     /* cannot find something reasonable -- strange */
-    x = xl;
-    y = yh;
+    cc->x = xl;
+    cc->y = yh;
     return FALSE;
  gotit:
     cc->x = x;
@@ -220,7 +223,7 @@ do_room_or_subroom(struct mkroom *croom,
 }
 
 void
-add_room(int lowx, int lowy, int hix, int hiy,
+add_room(coordxy lowx, coordxy lowy, coordxy hix, coordxy hiy,
          boolean lit, schar rtype, boolean special)
 {
     struct mkroom *croom;
@@ -234,7 +237,9 @@ add_room(int lowx, int lowy, int hix, int hiy,
 }
 
 void
-add_subroom(struct mkroom *proom, int lowx, int lowy, int hix, int hiy,
+add_subroom(struct mkroom *proom,
+            coordxy lowx, coordxy lowy,
+            coordxy hix, coordxy hiy,
             boolean lit, schar rtype, boolean special)
 {
     struct mkroom *croom;
@@ -885,7 +890,6 @@ clear_level_structures(void)
     svl.level.flags.has_zoo = 0;
     svl.level.flags.has_court = 0;
     svl.level.flags.has_morgue = svl.level.flags.graveyard = 0;
-    svl.level.flags.lethe = 0;
     svl.level.flags.has_beehive = 0;
     svl.level.flags.has_migohive = 0;
     svl.level.flags.has_fungusfarm = 0;
@@ -993,7 +997,7 @@ fill_ordinary_room(
         if (!rn2(15))
             mktoilet(croom);
     }
-    if (depth(&u.uz) > 4 && !rn2(60))
+    if (depth(&u.uz) > 2 && !rn2(60))
         mkaltar(croom);
     if (!rn2(120))
         mkforge(croom);
@@ -1157,7 +1161,6 @@ fill_ordinary_room(
         }
     }
 
-
     /* put box/chest inside;
      *  40% chance for at least 1 box, regardless of number
      *  of rooms; about 5 - 7.5% for 2 boxes, least likely
@@ -1175,7 +1178,10 @@ fill_ordinary_room(
      * Either a hint or a true rumor. */
     if (depth(&u.uz) < 2 && has_upstairs(croom) && !rn2(depth(&u.uz))) {
         if (find_okay_roompos(croom, &pos)) {
-            make_engr_at(pos.x, pos.y, get_hint(), 0L, BURN);
+            char buf[BUFSZ];
+            const char *str;
+            str = get_rnd_text(ENTRYMSGFILE, buf, rn2, MD_PAD_RUMORS);
+            make_engr_at(pos.x, pos.y, str, 0L, BURN);
         }
     } else if (!rn2(27 + 3 * abs(depth(&u.uz)))) {
         char buf[BUFSZ];
@@ -1365,9 +1371,11 @@ makelevel(void)
         else if (u_depth > 16 && !rn2(8)
                  && !(svm.mvitals[PM_COCKATRICE].mvflags & G_GONE))
             do_mkroom(COCKNEST);
-        /* Better odds because above rooms gets hit much more often. */
         else if (u_depth > 16 && !rn2(4))
             do_mkroom(DRAGONLAIR);
+        else if (u_depth > 18 && !rn2(6)
+                 && !(svm.mvitals[PM_MIGO_DRONE].mvflags & G_GONE))
+            do_mkroom(MIGOHIVE);
 
  skip0:
          /* make grass */
@@ -1683,7 +1691,6 @@ place_branch(
     coord m = {0};
     d_level *dest;
     boolean make_stairs;
-    struct mkroom *br_room;
 
     /*
      * Return immediately if there is no branch to make or we have
@@ -1694,14 +1701,13 @@ place_branch(
     if (!br || gm.made_branch)
         return;
 
-    nhUse(br_room);
     if (!x) { /* find random coordinates for branch */
         /* br_room = find_branch_room(&m); */
         (void) find_branch_room(&m);  /* sets m via mazexy() or somexy() */
         x = m.x;
         y = m.y;
     } else {
-        br_room = pos_to_room(x, y);
+        (void) pos_to_room(x, y);
     }
 
     if (on_level(&br->end1, &u.uz)) {
@@ -2710,8 +2716,8 @@ mk_knox_portal(coordxy x, coordxy y)
         source = &br->end1;
     }
 
-    /* Already set or 2/3 chance of deferring until a later level. */
-    if (source->dnum < svn.n_dgns || (rn2(3) && !wizard))
+    /* Already set */
+    if (source->dnum < svn.n_dgns)
         return;
 
     if (!(u.uz.dnum == oracle_level.dnum      /* in main dungeon */

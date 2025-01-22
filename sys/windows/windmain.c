@@ -25,7 +25,6 @@ char *translate_path_variables(const char *, char *);
 char *exename(void);
 boolean fakeconsole(void);
 void freefakeconsole(void);
-ATTRNORETURN extern void nethack_exit(int) NORETURN;
 #if defined(MSWIN_GRAPHICS)
 extern void mswin_destroy_reg(void);
 #endif
@@ -630,8 +629,13 @@ early_options(int argc, char *argv[])
                 break;
             } else
                 raw_printf("\nUnknown switch: %s", argv[0]);
+<<<<<<< HEAD
             FALLTHROUGH;
         /* FALLTHRU */
+=======
+        FALLTHROUGH;
+	/*FALLTHRU*/
+>>>>>>> fc416534f38cda19d608ffeacd2a5738076e8445
         case '?':
             nhusage();
             nethack_exit(EXIT_SUCCESS);

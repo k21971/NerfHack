@@ -30,6 +30,7 @@
 #define EPITAPHFILE "epitaph"   /* random epitaphs on graves */
 #define ENGRAVEFILE "engrave"   /* random engravings on the floor */
 #define BOGUSMONFILE "bogusmon" /* hallucinatory monsters */
+#define ENTRYMSGFILE "ntrymsgs" /* entry room messages */
 #define TRIBUTEFILE "tribute"   /* 3.6 tribute to Terry Pratchett */
 #define LEV_EXT ".lua"          /* extension for special level files */
 
@@ -512,7 +513,6 @@ extern struct nomakedefs_s nomakedefs;
 #define C(c) (0x1f & (c))
 #endif
 
-#define unctrl(c) ((c) <= C('z') ? (0x60 | (c)) : (c))
 #define unmeta(c) (0x7f & (c))
 
 /* Game log message type flags */

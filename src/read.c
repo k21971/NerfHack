@@ -110,7 +110,7 @@ tshirt_text(struct obj *tshirt, char *buf)
         "Madame Elvira's House O' Succubi Employee of the Month",
         "Ludios Vault Guards Do It In Small, Dark Rooms",
         "Yendor Military Soldiers Do It In Large Groups",
-        "I survived Yendor Military Boot Camp",
+        "I survived NerfHack Military Boot Camp",
         "Ludios Accounting School Intra-Mural Lacrosse Team",
         "Oracle(TM) Fountains 10th Annual Wet T-Shirt Contest",
         "Hey, black dragon!  Disintegrate THIS!",
@@ -349,6 +349,7 @@ doread(void)
     boolean confused, nodisappear;
     boolean carto = Role_if(PM_CARTOMANCER);
     int otyp;
+    
 
     /*
      * Reading while blind is allowed in most cases, including the
@@ -374,6 +375,28 @@ doread(void)
     scroll = getobj("read", read_ok, GETOBJ_PROMPT);
     if (!scroll)
         return ECMD_CANCEL;
+
+    /* really low intelligence can prevent reading things.
+       exceptions to this rule are scrolls of mail (server
+       messages), hawaiian shirts (pattern, not text), and
+       the book of the dead (must have to win) */
+    if (ACURR(A_INT) < 6
+#ifdef MAIL
+        && scroll->otyp != SCR_MAIL
+#endif
+        && scroll->otyp != HAWAIIAN_SHIRT
+        && scroll->otyp != ALCHEMY_SMOCK
+        && scroll->otyp != CREDIT_CARD
+        && scroll->otyp != MAGIC_MARKER
+        && scroll->otyp != CANDY_BAR
+        && scroll->oclass == COIN_CLASS
+        && scroll->otyp != SPE_BOOK_OF_THE_DEAD) {
+        You_cant("seem to make out what all these %s on the %s mean.",
+                 rn2(2) ? "weird scribbles" : "confusing scratches",
+                 simple_typename(scroll->otyp));
+        return 0;
+    }
+    
     otyp = scroll->otyp;
     scroll->pickup_prev = 0; /* no longer 'just picked up' */
 
@@ -895,13 +918,27 @@ recharge(struct obj *obj, int curse_bless)
                 alter_cost(obj, 0L);
         }
     } else if (obj->oclass == TOOL_CLASS) {
-        int rechrg = (int) obj->recharged;
+        n = (int) obj->recharged;
 
+        
+        /* Use same recharging calculation as for wands. */
+        if (obj->obroken) {
+            pline_The("%s crumbles away!", xname(obj));
+            useup(obj);
+            return;
+        }
+        if (n > 0 && !obj->oartifact && obj->otyp != BELL_OF_OPENING
+                && (n * n * n > rn2(7 * 7 * 7))) { /* recharge_limit */
+            obj->obroken = 1;
+            Your("%s suddenly vibrates!", xname(obj));
+            return;
+        }
         if (objects[obj->otyp].oc_charged) {
             /* tools don't have a limit, but the counter used does */
-            if (rechrg < 7) /* recharge_limit */
+            if (n < 7) /* recharge_limit */
                 obj->recharged++;
         }
+        
         switch (obj->otyp) {
         case BELL_OF_OPENING:
             if (is_cursed)
@@ -918,7 +955,7 @@ recharge(struct obj *obj, int curse_bless)
         case EXPENSIVE_CAMERA:
             if (is_cursed) {
                 stripspe(obj);
-            } else if (rechrg && obj->otyp == MAGIC_MARKER) {
+            } else if (n && obj->otyp == MAGIC_MARKER) {
                 /* previously recharged */
                 obj->recharged = 1; /* override increment done above */
                 if (obj->spe < 3)
@@ -1190,25 +1227,25 @@ flood_space(coordxy x, coordxy y, genericptr_t poolcnt)
 {
     struct monst *mtmp;
     struct trap *ttmp;
-    int xx = u.ux, yy = u.uy;
-    schar ltyp = PUDDLE;
+    int castr_x = u.ux, castr_y = u.uy;
+    schar ltyp = rn2(3) ? POOL : PUDDLE;
+    
+    /* We use current_wand if a monster muse'd the scroll */
     if (gc.current_wand && gc.current_wand->otyp == SCR_FLOOD) {
-        xx = gc.current_wand->ox;
-        yy = gc.current_wand->oy;
+        castr_x = gc.current_wand->ox;
+        castr_y = gc.current_wand->oy;
     }
-    if (!isok(xx, yy))
-        return;
 
     /* Don't create on the user's space unless poolcnt is -1. */
     if ((* (int*)poolcnt) != -1) {
-        if (x == xx && y == yy)
+        if (x == castr_x && y == castr_y)
             return;
     } else {
         ltyp = POOL;
     }
 
-    if (rn2(1 + distmin(xx, yy, x, y))
-        || sobj_at(BOULDER, x, y) || nexttodoor(x, y))
+    if (nexttodoor(x, y) || rn2(1 + distmin(castr_x, castr_y, x, y))
+        || sobj_at(BOULDER, x, y))
         return;
 
     if (levl[x][y].typ != ROOM      && levl[x][y].typ != GRASS
@@ -1574,7 +1611,7 @@ seffect_scare_monster(struct obj **sobjp)
         if (cansee(mtmp->mx, mtmp->my)) {
             if (confused || scursed) {
                 mtmp->mflee = mtmp->mfrozen = mtmp->msleeping = 0;
-                mtmp->mcanmove = 1;
+                maybe_moncanmove(mtmp);
             } else if (!resist(mtmp, sobj->oclass, 0, NOTELL))
                 monflee(mtmp, 0, FALSE, FALSE);
             if (!mtmp->mtame)
@@ -2397,10 +2434,9 @@ seffect_water(struct obj **sobjp, struct monst *mtmp)
         wx = mtmp->mx;
         wy = mtmp->my;
     }
-    /* Cleanup when used in muse.c */
     if (!isyou)
-        m_useup(mtmp, sobj);
-
+        extract_from_minvent(mtmp, sobj, FALSE, TRUE);
+    
     if (confused) {
         int dried_up = 0;
         do_clear_area(wx, wy, range, unflood_space, (genericptr_t) &dried_up);
@@ -2447,6 +2483,10 @@ seffect_water(struct obj **sobjp, struct monst *mtmp)
         } else {
             pline("The air around you suddenly feels very humid.");
         }
+        /* Cleanup when used in muse.c */
+        if (!isyou)
+            delobj(sobj);
+
     }
 }
 
@@ -2637,8 +2677,11 @@ seffect_magic_mapping(struct obj **sobjp)
 
             for (x = 1; x < COLNO; x++)
                 for (y = 0; y < ROWNO; y++)
-                    if (levl[x][y].typ == SDOOR)
+                    if (levl[x][y].typ == SDOOR) {
                         cvt_sdoor_to_door(&levl[x][y]);
+                        if (Is_rogue_level(&u.uz))
+                            unblock_point(x, y);
+                    }
             /* do_mapping() already reveals secret passages */
         }
         gk.known = TRUE;
@@ -3869,9 +3912,9 @@ create_particular_creation(
             mtmp->msummoned = 15; /* Arbitrary, for testing */
 
         if (d->saddled && can_saddle(mtmp) && !which_armor(mtmp, W_SADDLE)) {
-            struct obj *otmp = mksobj(SADDLE, TRUE, FALSE);
-
-            put_saddle_on_mon(otmp, mtmp);
+            /* NULL obj arg means put_saddle_on_mon()
+             * will create the saddle itself */
+            put_saddle_on_mon((struct obj *) 0, mtmp);
         }
         if (d->hidden
            /* can't hide on a closed door (amorphous green slimes, etc) */

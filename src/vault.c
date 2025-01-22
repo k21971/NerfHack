@@ -99,8 +99,7 @@ clear_fcorr(struct monst *grd, boolean forceshow)
         }
         del_engr_at(fcx, fcy);
         map_location(fcx, fcy, 1); /* bypass vision */
-        if (!ACCESSIBLE(lev->typ))
-            block_point(fcx, fcy);
+        recalc_block_point(fcx, fcy);
         gv.vision_full_recalc = 1;
         egrd->fcbeg++;
     }
@@ -608,6 +607,7 @@ invault(void)
         EGD(guard)->fakecorr[0].ftyp = typ;
         EGD(guard)->fakecorr[0].flags = levl[x][y].flags;
         /* guard's entry point where confrontation with hero takes place */
+        spot_stop_timers(x, y, MELT_ICE_AWAY);
         levl[x][y].typ = DOOR;
         levl[x][y].doormask = D_NODOOR;
         unblock_point(x, y); /* empty doorway doesn't block light */
@@ -730,6 +730,7 @@ gd_mv_monaway(struct monst *grd, int nx, int ny)
         }
         if (!rloc(mtmp, RLOC_ERR | RLOC_MSG) || MON_AT(nx, ny))
             m_into_limbo(mtmp);
+        recalc_block_point(nx, ny);
     }
 }
 
@@ -958,6 +959,7 @@ gd_move(struct monst *grd)
                 mnexto(grd, RLOC_NOMSG);
                 levl[m][n].typ = egrd->fakecorr[0].ftyp;
                 levl[m][n].flags = egrd->fakecorr[0].flags;
+                recalc_block_point(m, n);
                 del_engr_at(m, n);
                 newsym(m, n);
                 return -1;

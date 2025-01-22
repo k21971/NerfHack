@@ -1,4 +1,4 @@
-/* NetHack 3.7	cmd.c	$NHDT-Date: 1717967336 2024/06/09 21:08:56 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.729 $ */
+/* NetHack 3.7	cmd.c	$NHDT-Date: 1736401574 2025/01/08 21:46:14 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.744 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2013. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -805,7 +805,7 @@ extcmd_via_menu(void)
                              * ('w' in wizard mode) */
         /* -3: two line menu header, 1 line menu footer (for prompt) */
         one_per_line = (nchoices < ROWNO - 3);
-        accelerator = prevaccelerator = 0;
+        prevaccelerator = 0;
         acount = 0;
         for (i = 0; choices[i]; ++i) {
             accelerator = choices[i]->ef_txt[matchlevel];
@@ -941,7 +941,7 @@ domonability(void)
     } else if (is_vampire(uptr) || is_vampshifter(&gy.youmonst)) {
         return dopoly();
     } else if (u.usteed && can_breathe(u.usteed->data)) {
-        (void) pet_ranged_attk(u.usteed);
+        (void) pet_ranged_attk(u.usteed, TRUE);
         return ECMD_TIME;
     } else if (Upolyd) {
         pline("Any special ability you may have is purely reflexive.");
@@ -3417,7 +3417,6 @@ rhack(int key)
                 }
                 res = ECMD_FAIL;
                 prefix_seen = 0;
-                was_m_prefix = FALSE;
             } else {
                 /* we discard 'const' because some compilers seem to have
                    trouble with the pointer passed to set_occupation() */
@@ -3464,7 +3463,6 @@ rhack(int key)
                         return;
                     }
                     prefix_seen = tlist;
-                    bad_command = FALSE;
                     cmdq_ec = NULL;
                     if (func == do_reqmenu)
                         was_m_prefix = TRUE;
@@ -3499,7 +3497,6 @@ rhack(int key)
                     return;
                 }
                 prefix_seen = 0;
-                was_m_prefix = FALSE;
             }
             /* it is possible to have a result of (ECMD_TIME|ECMD_CANCEL)
                [for example, using 'f'ire, manually filling quiver with
@@ -3533,6 +3530,7 @@ rhack(int key)
         custompline(SUPPRESS_HISTORY, "Unknown command '%s'.", visctrl(key));
         cmdq_clear(CQ_CANNED);
         cmdq_clear(CQ_REPEAT);
+        iflags.sanity_no_check = iflags.sanity_check; /* skip sanity check */
     }
     /* didn't move */
     svc.context.move = FALSE;
@@ -3541,7 +3539,7 @@ rhack(int key)
 }
 
 /* convert an x,y pair into a direction code */
-coordxy
+int
 xytod(coordxy x, coordxy y)
 {
     int dd;

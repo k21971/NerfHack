@@ -1,4 +1,4 @@
-/* NetHack 3.7	engrave.c	$NHDT-Date: 1713657576 2024/04/20 23:59:36 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.157 $ */
+/* NetHack 3.7	engrave.c	$NHDT-Date: 1737345573 2025/01/19 19:59:33 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.165 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -392,14 +392,6 @@ read_engr_at(coordxy x, coordxy y)
     }
 }
 
-#define N_CANNOT_WRITE 4
-static const char *cannot_write[N_CANNOT_WRITE] = {
-    "You can't seem to wrap your mind around that!",
-    "You feel like you've seen this word before, but can't quite remember it.",
-    "You regret skipping Sindarin class during school.",
-    "You have difficulty writing this word for some reason..."
-};
-
 #define N_REFUSE_WRITE 4
 static const char *refuse_write[N_REFUSE_WRITE] = {
     "You wouldn't dare invoke such a holy name!",
@@ -452,11 +444,7 @@ make_engr_at(
         del_engr(ep);
 
     if (!gi.in_mklev && e_type != HEADSTONE && strstri(s, "Elbereth")) {
-        if (svl.level.flags.lethe) {
-            pline("%s", cannot_write[rn2(N_CANNOT_WRITE)]);
-            make_confused(HConfusion + d(3, 4), FALSE);
-            return;
-        } else if (Race_if(PM_VAMPIRE) || Race_if(PM_ORC)) {
+        if (Race_if(PM_VAMPIRE) || Race_if(PM_ORC)) {
             s = bogus_elbereth[rn2(N_BOGUS_ELBERETH)];
             pline("%s", refuse_write[rn2(N_REFUSE_WRITE)]);
             You("%swrite `%s` instead.",
@@ -1561,6 +1549,7 @@ engrave(void)
             obj_extract_self(stylus);
             stylus = hold_another_object(stylus, "You drop one %s!",
                                          doname(stylus), (char *) NULL);
+            nhUse(stylus);
         } else if (dulled && stylus->known) {
             /* reflect change in stylus->spe; not needed for splitstack
                since hold_another_object() does this */

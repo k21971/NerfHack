@@ -240,7 +240,7 @@ erode_obj(
         is_primary = FALSE;
         cost_type = COST_CORRODE;
         break;
-    case ERODE_CRACK: /* crystal armor */
+    case ERODE_CRACK: /* crystal armor, glass items */
         vulnerable = is_crackable(otmp);
         is_primary = TRUE;
         crackers = TRUE;
@@ -639,6 +639,7 @@ maketrap(coordxy x, coordxy y, int typ)
             lev->flags = 0; /* set_levltyp doesn't take care of this [yet?] */
 
         unearth_objs(x, y);
+        recalc_block_point(x, y);
         break;
     case TELEP_TRAP:
         if (isok(gl.launchplace.x, gl.launchplace.y)) {
@@ -742,7 +743,7 @@ fall_through(
 
     if (*u.ushops)
         shopdig(1);
-    if (Is_lethe_gate(&u.uz)) {
+    if (Is_stronghold(&u.uz)) {
         find_hell(&dtmp);
     } else {
         int dist;
@@ -881,6 +882,8 @@ animate_statue(
     else
         mon->mundetected = FALSE;
     mon->msleeping = 0;
+    /* clear any left over slow-stoning timers that may be present */
+    mon->mstone = 0;
     if (cause == ANIMATE_NORMAL || cause == ANIMATE_SHATTER) {
         /* trap always releases hostile monster */
         mon->mtame = 0; /* (might be petrified pet tossed onto trap) */
@@ -1850,21 +1853,6 @@ trapeffect_rust_trap(
     return Trap_Effect_Finished;
 }
 
-
-/* This is not great - but FROMOUTSIDE is used by other
- * sources of fumbling. In timeout.c we check if this is I_SPECIAL
- * and reset it for a while or until it's wiped off by a towel.
- */
-void
-make_feet_greasy(void)
-{
-    long old;
-    HFumbling |= (I_SPECIAL);
-    old = (HFumbling & TIMEOUT);
-    HFumbling &= ~TIMEOUT;
-    HFumbling += old + rnd(3);
-}
-
 staticfn int
 trapeffect_grease_trap(
     struct monst *mtmp,
@@ -1878,7 +1866,6 @@ trapeffect_grease_trap(
     if (mtmp == &gy.youmonst) {
         /* Stepping in a puddle grease */
         if (!Levitation && !Flying && !rn2(2)) {
-
             /* Usually fall off steed if riding */
             if (u.usteed) {
                 pline("%s clops into a puddle of grease and slips!",
@@ -1897,16 +1884,29 @@ trapeffect_grease_trap(
 		    exercise(A_DEX, FALSE);
 		    losehp(Maybe_Half_Phys(rnd(3)),
                            "slipping on grease and falling", KILLED_BY);
+                    maybe_fall_onto_weapon();
 		    nomul(-rnd(3));
 		} else {
                     You("almost slip on a puddle of grease!");
                 }
 	    }
-            make_feet_greasy();
+            make_fumbling((HFumbling & TIMEOUT) + rnd(3)); /* + 1..3 */
             seetrap(trap);
             trap->once = 1;
             return Trap_Effect_Finished;
         }
+#if 0 /* Maybe come back to this - doesn't make sense for now */
+        else if (Flying && !rn2(2)) {
+            /* This is a bit of a stretch, but if you are flying
+               you get hit with an extra nasty splosh of grease that 
+               mucks up your flying and blinds you... */
+            pline("A torrent of grease inundates you!");
+            make_fumbling((HFumbling & TIMEOUT) + rnd(3)); /* + 1..3 */
+            seetrap(trap);
+            trap->once = 1;
+            goto greased_face;
+        }
+#endif
 
         if (trap->once && trap->tseen && !rn2(15)) {
             if (!Blind)
@@ -1935,10 +1935,12 @@ trapeffect_grease_trap(
             if (ublindf) {
                 grease_hits(ublindf);
                 otmp = ublindf;
-                Your("%s slips off your %s.", xname(otmp),
-                     body_part(HEAD));
-                Blindf_off(ublindf);
-                dropx(otmp);
+                if (!otmp->cursed) {
+                    Your("%s slips off your %s.", xname(otmp),
+                         body_part(HEAD));
+                    Blindf_off(ublindf);
+                    dropx(otmp);
+                }
             }
             pline("There's greasy goop all over your %s.",
                   body_part(FACE));
@@ -1951,9 +1953,11 @@ trapeffect_grease_trap(
             if (uarms) {
                 grease_hits(uarms);
                 otmp = uarms;
-                Your("%s slips off your left %s.", xname(otmp), body_part(ARM));
-                Shield_off();
-                dropx(otmp);
+                if (!otmp->cursed) {
+                    Your("%s slips off your left %s.", xname(otmp), body_part(ARM));
+                    Shield_off();
+                    dropx(otmp);
+                }
             }
             if (u.twoweap)
                 grease_hits(uswapwep);
@@ -1979,7 +1983,7 @@ trapeffect_grease_trap(
                 grease_hits(uarmf);
                 grease_hits(uarmf); /* Two chances for good measure */
             }
-            make_feet_greasy();
+            make_fumbling((HFumbling & TIMEOUT) + rnd(3));
             break;
         default:
             pline("%s you!", A_gush_of_grease_hits);
@@ -2014,7 +2018,6 @@ trapeffect_grease_trap(
                 grease_hits(uarm);
             else if (uarmu)
                 grease_hits(uarmu);
-
         }
         update_inventory();
     } else {
@@ -2449,8 +2452,8 @@ trapeffect_pit(
                            ? "stumbled into a pit of iron spikes"
                            : "fell into a pit of iron spikes",
                        NO_KILLER_PREFIX);
-
-                maybe_fall_onto_weapon();
+                if (!deliberate)
+                    maybe_fall_onto_weapon();
 
                 if (!rn2(6))
                     poisoned("spikes", A_STR,
@@ -2572,8 +2575,6 @@ trapeffect_hole(
                 if (in_sight) {
                     pline_mon(mtmp,
                              "%s seems to be yanked down!", Monnam(mtmp));
-                    /* suppress message in mlevel_tele_trap() */
-                    in_sight = FALSE;
                     seetrap(trap);
                 }
             } else
@@ -3045,13 +3046,11 @@ trapeffect_poly_trap(
             shieldeff_mon(mtmp);
         } else if (!resist(mtmp, WAND_CLASS, 0, NOTELL)) {
             (void) newcham(mtmp, (struct permonst *) 0, NC_SHOW_MSG);
-            if (in_sight)
+            if (in_sight) {
                 seetrap(trap);
-            if (!rn2(7)) {
-                if (in_sight)
-                    pline("The polymorph trap folds in on itself!");
-                deltrap(trap);
+                pline("The polymorph trap folds in on itself!");
             }
+            deltrap(trap);
         }
     }
     return Trap_Effect_Finished;
@@ -3338,13 +3337,9 @@ trapeffect_vibrating_square(
     unsigned int trflags UNUSED)
 {
     if (mtmp == &gy.youmonst) {
-        /* temporary kludge to save hothraxxa's game */
-        svi.inv_pos.x = u.ux;
-        svi.inv_pos.y = u.uy;
         feeltrap(trap);
         /* messages handled elsewhere; the trap symbol is merely to mark the
            square for future reference */
-        invocation_message();
     } else {
         boolean in_sight = canseemon(mtmp) || (mtmp == u.usteed);
         boolean see_it = cansee(mtmp->mx, mtmp->my);
@@ -3877,6 +3872,9 @@ blow_up_landmine(struct trap *trap)
             }
         }
     }
+    fill_pit(x, y);
+    maybe_dunk_boulders(x, y);
+    recalc_block_point(x, y);
     spot_checks(x, y, old_typ);
 }
 
@@ -4502,7 +4500,9 @@ instapetrify(const char *str)
 void
 minstapetrify(struct monst *mon, boolean byplayer)
 {
-    if (resists_ston(mon))
+    mon->mstone = 0; /* end any lingering timer */
+
+    if (resists_ston(mon) || defended(mon, AD_STON))
         return;
     if (poly_when_stoned(mon->data)) {
         mon_to_stone(mon);
@@ -4535,7 +4535,7 @@ selftouch(const char *arg)
         corpse_pmname = obj_pmname(uwep);
         pline("%s touch the %s corpse.", arg, corpse_pmname);
         Sprintf(kbuf, "%s corpse", an(corpse_pmname));
-        instapetrify(kbuf);
+        make_stoned(5L, (char *) 0, KILLED_BY, kbuf);
         /* life-saved; unwield the corpse if we can't handle it */
         if (!uarmg && !Stone_resistance)
             uwepgone();
@@ -4547,7 +4547,7 @@ selftouch(const char *arg)
         corpse_pmname = obj_pmname(uswapwep);
         pline("%s touch the %s corpse.", arg, corpse_pmname);
         Sprintf(kbuf, "%s corpse", an(corpse_pmname));
-        instapetrify(kbuf);
+        make_stoned(5L, (char *) 0, KILLED_BY, kbuf);
         /* life-saved; unwield the corpse */
         if (!uarmg && !Stone_resistance)
             uswapwepgone();
@@ -4563,16 +4563,21 @@ mselftouch(
     struct obj *mwep = MON_WEP(mon);
 
     if (mwep && mwep->otyp == CORPSE && touch_petrifies(&mons[mwep->corpsenm])
-        && !resists_ston(mon)) {
+        && !(resists_ston(mon) || defended(mon, AD_STON))) {
         if (cansee(mon->mx, mon->my)) {
             pline_mon(mon, "%s%s touches %s.", arg ? arg : "",
                   arg ? mon_nam(mon) : Monnam(mon),
                   corpse_xname(mwep, (const char *) 0, CXN_PFX_THE));
         }
-        minstapetrify(mon, byplayer);
+        if (!mon->mstone) {
+            mon->mstone = 5;
+            mon->mstonebyu = byplayer;
+        }
+        
         /* if life-saved, might not be able to continue wielding */
         if (!DEADMONSTER(mon)
-            && !safegloves(which_armor(mon, W_ARMG)) && !resists_ston(mon))
+            && !safegloves(which_armor(mon, W_ARMG))
+            && !(resists_ston(mon) || defended(mon, AD_STON)))
             mwepgone(mon);
     }
 }
@@ -6537,7 +6542,7 @@ help_monster_out(
             char kbuf[BUFSZ];
 
             Sprintf(kbuf, "trying to help %s out of a pit", an(mtmp_pmname));
-            instapetrify(kbuf);
+            make_stoned(5L, (char *) 0, KILLED_BY, kbuf);
             return 1;
         }
     }
@@ -6559,7 +6564,7 @@ help_monster_out(
         pline("%s awakens.", Monnam(mtmp));
     } else if (mtmp->mfrozen && !rn2(mtmp->mfrozen)) {
         /* After such manhandling, perhaps the effect wears off */
-        mtmp->mcanmove = 1;
+        maybe_moncanmove(mtmp);
         mtmp->mfrozen = 0;
         pline("%s stirs.", Monnam(mtmp));
     }
@@ -6906,7 +6911,7 @@ openholdingtrap(
     boolean *noticed) /* set to true iff hero notices the effect;
                        * otherwise left with its previous value intact */
 {
-    struct trap *t;
+    struct trap *t, tdummy;
     char buf[BUFSZ], whichbuf[20];
     const char *trapdescr = 0, *which = 0;
     boolean ishero = (mon == &gy.youmonst);
@@ -6919,7 +6924,15 @@ openholdingtrap(
     t = t_at(ishero ? u.ux : mon->mx, ishero ? u.uy : mon->my);
 
     if (ishero && u.utrap) { /* all u.utraptype values are holding traps */
+        /* there might not be any trap at hero's spot for tt_buriedball;
+           conversely, there might be an unrelated trap at that spot */
+        if (!t) {
+            t = &tdummy;
+            (void) memset(t, 0, sizeof *t), t->ntrap = NULL;
+            /* fallback 't' is now nonNull, t->tseen and t->madeby_u are 0 */
+        }
         which = the_your[(!t || !t->tseen || !t->madeby_u) ? 0 : 1];
+
         switch (u.utraptype) {
         case TT_LAVA:
             trapdescr = "molten lava";
@@ -6935,7 +6948,9 @@ openholdingtrap(
         case TT_BEARTRAP:
         case TT_PIT:
         case TT_WEB:
-            trapdescr = 0; /* use defsyms[].explanation */
+            trapdescr = defsyms[(u.utraptype == TT_WEB) ? S_web
+                                : (u.utraptype == TT_PIT) ? S_pit
+                                  : S_bear_trap].explanation;
             break;
         default:
             /* lint suppression in case 't' is unexpectedly Null
@@ -6947,10 +6962,9 @@ openholdingtrap(
         /* if no trap here or it's not a holding trap, we're done */
         if (!t || (t->ttyp != BEAR_TRAP && t->ttyp != WEB))
             return FALSE;
-    }
-
-    if (!trapdescr)
         trapdescr = trapname(t->ttyp, FALSE);
+    }
+    assert(t != NULL);
     if (!which)
         which = t->tseen ? the_your[t->madeby_u]
                          : strchr(vowels, *trapdescr) ? "an" : "a";
@@ -7410,7 +7424,8 @@ conjoined_pits(
     struct trap *trap1,
     boolean u_entering_trap2)
 {
-    coordxy dx, dy, diridx, adjidx;
+    coordxy dx, dy;
+    int diridx, adjidx;
 
     if (!trap1 || !trap2)
         return FALSE;
@@ -7909,11 +7924,11 @@ sokoban_guilt(void)
         }
     }
 
-    if (Sokoban && !completed_soko) {
+    if (Sokoban && !completed_soko && !wizard) {
         u.uconduct.sokocheat++;
         change_luck(-1);
         if (u.ualign.type == A_CHAOTIC)
-        You_feel(Hallucination ? "so creative!" : "shame.");
+            You_feel(Hallucination ? "so creative!" : "shame.");
         /*
          * TODO:
          *  Issue some feedback so that player can learn that whatever
@@ -8053,7 +8068,8 @@ trap_ice_effects(coordxy x, coordxy y, boolean ice_is_melting)
             int otyp = (ttmp->ttyp == LANDMINE) ? LAND_MINE : BEARTRAP;
             cnv_trap_obj(otyp, 1, ttmp, TRUE);
         } else {
-            deltrap(ttmp);
+            if (!undestroyable_trap(ttmp->ttyp))
+                deltrap(ttmp);
         }
     }
 }

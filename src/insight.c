@@ -1,4 +1,4 @@
-/* NetHack 3.7	insight.c	$NHDT-Date: 1724094296 2024/08/19 19:04:56 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.115 $ */
+/* NetHack 3.7	insight.c	$NHDT-Date: 1737384766 2025/01/20 06:52:46 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.128 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -1185,7 +1185,8 @@ status_enlightenment(int mode, int final)
                 || strcmp(MGIVENNAME(u.ustuck), "it") != 0))
             Strcpy(heldmon, "an unseen creature");
     }
-    if (u.uswallow) { /* implies u.ustuck is non-Null */
+    if (u.uswallow) {
+        assert(u.ustuck != NULL); /* implied by u.uswallow */
         Snprintf(buf, sizeof buf, "%s by %s",
                 digests(u.ustuck->data) ? "swallowed" : "engulfed",
                 heldmon);
@@ -1962,15 +1963,28 @@ attributes_enlightenment(
     if (Hate_silver)
         you_are("harmed by silver", "");
     /* movement and non-armor-based protection */
-    if (Fast)
-        you_are(Very_fast ? "very fast" : "fast", from_what(FAST));
+
+    if ((HFast & ~INTRINSIC) || EFast) {
+        if (BVery_fast)
+            enl_msg(You_, "will be", "would have been",
+                    " very fast if not airborne", "");
+        if (Fast || Very_fast)
+            you_are(Very_fast ? "very fast" : "fast", from_what(FAST));
+    } else if (Fast && !Very_fast) {
+        if (BFast)
+            enl_msg(You_, "will be", "would have been",
+                    " fast if not airborne", "");
+        else
+            you_are("fast", from_what(FAST));
+    }
+
     if (Reflecting)
         you_have("reflection", from_what(REFLECTING));
     if (Free_action)
         you_have("free action", from_what(FREE_ACTION));
     if (Fixed_abil)
         you_have("fixed abilities", from_what(FIXED_ABIL));
-    if (Lifesaved)
+    if (Lifesaved && !nonliving(gy.youmonst.data))
         enl_msg("Your life ", "will be", "would have been", " saved", "");
 
     /* Steadfastness checks: These are not very clean, perhaps in the future
@@ -2110,44 +2124,44 @@ attributes_enlightenment(
 
     /* Partial intrinsic resistances */
 
-    Sprintf(buf, "%3d%% fire resistant (intrinsic)", intrinsic_res(FIRE_RES));
+    Sprintf(buf, "%d%% fire resistant", intrinsic_res(FIRE_RES));
     if (extrinsic_res(FIRE_RES)) {
-        strcat(buf, " + extrinsic");
+        strcat(buf, " and 100% protected");
         strcat(buf, from_what(FIRE_RES));
     }
     you_are(buf, "");
     
-    Sprintf(buf, "%3d%% cold resistant (intrinsic)", intrinsic_res(COLD_RES));
+    Sprintf(buf, "%d%% cold resistant", intrinsic_res(COLD_RES));
     if (extrinsic_res(COLD_RES)) {
-        strcat(buf, " + extrinsic");
+        strcat(buf, " and 100% protected");
         strcat(buf, from_what(COLD_RES));
     }
     you_are(buf, "");
     
-    Sprintf(buf, "%3d%% sleep resistant (intrinsic)", intrinsic_res(SLEEP_RES));
+    Sprintf(buf, "%d%% sleep resistant", intrinsic_res(SLEEP_RES));
     if (extrinsic_res(SLEEP_RES)) {
-        strcat(buf, " + extrinsic");
+        strcat(buf, " and 100% protected");
         strcat(buf, from_what(SLEEP_RES));
     }
     you_are(buf, "");
     
-    Sprintf(buf, "%3d%% disintegration resistant (intrinsic)", intrinsic_res(DISINT_RES));
+    Sprintf(buf, "%d%% disintegration resistant", intrinsic_res(DISINT_RES));
     if (extrinsic_res(DISINT_RES)) {
-        strcat(buf, " + extrinsic");
+        strcat(buf, " and 100% protected");
         strcat(buf, from_what(DISINT_RES));
     }
     you_are(buf, "");
     
-    Sprintf(buf, "%3d%% shock resistant (intrinsic)", intrinsic_res(SHOCK_RES));
+    Sprintf(buf, "%d%% shock resistant", intrinsic_res(SHOCK_RES));
     if (extrinsic_res(SHOCK_RES)) {
-        strcat(buf, " + extrinsic");
+        strcat(buf, " and 100% protected");
         strcat(buf, from_what(SHOCK_RES));
     }
     you_are(buf, "");
     
-    Sprintf(buf, "%3d%% poison resistant (intrinsic)", intrinsic_res(POISON_RES));
+    Sprintf(buf, "%d%% poison resistant", intrinsic_res(POISON_RES));
     if (extrinsic_res(POISON_RES)) {
-        strcat(buf, " + extrinsic");
+        strcat(buf, " and 100% protected");
         strcat(buf, from_what(POISON_RES));
     }
     you_are(buf, "");
@@ -2160,7 +2174,8 @@ attributes_enlightenment(
     item_resistance_message(AD_DISN, " protected from disintegration", final);
     item_resistance_message(AD_ELEC, " protected from electric shocks", final);
     item_resistance_message(AD_ACID, " protected from acid", final);
-
+    item_resistance_message(AD_DCAY, " protected from decay", final);
+    
     /*** Resistances to troubles ***/
     if (Invulnerable)
         you_are("invulnerable", from_what(INVULNERABLE));
@@ -3570,6 +3585,8 @@ mstatusline(struct monst *mtmp)
         Strcat(info, ", meditating");
     if (mtmp->mwither)
         Strcat(info, ", withering away");
+    if (mtmp->mstone > 0)
+        Strcat(info, ", solidifying");
     if (mtmp->mberserk)
         Strcat(info, ", berserking");
     if (mtmp->mflee)
