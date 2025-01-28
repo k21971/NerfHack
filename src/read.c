@@ -1227,24 +1227,17 @@ flood_space(coordxy x, coordxy y, genericptr_t poolcnt)
 {
     struct monst *mtmp;
     struct trap *ttmp;
-    int castr_x = u.ux, castr_y = u.uy;
     schar ltyp = rn2(3) ? POOL : PUDDLE;
-    
-    /* We use current_wand if a monster muse'd the scroll */
-    if (gc.current_wand && gc.current_wand->otyp == SCR_FLOOD) {
-        castr_x = gc.current_wand->ox;
-        castr_y = gc.current_wand->oy;
-    }
 
     /* Don't create on the user's space unless poolcnt is -1. */
     if ((* (int*)poolcnt) != -1) {
-        if (x == castr_x && y == castr_y)
+        if (x == u.ux && y == u.uy)
             return;
     } else {
         ltyp = POOL;
     }
 
-    if (nexttodoor(x, y) || rn2(1 + distmin(castr_x, castr_y, x, y))
+    if (nexttodoor(x, y) || rn2(1 + distmin(u.ux, u.uy, x, y))
         || sobj_at(BOULDER, x, y))
         return;
 
@@ -1257,11 +1250,21 @@ flood_space(coordxy x, coordxy y, genericptr_t poolcnt)
     ttmp = t_at(x, y);
     if (ttmp && !delfloortrap(ttmp))
         return;
-
+    
+    if (levl[x][y].typ == TREE) {
+        if (ltyp == PUDDLE) /* This won't destroy a tree */
+            return;
+        if (cansee(x, y))
+            pline("A tree sinks into deep water!");
+    }
     set_levltyp(x, y, ltyp);
     del_engr_at(x, y);
     water_damage_chain(svl.level.objects[x][y], FALSE);
     maybe_unhide_at(x, y);
+    
+    if (!does_block(x, y, &levl[x][y]))
+        unblock_point(x, y); /* vision */
+    vision_recalc(0);
 
     if (ltyp == POOL && (mtmp = m_at(x, y)) != 0)
         (void) minliquid(mtmp);
@@ -2419,21 +2422,15 @@ seffect_stinking_cloud(struct obj **sobjp)
 }
 
 void
-seffect_water(struct obj **sobjp, struct monst *mtmp)
+seffect_flood(struct obj **sobjp, struct monst *mtmp)
 {
     struct obj *sobj = *sobjp;
     boolean sblessed = sobj->blessed;
     boolean scursed = sobj->cursed;
     boolean isyou = (mtmp == &gy.youmonst);
     boolean confused = isyou ? (Confusion != 0) : mtmp->mconf;
-    int wx, wy, range = 4 + (2 * bcsign(sobj));
+    int wx = u.ux, wy = u.uy, range = 4 + (2 * bcsign(sobj));
 
-    if (isyou)
-        wx = u.ux, wy = u.uy;
-    else {
-        wx = mtmp->mx;
-        wy = mtmp->my;
-    }
     if (!isyou)
         extract_from_minvent(mtmp, sobj, FALSE, TRUE);
     
@@ -2486,7 +2483,6 @@ seffect_water(struct obj **sobjp, struct monst *mtmp)
         /* Cleanup when used in muse.c */
         if (!isyou)
             delobj(sobj);
-
     }
 }
 
@@ -2846,7 +2842,7 @@ seffects(
         seffect_stinking_cloud(&sobj);
         break;
     case SCR_FLOOD:
-        seffect_water(&sobj, &gy.youmonst);
+        seffect_flood(&sobj, &gy.youmonst);
         break;
     default:
         impossible("What weird effect is this? (%u)", otyp);

@@ -963,13 +963,13 @@ TOOL("credit card",         NoDes, 1, 0, 0, 0, 15,  1, 10, PLASTIC, CLR_WHITE,
 /* light sources */
 TOOL("tallow candle",   "candle", 0, 1, 0, 0, 20,  2, 10, WAX, CLR_WHITE,
                                                                 TALLOW_CANDLE),
-TOOL("wax candle",      "candle", 0, 1, 0, 0,  5,  2, 20, WAX, CLR_WHITE,
+TOOL("wax candle",      "candle", 0, 1, 0, 0, 15,  2, 20, WAX, CLR_WHITE,
                                                                 WAX_CANDLE),
 TOOL("brass lantern",       NoDes, 1, 0, 0, 0, 30, 30, 12, COPPER, CLR_YELLOW,
                                                                 BRASS_LANTERN),
 TOOL("oil lamp",          "lamp", 0, 0, 0, 0, 45, 20, 10, COPPER, CLR_YELLOW,
                                                                 OIL_LAMP),
-TOOL("magic lamp",        "lamp", 0, 0, 1, 0, 15, 20,500, COPPER, CLR_YELLOW,
+TOOL("magic lamp",        "lamp", 0, 0, 1, 0, 5, 20,500, COPPER, CLR_YELLOW,
                                                                 MAGIC_LAMP),
 /* other tools */
 TOOL("expensive camera",    NoDes, 1, 0, 0, 1, 15, 12,200, PLASTIC, CLR_BLACK,
@@ -1195,7 +1195,7 @@ POTION("invisibility",         "indigo",  1, INVIS, 40, 200, CLR_BRIGHT_BLUE,
                                                         POT_INVISIBILITY),
 POTION("see invisible",       "magenta",  1, SEE_INVIS, 40, 200, CLR_MAGENTA,
                                                         POT_SEE_INVISIBLE),
-POTION("healing",              "amber",  1, 0, 115, 200, CLR_MAGENTA,
+POTION("healing",              "amber",  1, 0, 115, 100, CLR_MAGENTA,
                                                         POT_HEALING),
 POTION("extra healing",          "puce",  1, 0, 45, 200, CLR_RED,
                                                         POT_EXTRA_HEALING),
@@ -1269,9 +1269,9 @@ SCROLL("gold detection",                 "THARR",  1,  33, 200,
                                                         SCR_GOLD_DETECTION),
 SCROLL("food detection",               "YUM YUM",  1,  25, 200,
                                                         SCR_FOOD_DETECTION),
-SCROLL("knowledge",                   "POTESTAS",  1,  15,  200,
+SCROLL("knowledge",                   "POTESTAS",  1,  15,  100,
                                      /* power */        SCR_KNOWLEDGE),
-SCROLL("identify",                  "KERNOD WEL",  1, 180,  200,
+SCROLL("identify",                  "KERNOD WEL",  1, 180,  100,
                                                         SCR_IDENTIFY),
 SCROLL("magic mapping",              "ELAM EBOW",  1,  45, 200,
                                                         SCR_MAGIC_MAPPING),
@@ -1337,7 +1337,7 @@ XTRA_SCROLL_LABEL("ELPHE MONATER",       SC28), /* famous mistranslation */
 XTRA_SCROLL_LABEL("ABAJ",                SC29), /* famous mistranslation */
 XTRA_SCROLL_LABEL("CONG LAT URAT ION",   SC30), /* famous mistranslation */
 XTRA_SCROLL_LABEL("DESUM TETRAL",        SC31), /* dal aos */
-XTRA_SCROLL_LABEL("NH IN RL",            SC32), /* meta */
+XTRA_SCROLL_LABEL("NHINRL",            SC32), /* meta */
 XTRA_SCROLL_LABEL("ISAY INAY",           SC33), /* meta */
 XTRA_SCROLL_LABEL("PEBCAK RTFM",         SC34), /* Slang */
 XTRA_SCROLL_LABEL("KA TET",              SC35), /* Dark Tower */
@@ -1424,7 +1424,7 @@ SPELL("wizard lock",     "dark green",
       P_MATTER_SPELL,      25,  3, 1, 1, IMMEDIATE, CLR_GREEN,
                                                         SPE_WIZARD_LOCK),
 SPELL("create monster",  "turquoise",
-      P_CLERIC_SPELL,      35,  3, 2, 1, NODIR, CLR_BRIGHT_CYAN,
+      P_CLERIC_SPELL,      35,  3, 4, 1, NODIR, CLR_BRIGHT_CYAN,
                                                         SPE_CREATE_MONSTER),
 SPELL("detect food",     "cyan",
       P_DIVINATION_SPELL,  30,  3, 2, 1, NODIR, CLR_CYAN,

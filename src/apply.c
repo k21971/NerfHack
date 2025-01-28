@@ -1752,6 +1752,24 @@ use_lamp(struct obj *obj)
         Your("%s are occupied!", makeplural(body_part(HAND)));
         return;
     }
+    
+    /* For convenience, allow just lighting one candle. */
+    if (!obj->lamplit 
+        && (obj->otyp == WAX_CANDLE || obj->otyp == TALLOW_CANDLE)) {
+        
+        /* Don't allow splitting the stack if the player's
+           inventory won't accomodate it */
+        if (obj->quan > 1L && y_n("Light only one?") == 'y') {
+            obj = splitobj(obj, 1L);
+            obj_extract_self(obj); /* free from inv */
+            obj->nomerge = 1;
+            obj = hold_another_object(obj, "You drop %s!", doname(obj),
+                                      (const char *) 0);
+            if (obj)
+                obj->nomerge = 0;
+        }
+    }
+    
     /*
      * When blind, lamps' and candles' on/off state can be distinguished
      * by heat.  For brass lantern assume that there is an on/off switch
@@ -2343,7 +2361,7 @@ tinnable(struct obj *corpse)
 staticfn void
 use_tinning_kit(struct obj *obj)
 {
-    struct obj *corpse, *can, *bld;
+    struct obj *corpse, *can;
     struct permonst *mptr;
 
     if (!freehand()) {
@@ -2389,56 +2407,8 @@ use_tinning_kit(struct obj *obj)
         pline("That's too insubstantial to tin.");
         return;
     }
-    
-    /* Vampires can tin blood from corpses - from SlashTHEM.
-     * TODO: Factor this out to it's own function. */
-    long age = peek_at_iced_corpse_age(corpse);
-    long rotted = (svm.moves - age) / (10L + rn2(20));
-    boolean bottleable = rotted <= 0 &&
-          (peek_at_iced_corpse_age(corpse) + 5) >= svm.moves;
-
-    if (Race_if(PM_VAMPIRE)
-            && mons[corpse->corpsenm].cnutrit
-            && !(svm.mvitals[corpse->corpsenm].mvflags & G_NOCORPSE)
-            && has_blood(&mons[corpse->corpsenm])) {
-
-        if (!bottleable) {
-            if (y_n("This corpse does not have any fresh blood.  Tin it?") == 'y')
-                goto tinit;
-            else
-                return;
-        } else if (mons[corpse->corpsenm].msize < MZ_MEDIUM) {
-            if (y_n("This corpse doesn't have enough blood to bottle.  Tin it?") == 'y')
-                goto tinit;
-            else
-                return;
-        } else if ((bld = mksobj(POT_BLOOD, FALSE, FALSE)) != 0) {
-            consume_obj_charge(obj, TRUE);
-            static const char you_buy_it[] = "You bottle it, you bought it!";
-
-            bld->corpsenm = corpse->corpsenm;
-            bld->cursed = obj->cursed;
-            bld->blessed = obj->blessed;
-            bld->known = 1;
-            bld->bknown = obj->bknown;
-            if (carried(corpse)) {
-                if (corpse->unpaid)
-                    verbalize(you_buy_it);
-                useup(corpse);
-            } else {
-                if (costly_spot(corpse->ox, corpse->oy) && !corpse->no_charge)
-                    verbalize(you_buy_it);
-                useupf(corpse, 1L);
-            }
-            bld = hold_another_object(bld, "You make, but cannot pick up, %s.",
-                          doname(bld), (const char *)0);
-        } else
-            impossible("Bottling failed.");
-        return;
-    }
-
-tinit:
     consume_obj_charge(obj, TRUE);
+
     if ((can = mksobj(TIN, FALSE, FALSE)) != 0) {
         static const char you_buy_it[] = "You tin it, you bought it!";
 
@@ -4427,7 +4397,7 @@ do_break_wand(struct obj *obj)
     } else if (ACURR(A_STR) < (is_fragile ? 5 : 10)) {
         You("don't have the strength to break %s!", yname(obj));
         return ECMD_OK;
-    } else if (objdescr_is(obj, "plastic")) {
+    } else if (is_plastic(obj)) {
         pline("%s is too flexible to break!", Yname2(obj));
         return ECMD_OK;
     }

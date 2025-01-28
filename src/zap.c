@@ -1847,7 +1847,13 @@ do_osshock(struct obj *obj)
     if (gp.poly_zapped < 0) {
         /* some may metamorphosize */
         for (i = obj->quan; i; i--)
-            if (!rn2((Luck > -7 ? Luck : -6) + 7)) {
+            /* increase chances of Happy Golem Time
+             * (adjusted from SporkHack)
+             * Luck = 13:      1 in 14
+             * Luck = 0:       1 in 8
+             * Luck = -13:     1 in 2
+             * */
+            if (!rn2(Luck/2 + 8)) {
                 gp.poly_zapped = objects[obj->otyp].oc_material;
                 break;
             }
@@ -2093,11 +2099,10 @@ poly_obj(struct obj *obj, int id)
         break;
 
     case SCROLL_CLASS:
-	/* Avoid creating scrolls of zapping from polypiling.
-	 * Maybe cartomancers should be able to?? */
-	while (otmp->otyp == SCR_ZAPPING) {
+	    /* Avoid creating scrolls of zapping from polypiling.
+	     * Maybe cartomancers should be able to?? */
+	    while (otmp->otyp == SCR_ZAPPING)
             otmp->otyp = rnd_class(SCR_ENCHANT_ARMOR, SCR_STINKING_CLOUD);
-        }
 
         if (Role_if(PM_CARTOMANCER)) {
             You("feel guilty about defacing a card!");
@@ -2738,11 +2743,14 @@ bhitpile(
         if (otmp->where != OBJ_FLOOR || otmp->ox != tx || otmp->oy != ty)
             continue;
         hitanything += (*fhito)(otmp, obj);
+        /* Short-circuit the "one-big-polypile" exploit.
+         * As soon as a golem is created, abort polymorphing. */ 
+        if (gp.poly_zapped >= 0) {
+            create_polymon(svl.level.objects[tx][ty], gp.poly_zapped);
+            break;
+        }
     }
-
-    if (gp.poly_zapped >= 0)
-        create_polymon(svl.level.objects[tx][ty], gp.poly_zapped);
-
+    
     /* when boulders are present they're expected to be on top; with
        multiple boulders it's possible for some to have been changed into
        non-boulders (polymorph, stone-to-flesh) while ones beneath resist,
@@ -4619,8 +4627,12 @@ bhit(
             set_levltyp(gb.bhitpos.x, gb.bhitpos.y, ROOM);
             levl[gb.bhitpos.x][gb.bhitpos.y].flags = 0;
             if (!rn2(3))
-                explode(x, y, ZT_FIRE, d(3, 6), 0, EXPL_FIERY);
-            newsym(gb.bhitpos.x, gb.bhitpos.y);
+                explode(gb.bhitpos.x, gb.bhitpos.y, ZT_FIRE, d(3, 6), 0, EXPL_FIERY);
+            if (!does_block(gb.bhitpos.x, gb.bhitpos.y, &levl[gb.bhitpos.x][gb.bhitpos.y]))
+                unblock_point(gb.bhitpos.x, gb.bhitpos.y); /* vision */
+            vision_recalc(0);
+            if (cansee(gb.bhitpos.x, gb.bhitpos.y))
+                newsym(gb.bhitpos.x, gb.bhitpos.y);
             /* stop the bolt here; it takes a lot of energy to destroy trees */
             range = 0;
             break;
@@ -5640,8 +5652,14 @@ disintegrate_floor_objects(
                 else if (delquan < scrquan) {
                     obj->quan -= delquan;
                     obj->owt = weight(obj);
-                } else
+                } else {
                     delobj(obj);
+                    if (!does_block(x, y, &levl[x][y]))
+                        unblock_point(x, y);
+                    vision_recalc(0);
+                    if (cansee(x, y))
+                        newsym(x, y);
+                }
                 cnt += delquan;
                 if (give_feedback) {
                     if (delquan > 1L)
@@ -5885,8 +5903,8 @@ dobuzz(
                     if (strcmp(mreflector, "mirror") == 0) {
                         struct obj *mmirror = m_carrying(mon, MIRROR);
                         /* They break roughly 50% of the time */
-                        if (d(6,6) > 20 && !mmirror->oartifact
-                                        && breaktest(mmirror)) {
+                        if ((d(6,6) > 20 || mmirror->oeroded) 
+                            && !mmirror->oartifact && breaktest(mmirror)) {
                             pline("A %s shatters!", xname(mmirror));
                             if (type >= 0) {
                                 pline("That's bad luck!");
@@ -6017,8 +6035,8 @@ dobuzz(
                     if (strcmp(reflectsrc, "mirror") == 0) {
                         struct obj *mmirror = carrying(MIRROR);
                         /* They break roughly 50% of the time */
-                        if (d(6,6) > 20 && !mmirror->oartifact
-                                        && breaktest(mmirror)) {
+                        if ((d(6,6) > 20 || mmirror->oeroded)
+                            && !mmirror->oartifact && breaktest(mmirror)) {
                             pline("%s shatters!", Ysimple_name2(mmirror));
                             if (type >= 0) {
                                 pline("That's bad luck!");
@@ -6271,6 +6289,9 @@ zap_over_floor(
              * - Smokey Bear */
             if (!rn2(3))
                 explode(x, y, type, d(3, 6), 0, EXPL_FIERY);
+            if (!does_block(x, y, &levl[x][y]))
+                unblock_point(x, y); /* vision */
+            vision_recalc(0);
             if (see_it)
                 newsym(x, y);
         }
@@ -6352,8 +6373,12 @@ zap_over_floor(
             levl[x][y].flags = 0;
             if (!rn2(3))
                 explode(x, y, type, d(3, 6), 0, EXPL_FROSTY);
+            if (!does_block(x, y, &levl[x][y]))
+                unblock_point(x, y); /* vision */
+            vision_recalc(0);
             if (see_it)
                 newsym(x, y);
+
         }
         if (is_damp_terrain(x, y) || is_lava(x, y) || lavawall) {
             boolean lava = (is_lava(x, y) || lavawall),
@@ -6504,6 +6529,9 @@ zap_over_floor(
                 Norep("A tree disintegrates!");
             set_levltyp(x, y, ROOM);
             levl[x][y].flags = 0;
+            if (!does_block(x, y, &levl[x][y]))
+                unblock_point(x, y); /* vision */
+            vision_recalc(0);
             if (see_it)
                 newsym(x, y);
         }
@@ -7077,7 +7105,12 @@ maybe_destroy_item(
         break;
     /* Fragile item destruction */
     case AD_PHYS:
-        if (obj->oerodeproof)
+        /* Rings of "shock" resistance prevent this type of damage */
+        if ((uleft && uleft->otyp == RIN_SHOCK_RESISTANCE) || 
+            (uright && uright->otyp == RIN_SHOCK_RESISTANCE))
+            skip++;
+        if (obj->oerodeproof || obj->otyp == WAN_STRIKING
+                             || obj->otyp == RIN_SHOCK_RESISTANCE)
             skip++;
         quan = obj->quan;
         /* Some items are gradually cracked, other can shatter instantly */

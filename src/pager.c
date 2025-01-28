@@ -1035,6 +1035,25 @@ add_mon_info(winid datawin, struct permonst * pm)
             pm->difficulty, pm->mmove, pm->mlevel, pm->ac, pm->mr, pm->cwt);
     MONPUTSTR(buf);
 
+    /* Size */
+    switch (pm->msize) {
+    case MZ_TINY: Sprintf(buf, "Size: tiny"); break;
+    case MZ_SMALL: Sprintf(buf, "Size: small"); break;
+    case MZ_MEDIUM: Sprintf(buf, "Size: medium"); break;
+    case MZ_LARGE: Sprintf(buf, "Size: large"); break;
+    case MZ_HUGE: Sprintf(buf, "Size: huge"); break;
+    case MZ_GIGANTIC: Sprintf(buf, "Size: gigantic"); break;
+    default:
+         if (verysmall(pm))
+             Sprintf(buf, "Size: small");
+         else if (bigmonst(pm))
+             Sprintf(buf, "Size: big");
+         else
+             impossible("no size for mon?");
+          break;
+    }
+    MONPUTSTR(buf);
+    
     if (pm->maligntyp > 0)
         Sprintf(buf, "Alignment: lawful");
     else if (pm->maligntyp < 0)
@@ -1128,16 +1147,7 @@ add_mon_info(winid datawin, struct permonst * pm)
     /* Flag descriptions */
     buf[0] = '\0';
     APPENDC(is_male(pm), "male");
-    APPENDC(pm->msize == MZ_TINY, "tiny");
-    APPENDC(pm->msize == MZ_SMALL, "small");
-    APPENDC(pm->msize == MZ_LARGE, "large");
-    APPENDC(pm->msize == MZ_HUGE, "huge");
-    APPENDC(pm->msize == MZ_GIGANTIC, "gigantic");
-    if (!(*buf)) {
-        /* for nonstandard sizes */
-        APPENDC(verysmall(pm), "small");
-        APPENDC(bigmonst(pm), "big");
-    }
+
 
     /* inherent characteristics: "Monster is X." */
     APPENDC(!(gen & G_GENO), "ungenocideable");
@@ -2876,11 +2886,11 @@ do_screen_description(
         x_str = def_warnsyms[i].explanation;
         if (sym == (looked ? gw.warnsyms[i] : def_warnsyms[i].sym)) {
             if (!found) {
-                Sprintf(out_str, "%s%s", prefix, def_warnsyms[i].explanation);
-                *firstmatch = def_warnsyms[i].explanation;
+                Sprintf(out_str, "%s%s", prefix, x_str);
+                *firstmatch = x_str;;
                 found++;
             } else {
-                found += append_str(out_str, def_warnsyms[i].explanation);
+                found += append_str(out_str, x_str);
             }
             /* Kludge: warning trumps boulders on the display.
                Reveal the boulder too or player can get confused */
@@ -3061,7 +3071,6 @@ do_look(int mode, coord *click_cc)
 
     if (!clicklook) {
         if (quick) {
-            from_screen = TRUE; /* yes, we want to use the cursor */
             i = 'y';
         } else {
             menu_item *pick_list = (menu_item *) 0;
@@ -3226,7 +3235,6 @@ do_look(int mode, coord *click_cc)
     do {
         /* Reset some variables. */
         pm = (struct permonst *) 0;
-        found = 0;
         out_str[0] = '\0';
 
         if (from_screen || clicklook) {

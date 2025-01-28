@@ -1,4 +1,4 @@
-/* NetHack 3.7	potion.c	$NHDT-Date: 1726356849 2024/09/14 23:34:09 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.270 $ */
+/* NetHack 3.7	potion.c	$NHDT-Date: 1737605675 2025/01/22 20:14:35 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.274 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2013. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -1709,12 +1709,13 @@ peffect_blood(struct obj *otmp)
                     : "The %s blood tastes delicious.",
                     otmp->odiluted ? "watery" : "thick");
 
-        amt = (otmp->otyp == POT_VAMPIRE_BLOOD ? 400 : 200)
-               * (otmp->odiluted ? 1 : 2);
+        amt = (otmp->otyp == POT_VAMPIRE_BLOOD ? 300 : 150)
+               * (otmp->odiluted ? 1 : 3);
         lesshungry(amt);
 
-        if (otmp->otyp == POT_VAMPIRE_BLOOD && otmp->blessed) {
-            int num = newhp() * (otmp->odiluted ? 1 : 2);
+        if (otmp->otyp == POT_VAMPIRE_BLOOD
+            && otmp->blessed && !otmp->odiluted) {
+            int num = newhp();
             if (Upolyd) {
                 u.mhmax += num;
                 u.mh += num;
@@ -3096,6 +3097,7 @@ hold_potion(
     obj_extract_self(potobj);
     /* re-insert into inventory, possibly merging with compatible stack */
     potobj = hold_another_object(potobj, drop_fmt, drop_arg, hold_msg);
+    nhUse(potobj);
     flags.pickup_burden = save_pickup_burden;
     update_inventory();
     return;

@@ -357,12 +357,18 @@ DISABLE_WARNING_FORMAT_NONLITERAL
 staticfn int
 learn(void)
 {
-    int i;
+    int i, skill;
     char splname[BUFSZ];
     boolean costly = TRUE, faded_to_blank = FALSE;
     struct obj *book = svc.context.spbook.book;
-    short booktype = book->otyp;
-    int skill = objects[booktype].oc_skill;
+    short booktype;
+    
+    /* Safety check in case spellbook doesn't exist anymore */
+    if (!book)
+        return 0; /* This should stop the occupation */
+        
+    booktype = book->otyp;
+    skill = objects[booktype].oc_skill;
 
     /* JDS: lenses give 50% faster reading; 33% smaller read time */
     if (svc.context.spbook.delay && ublindf
@@ -390,6 +396,8 @@ learn(void)
     /* Spellbook destroyed while reading? */
     if (!book) {
         pline("Where did the spellbook go?");
+        svc.context.spbook.book = 0;
+        svc.context.spbook.o_id = 0;
         return 0;
     }
 
@@ -1561,10 +1569,15 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
         FALLTHROUGH;
         /*FALLTHRU*/
     case SPE_MAGIC_MAPPING:
-    case SPE_CREATE_MONSTER:
         (void) seffects(pseudo);
         break;
-
+    case SPE_CREATE_MONSTER:
+        if (role_skill >= P_SKILLED)
+            (void) seffects(pseudo);
+        else
+            (void) make_msummoned(0, &gy.youmonst, FALSE, u.ux, u.uy);
+        
+        break;
     /* these are all duplicates of potion effects */
     case SPE_HASTE_SELF:
     case SPE_DETECT_TREASURE:
@@ -1650,11 +1663,12 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
 
     /* Skill gain for spells is faster than skill gain for weapons;
        four times faster when at basic skill or lower, two times
-       when above. Players may want to (ab)use this to train spells
-       even faster by not advancing to skilled as soon as possible. */
-    if (!force)
-        use_skill(skill, (spellev(spell) * (role_skill <= P_BASIC ? 4 : 2)));
-
+       when above. */
+    if (!force) {
+        boolean spbonus = role_skill <= P_BASIC 
+                          && !can_advance(skill, FALSE);
+        use_skill(skill, (spellev(spell) * (spbonus ? 4 : 2)));
+    }
     /* Successful casting increases the amount of time the cast
        spell is known. The players INT must be greater than 6 to be
        able to help remember spells as they're cast. Primary spellcasters
@@ -2517,6 +2531,13 @@ int cast_from_book(struct obj *spellbook)
         pline("This book is all blank.");
         makeknown(booktype);
         return 1;
+    } else {
+        if (Blind)
+            pline("Feeling the braille etchings, you invoke the divine directives for %s!",
+                  OBJ_NAME(objects[spellbook->otyp]));
+        else
+            You("invoke the ancient instructions for %s!",
+                OBJ_NAME(objects[spellbook->otyp]));
     }
 
     /* Cursed books still have bad effects */

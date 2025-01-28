@@ -1063,7 +1063,7 @@ mattacku(struct monst *mtmp)
                     } else {
                         missmu(mtmp, (tmp == j), mattk);
                         if (uarms && !rn2(3))
-                            use_skill(P_SHIELD, 1);
+                            use_skill(P_SHIELD, 4);
                     }
                 } else {
                     wildmiss(mtmp, mattk);
@@ -1106,7 +1106,7 @@ mattacku(struct monst *mtmp)
                     } else {
                         missmu(mtmp, (tmp == j), mattk);
                         if (uarms && !rn2(3))
-                            use_skill(P_SHIELD, 1);
+                            use_skill(P_SHIELD, 4);
                     }
                 } else if (digests(mtmp->data)) {
                     pline_mon(mtmp, "%s gulps some air!", Monnam(mtmp));
@@ -1183,7 +1183,7 @@ mattacku(struct monst *mtmp)
                     } else {
                         missmu(mtmp, (tmp == j), mattk);
                         if (uarms && !rn2(3))
-                            use_skill(P_SHIELD, 1);
+                            use_skill(P_SHIELD, 4);
                     }
                     /* KMH -- Don't accumulate to-hit bonuses */
                     if (mon_currwep)
@@ -2135,10 +2135,28 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                           s_suffix(Monnam(mtmp)), mhis(mtmp));
                 break;
             }
+            if (strcmp(reflectsrc, "mirror") == 0) {
+                struct obj *mmirror = carrying(MIRROR);
+                /* break 100% for stoning gazes */
+                if (!mmirror->oartifact) {
+                    pline("%s shatters!", Ysimple_name2(mmirror));
+                    useup(mmirror);
+                    mmirror = (struct obj *) 0;
+                }
+            }
             const char* monreflector = mon_reflectsrc(mtmp);
             if (monreflector) {
                 pline_mon(mtmp, "The gaze is reflected away by %s %s!",
                                   s_suffix(mon_nam(mtmp)), monreflector);
+                if (strcmp(monreflector, "mirror") == 0) {
+                    struct obj *mmirror = m_carrying(mtmp, MIRROR);
+                    /* break 100% for stoning gazes */
+                    if (!mmirror->oartifact) {
+                        pline("A %s shatters!", xname(mmirror));
+                        m_useup(mtmp, mmirror);
+                        mmirror = (struct obj *) 0;
+                    }
+                }
                 break;
             }
                 
@@ -3166,7 +3184,7 @@ struct attack *mattk)
     }
     
     /* Counterattacks use energy */
-    if (u.uen < 5)
+    if (u.uen < COUNTER_COST)
         return M_ATTK_HIT;
 
     /* Allow counterattacks on weapon, bite, claw, and kick attacks. */
@@ -3201,7 +3219,7 @@ struct attack *mattk)
         if (rn2(100) < chance) {
             You("counterattack!");
             (void) thitmonst(mtmp, uwep);
-            u.uen -= 5;
+            u.uen -= COUNTER_COST;
             if (DEADMONSTER(mtmp))
                 return M_ATTK_AGR_DIED;
             return M_ATTK_AGR_DONE;

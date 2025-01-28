@@ -36,6 +36,7 @@ staticfn int glow_strength(int);
 staticfn boolean untouchable(struct obj *, boolean);
 staticfn int count_surround_traps(coordxy, coordxy);
 staticfn const char *adtyp_str(int, boolean);
+staticfn void dispose_of_orig_obj(struct obj *);
 
 /* The amount added to the victim's total hit points to insure that the
    victim will be killed even after damage bonus/penalty adjustments.
@@ -150,7 +151,8 @@ artiname(int artinum)
  */
 struct obj *
 mk_artifact(
-    struct obj *otmp,    /* existing object; ignored if alignment specified */
+    struct obj *otmp,    /* existing object; ignored and disposed of
+                          * if alignment specified */
     aligntyp alignment,  /* target alignment, or A_NONE */
     uchar max_giftvalue, /* cap on generated giftvalue */
     boolean adjust_spe)  /* whether to add spe to situational artifacts */
@@ -256,12 +258,34 @@ mk_artifact(
         a = &artilist[m];
 
         /* make an appropriate object if necessary, then christen it */
-        otmp = mksobj((int) a->otyp, TRUE, FALSE);
+        if (by_align) {
+            /* 'by_align' indicates that an alignment was passed as
+             * an argument, but also that the 'otmp' argument is not
+             * relevant */
+            struct obj *artiobj = mksobj((int) a->otyp, TRUE, FALSE);
 
+            if (artiobj) {
+                /* nonnull value of 'otmp' is unexpected. Cope. */
+                if (otmp) /* just in case; avoid orphaning */
+                    dispose_of_orig_obj(otmp);
+                otmp = artiobj;
+            }
+        }
+        /*
+         * otmp should be nonnull at this point:
+         * either the passed argument (if !by_align == A_NONE), or
+         * the result of mksobj() just above if by_align is an alignment. */
+        assert(otmp != 0);
+        /* prevent erosion from generating */
+        otmp->oeroded = otmp->oeroded2 = 0;
+        otmp = oname(otmp, a->name, ONAME_NO_FLAGS);
+        otmp->oartifact = m;  /* probably already set by this point, but */
+        /* set existence and reason for creation bits */
+        artifact_origin(otmp, ONAME_RANDOM); /* 'random' is default */
         if (adjust_spe) {
             int new_spe;
 
-            /* Adjust otmp->spe by a->gen_spe. (This is a no-op for
+            /* Adjust artiobj->spe by a->gen_spe. (This is a no-op for
                non-weapons, which always have a gen_spe of 0, and for many
                weapons, too.) The result is clamped into the "normal" range to
                prevent an outside chance of +12 artifacts generating. */
@@ -269,21 +293,27 @@ mk_artifact(
             if (new_spe >= -10 && new_spe < 10)
                 otmp->spe = new_spe;
         }
-
-        if (otmp) {
-            /* prevent erosion from generating */
-            otmp->oeroded = otmp->oeroded2 = 0;
-            otmp = oname(otmp, a->name, ONAME_NO_FLAGS);
-            otmp->oartifact = m;
-            /* set existence and reason for creation bits */
-            artifact_origin(otmp, ONAME_RANDOM); /* 'random' is default */
-        }
     } else {
         /* nothing appropriate could be found; return original object */
-        if (by_align)
-            otmp = 0; /* (there was no original object) */
+        if (by_align && otmp) {
+            /* (there shouldn't have been an original object). Deal with it.
+             * The callers that passed an alignment and a NULL otmp are
+             * prepared to get a potential NULL return value, so this is okay */
+            dispose_of_orig_obj(otmp);
+            otmp = 0;
+        } /* otherwise, otmp has not changed; just fallthrough to return it */
     }
     return otmp;
+}
+
+staticfn void
+dispose_of_orig_obj(struct obj *obj)
+{
+    if (!obj)
+        return;
+
+    obj_extract_self(obj);
+    obfree(obj, (struct obj *) 0);
 }
 
 /*
@@ -881,7 +911,7 @@ set_artifact_intrinsic(
          * are forbidden, there should not be any problems
          * with double xray vision here. */
         if (on)
-            u.xray_range = 3;
+            u.xray_range = 8;
         else
             u.xray_range = -1;
         gv.vision_full_recalc = 1;
@@ -2188,12 +2218,12 @@ artifact_hit(
         otmp->dknown = TRUE;
         pline_The("twisted blade poisons %s!",
                   youdefend ? "you" : mon_nam(mdef));
-  	    if (youdefend ? fully_resistant(POISON_RES) : resists_poison(mdef)) {
-                if (youdefend)
-                    You("are not affected by the poison.");
-                else
-                    pline("%s seems unaffected by the poison.", Monnam(mdef));
-                return TRUE;
+  	if (youdefend ? fully_resistant(POISON_RES) : resists_poison(mdef)) {
+            if (youdefend)
+                You("are not affected by the poison.");
+            else
+                pline("%s seems unaffected by the poison.", Monnam(mdef));
+            return TRUE;
         }
         switch (rnd(10)) {
         case 1:
@@ -2212,13 +2242,18 @@ artifact_hit(
             *dmgptr += d(3, 6) + 6;
             break;
         case 10:
-            pline_The("poison was deadly...");
-            *dmgptr = 2 * (youdefend
-                               ? Upolyd
-                                     ? u.mh : u.uhp : mdef->mhp) + FATAL_DAMAGE_MODIFIER;
+            *dmgptr = 2 * (youdefend ? Upolyd ? u.mh : u.uhp 
+                                     : mdef->mhp) + FATAL_DAMAGE_MODIFIER;
             break;
         }
-        *dmgptr = resist_reduce(*dmgptr, POISON_RES);
+        if (youdefend) {
+            *dmgptr = resist_reduce(*dmgptr, POISON_RES);
+            if (*dmgptr >= (Upolyd ? u.mh : u.uhp))
+                pline_The("poison was deadly...");
+        } else {
+            if (*dmgptr >= mdef->mhp)
+                pline_The("poison was deadly...");
+        }
         return TRUE;
     }
 
@@ -3560,7 +3595,7 @@ artifact_info(int anum)
     /* Special attacks */
     if (artilist[anum].attk.adtyp
           || artilist[anum].attk.damn || artilist[anum].attk.damd) {
-        Sprintf(buf, "%s, -%d to-hit, +1d%d damage",
+        Sprintf(buf, "%s, +%d to-hit, +1d%d damage",
                 adtyp_str(artilist[anum].attk.adtyp, FALSE),
                 artilist[anum].attk.damn,
                 artilist[anum].attk.damd);
@@ -3762,7 +3797,6 @@ artifact_info(int anum)
         break;
     case ART_MORTALITY_DIAL: 
         art_info.wielded[16] = "prevents monster regeneration";
-        art_info.wielded[17] = "prevents corpse revival";
         break;
     case ART_ORCRIST:
     case ART_GLAMDRING:

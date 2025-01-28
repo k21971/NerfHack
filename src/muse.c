@@ -1120,17 +1120,14 @@ use_defensive(struct monst *mtmp)
     case MUSE_SCR_FLOOD:
         if (otmp->quan > 1L)
             otmp = splitobj(otmp, 1L);
-
-        /* Kludge to make pools generate appropriately, otherwise
-         * they always generate out from the player. */
-        otmp->ox = mtmp->mx;
-        otmp->oy = mtmp->my;
-        gc.current_wand = otmp;
-
+        
+        /* Note: do_clear_area did not work correctly when I tried
+         * to pass the scroll from the monsters position. As a 
+         * consequence (and because I don't have the skilled to fix it)
+         * we are assuming the flood is always intended to be centered 
+         * on the hero */
         mreadmsg(mtmp, otmp); /* sets otmp->dknown if !Blind or !Deaf */
-        seffect_water(&otmp, mtmp);
-        /* otmp used up in seffect_water() */
-        gc.current_wand = 0;
+        seffect_flood(&otmp, mtmp);
         return (DEADMONSTER(mtmp)) ? 1 : 2;
     case MUSE_WAN_DIGGING:
         if (!otmp)
@@ -3535,13 +3532,14 @@ mon_reflectsrc(struct monst *mon)
     } else if (has_reflection(mon)) {
         /* specifically for the monster spell MGC_REFLECTION */
         return "shimmering globe";
+    } else if (m_carrying(mon, MIRROR)) {
+        /* Also applies to the Magic Mirror of Merlin - put this before the 
+         * W_ART check */
+        return "mirror";
     } else if (orefl && orefl->oartifact == ART_HOLOGRAPHIC_VOID_LILY) {
         /* Due to any carried artifact which grants reflection, which shows as W_ART */
         return "card";
-    } else if (m_carrying(mon, MIRROR)) {
-        /* Also applies to the Magic Mirror of Merlin */
-        return "mirror";
-    }
+    } 
     return (const char*) NULL;
 }
 
@@ -3581,16 +3579,17 @@ ureflectsrc(void)
         }
     } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]) {
         return "scales";
+    } else if (carrying(MIRROR)) {
+        /* carried mirror offers reflection but easily breaks */
+        /* Also applies to the Magic Mirror of Merlin - put this before the 
+         * W_ART check */
+        makeknown(MIRROR);
+        return "mirror";
     } else if (EReflecting & W_ART) {
         /* Only carried artifact which grants reflection is
          * the Holographic Void Lily, which shows as W_ART */
         return "card";
-    } else if (carrying(MIRROR)) {
-        /* carried mirror offers reflection but easily breaks */
-        /* Also applies to the Magic Mirror of Merlin */
-        makeknown(MIRROR);
-        return "mirror";
-    }
+    } 
     return (const char*) NULL;
 }
 

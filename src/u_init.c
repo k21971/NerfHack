@@ -1,4 +1,4 @@
-/* NetHack 3.7	u_init.c	$NHDT-Date: 1725227809 2024/09/01 21:56:49 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.111 $ */
+/* NetHack 3.7	u_init.c	$NHDT-Date: 1737620595 2025/01/23 00:23:15 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.113 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2017. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -1345,8 +1345,9 @@ ini_inv_mkobj_filter(int oclass, boolean got_level1_spellbook)
 	       (Race_if(PM_ORC) || Race_if(PM_VAMPIRE)))
            /* Monks don't use weapons */
            || (otyp == SCR_ENCHANT_WEAPON && Role_if(PM_MONK))
-           /* wizard patch -- they already have one */
-           || (otyp == SPE_FORCE_BOLT && Role_if(PM_WIZARD))
+           /* wizard patch -- they already have one of these */
+           || (Role_if(PM_WIZARD)
+               && (otyp == SPE_FORCE_BOLT || otyp == SPE_FIRE_BOLT))
            /* Make them hunt for it!*/
            || (otyp == SPE_MAGIC_MISSILE && Role_if(PM_WIZARD))
            /* powerful spells are either useless to
@@ -1538,6 +1539,7 @@ ini_inv(struct trobj *trop)
          * it was UNDEF_TYP or not after this. */
 
         otyp = ini_inv_obj_substitution(trop, obj);
+        nhUse(otyp);
 
 	/* Set up cartomancer cards */
         if (Role_if(PM_CARTOMANCER) && obj->otyp == SCR_CREATE_MONSTER) {

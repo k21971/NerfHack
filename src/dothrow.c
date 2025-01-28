@@ -1304,7 +1304,7 @@ toss_up(struct obj *obj, boolean hitsroof)
 
     if (obj->oclass == POTION_CLASS) {
         potionhit(&gy.youmonst, obj, POTHIT_HERO_THROW);
-    } else if (is_moncard(obj) && u.uen >= 10) {
+    } else if (is_moncard(obj) && u.uen >= CARD_COST) {
         use_moncard(obj, gb.bhitpos.x, gb.bhitpos.y);
         obfree(obj, (struct obj *) 0);
     } else if (breaktest(obj)) {
@@ -1745,7 +1745,7 @@ throwit(struct obj *obj,
     }
 
     /* Cartomancer summon cards */
-    if (obj && gt.thrownobj && carding && u.uen >= 10) {
+    if (obj && gt.thrownobj && carding && u.uen >= CARD_COST) {
         use_moncard(obj, gb.bhitpos.x, gb.bhitpos.y);
         obfree(obj, (struct obj *) 0);
         gt.thrownobj = (struct obj *) 0;
@@ -2298,7 +2298,7 @@ thitmonst(
                 }
             }
 
-            if (is_moncard(obj) && u.uen >= 10) {
+            if (is_moncard(obj) && u.uen >= CARD_COST) {
                 /* Spheres explode on contact! */
                 if (is_boomer(obj->corpsenm) && !obj->cursed) {
                     switch (obj->corpsenm) {
@@ -2529,12 +2529,17 @@ gem_accept(struct monst *mon, struct obj *obj)
     Strcat(buf, acceptgift);
     if (*u.ushops || obj->unpaid)
         check_shop_obj(obj, mon->mx, mon->my, TRUE);
-    (void) mpickobj(mon, obj); /* may merge and free obj */
     ret = 1;
 
  nopick:
     if (!Blind)
         pline1(buf);
+    /* Like priest donations, these are consumed for positive gains */
+    if (ret && canspotmon(mon))
+        pline("Its %s %s.", xname(obj),
+              canseemon(mon) ? "vanishes" : "seems to vanish");
+    obfree(obj, (struct obj *) 0);
+    
     if (!tele_restrict(mon))
         (void) rloc(mon, RLOC_MSG);
     return ret;
@@ -2643,17 +2648,28 @@ breakobj(
     boolean from_invent)
 {
     boolean fracture = FALSE;
+    const char *ostr;
     int am;
+    
     if (IS_ALTAR(levl[x][y].typ))
         am = levl[x][y].altarmask & AM_MASK;
     else
         am = AM_NONE;
     boolean explosion = FALSE;
 
-    if (is_crackable(obj)) /* if erodeproof, erode_obj() will say so */
-        return (erode_obj(obj, armor_simple_name(obj), ERODE_CRACK,
+    /* if erodeproof, erode_obj() will say so */
+    if (is_crackable(obj)) {
+        switch (obj->oclass) {
+            case ARMOR_CLASS:
+                ostr = armor_simple_name(obj);
+                break;
+            default:
+                ostr = xname(obj);
+                break;
+        }
+        return (erode_obj(obj, ostr, ERODE_CRACK,
                           EF_DESTROY | EF_VERBOSE) == ER_DESTROYED);
-
+    }
     switch (obj->oclass == POTION_CLASS ? POT_WATER : obj->otyp) {
     case MIRROR:
         if (hero_caused)

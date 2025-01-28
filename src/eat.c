@@ -44,6 +44,7 @@ staticfn boolean maybe_cannibal(int, boolean);
 staticfn int eat_ok(struct obj *);
 staticfn int offer_ok(struct obj *);
 staticfn int tin_ok(struct obj *);
+staticfn void regen_hunger(void);
 
 /* also used to see if you're allowed to eat cats and dogs */
 #define CANNIBAL_ALLOWED() (Role_if(PM_CAVE_DWELLER) || Race_if(PM_ORC) \
@@ -273,7 +274,8 @@ choke(struct obj *food)
             return;
         }
         You("%s yourself and then vomit voluminously.",
-            food->oclass == POTION_CLASS ? "gorge" : "stuff");
+            maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))
+                ? "gorge" : "stuff");
         morehungry(Hunger ? (u.uhunger - 60) : 1000); /* just got very sick! */
         vomit();
     } else {
@@ -1145,7 +1147,8 @@ givit(int type, struct permonst *ptr)
         else
             You_feel(Hallucination ? "more in touch with the cosmos."
                                    : "more mentally acute.");
-        incr_itimeout(&HTelepat, rn1(250, 500));
+        incr_itimeout(&HTelepat, ptr == &mons[PM_FLOATING_EYE] 
+                                     ? rn1(400, 400) : rn1(100, 100));
         /* If blind, make sure monsters show up. */
         if (Blind)
             see_monsters();
@@ -3539,19 +3542,14 @@ gethungry(void)
      */
     accessorytime = rn2(20); /* rn2(20) replaces (int) (svm.moves % 20L) */
     if (accessorytime % 2) { /* odd */
-         /* Regeneration uses up food when injured, unless due to an artifact */
-        if ((HRegeneration & ~(FROMFORM | FROMRACE))
-             /* Extrinsic regeneration is possible from a couple artifacts
-              * and green dragon scales. */
-             || (((ERegeneration & ~(W_ARTI | W_WEP | W_ARMOR)) &&
-                 uhp() < uhpmax())))
-            u.uhunger--;
+        regen_hunger();
         if (near_capacity() > SLT_ENCUMBER)
             u.uhunger--;
         /* Cursed rings burn hunger too */
         if (uright && uright->cursed && rn2(2))
             u.uhunger--;
     } else { /* even */
+        regen_hunger();
         if (Hunger)
             u.uhunger--;
         /* Conflict uses up food too */
@@ -4320,6 +4318,17 @@ Popeye(int threat)
     return FALSE;
 }
 
+staticfn void
+regen_hunger(void)
+{
+    /* Regeneration uses up food when injured, unless due to an artifact */
+    if ((HRegeneration & ~(FROMFORM | FROMRACE))
+         /* Extrinsic regeneration is possible from a couple artifacts
+          * and green dragon scales. */
+         || (((ERegeneration & ~(W_ARTI | W_WEP | W_ARMOR)) &&
+             uhp() < uhpmax())))
+        u.uhunger--;
+}
 /* the hero has swallowed a monster whole as a purple worm or similar, and has
    finished digesting its corpse (called via ga.afternmv) */
 int
