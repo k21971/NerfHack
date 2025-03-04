@@ -2805,7 +2805,7 @@
         M2_NOPOLY | M2_HOSTILE | M2_COLLECT | M2_MAGIC | M2_GREEDY
             | M2_JEWELS | M2_FLANK,
         M3_INFRAVISION | M3_BERSERK,
-        NO_RACE, 20, CLR_GRAY, GNOLL),
+        NO_RACE, 24, CLR_GRAY, GNOLL),
     MON(NAM("gnoll warrior"), S_GNOLL,
         LVL(24, 15, 0, 20, -6), (G_GENO | G_HELL | 1),
         A(ATTK(AT_BITE, AD_DISE, 1, 6),
@@ -2817,7 +2817,7 @@
         M2_NOPOLY | M2_HOSTILE | M2_COLLECT | M2_MAGIC | M2_GREEDY
             | M2_JEWELS | M2_FLANK | M2_LORD,
         M3_INFRAVISION | M3_BERSERK,
-        NO_RACE, 26, CLR_WHITE, GNOLL_WARRIOR),
+        NO_RACE, 30, CLR_WHITE, GNOLL_WARRIOR),
     MON(NAM("gnoll chieftain"), S_GNOLL,
         LVL(30, 18, -5, 40, -8), (G_GENO | G_HELL | 1),
         A(ATTK(AT_BITE, AD_DISE, 1, 6),
@@ -2829,7 +2829,7 @@
         M2_NOPOLY | M2_HOSTILE | M2_COLLECT | M2_MAGIC | M2_GREEDY
             | M2_JEWELS | M2_FLANK | M2_PRINCE,
         M3_INFRAVISION | M3_BERSERK, 
-        NO_RACE, 33, CLR_MAGENTA, GNOLL_CHIEFTAIN),
+        NO_RACE, 35, CLR_MAGENTA, GNOLL_CHIEFTAIN),
     MON(NAM("gnoll shaman"), S_GNOLL,
         LVL(18, 15, 0, 60, -10), (G_GENO | G_HELL | 1),
         A(ATTK(AT_BITE, AD_DISE, 1, 6),
@@ -2842,7 +2842,7 @@
         M2_NOPOLY | M2_HOSTILE | M2_COLLECT | M2_MAGIC | M2_GREEDY
             | M2_JEWELS | M2_FLANK,
         M3_INFRAVISION | M3_BERSERK,
-        NO_RACE, 22, CLR_YELLOW, GNOLL_SHAMAN),
+        NO_RACE, 26, CLR_YELLOW, GNOLL_SHAMAN),
     /*
      * giant Humanoids
      */
