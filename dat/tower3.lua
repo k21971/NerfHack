@@ -2,7 +2,7 @@
 -- MAZE:"tower3",' '
 
 des.level_init({ style = "solidfill", fg = " " });
-des.level_flags("mazelevel", "noteleport", "hardfloor", "solidify"")
+des.level_flags("mazelevel", "noteleport", "hardfloor", "solidify")
 
 --0         1         2         3         4         5
 --01234567890123456789012345678901234567890123456789012345
