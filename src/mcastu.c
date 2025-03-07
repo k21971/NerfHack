@@ -479,7 +479,7 @@ m_cure_self(struct monst *caster, int dmg)
     }
     /* Cure other ailments that players spells are capable of. */
     if (caster->mblinded)
-        mcureblindness(caster, TRUE);
+        mcureblindness(caster, canseemon(caster));
     if (caster->mdiseased || caster->mrabid) {
         caster->mdiseased = caster->mrabid = 0;
         if (canseemon(caster))
