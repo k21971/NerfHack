@@ -435,6 +435,20 @@ castmu(
          * fire, it does not target susceptible floor items with cold */
         mon_spell_hits_spot(caster, AD_COLD, u.ux, u.uy);
         break;
+    case AD_ELEC:
+        pline("You are blasted with electricity!");
+        if (fully_resistant(SHOCK_RES)) {
+            shieldeff(u.ux, u.uy);
+            pline("But you resist the effects.");
+            monstseesu(M_SEEN_ELEC);
+            dmg = 0;
+        } else {
+            dmg = resist_reduce(dmg, SHOCK_RES);
+            monstunseesu(M_SEEN_ELEC);
+        }
+        /* blind hero; no effect if already blind */
+        (void) flashburn((long) rnd(100), TRUE);
+        break;
     case AD_MAGM:
         You("are hit by a shower of missiles!");
         dmg = d((int) caster->m_lev / 2 + 1, 6);
