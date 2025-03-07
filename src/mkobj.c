@@ -247,7 +247,8 @@ mkobj_erosions(struct obj *otmp)
             otmp->greased = 1;
     }
     /* Potions can sometimes generate diluted. */
-    if (otmp->oclass == POTION_CLASS && otmp->otyp != POT_WATER
+    if (otmp->oclass == POTION_CLASS
+        && otmp->otyp != POT_WATER && otmp->otyp != POT_ACID
         && svm.moves > 1L && !rn2(27))
         otmp->odiluted = 1;
     /* Wands can sometimes generate pre-charged. */

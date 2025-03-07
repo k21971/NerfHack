@@ -2675,7 +2675,9 @@ mongets(struct monst *mtmp, int otyp)
         } else {
             /* Items frequently spawn used for lesser monsters to prevent
                late-game inventory bloat. */
-            if (otmp->oclass == POTION_CLASS && rn2(3)) {
+            if (otmp->oclass == POTION_CLASS 
+                && otmp->otyp != POT_WATER && otmp->otyp != POT_ACID
+                && rn2(3)) {
                 otmp->odiluted = 1;
             } else if (otmp->oclass == WAND_CLASS && rn2(4)) {
                 otmp->recharged = rne(3);
