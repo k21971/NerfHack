@@ -7287,7 +7287,8 @@ calm_berserker(struct monst *mtmp)
 void
 mon_rabid(struct monst *mtmp, boolean noisy)
 {
-    if (noattacks(mtmp->data) || !can_become_rabid(mtmp->data))
+    if (noattacks(mtmp->data) || !can_become_rabid(mtmp->data)
+        || is_vampshifter(mtmp))
         return;
 
     if (canseemon(mtmp) && noisy)
