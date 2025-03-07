@@ -23,13 +23,13 @@ enum mcast_mage_spells {
     MGC_DEATH_TOUCH,   /* 11 */
     MGC_CALL_UNDEAD,   /* 12 */
     MGC_ENTOMB,        /* 13 */
+    MGC_TELEPORT,      /* 14 */
                        /* Defensive spells */
-    MGC_CURE_SELF,     /* 14 */
-    MGC_HASTE_SELF,    /* 15 */
-    MGC_DISAPPEAR,     /* 16 */
-    MGC_CLONE_WIZ,     /* 17 */
-    MGC_REFLECTION,    /* 18 */
-    MGC_TELEPORT,      /* 19 */
+    MGC_CURE_SELF,     /* 15 */
+    MGC_HASTE_SELF,    /* 16 */
+    MGC_DISAPPEAR,     /* 17 */
+    MGC_CLONE_WIZ,     /* 18 */
+    MGC_REFLECTION,    /* 19 */
 };
 
 /* monster cleric spells */
@@ -54,7 +54,7 @@ enum mcast_cleric_spells {
 };
 
 #define offensive_mgc(spelltype) \
-    (spelltype >= MGC_PSI_BOLT && spelltype <= MGC_ENTOMB)
+    (spelltype >= MGC_PSI_BOLT && spelltype <= MGC_TELEPORT)
 #define offensive_clc(spelltype) \
     (spelltype >= CLC_OPEN_WOUNDS && spelltype <= CLC_FLESH_TO_STONE)
 
