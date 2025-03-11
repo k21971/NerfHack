@@ -1989,9 +1989,11 @@ domove_attackmon_at(
                                    && bad_rock(gy.youmonst.data, x, u.uy0))))
                       && goodpos(u.ux0, u.uy0, mtmp, GP_ALLOW_U));
         /* if not displacing, try to attack; note that it might evade;
-           also, we don't attack tame when _safepet_ */
-        if (!*displaceu && do_attack(mtmp))
-            return TRUE;
+           also, we don't attack tame or peaceful when safemon() */
+        if (!*displaceu) {
+            if (do_attack(mtmp))
+                return TRUE;
+        }
     }
     return FALSE;
 }
@@ -2764,24 +2766,26 @@ domove_core(void)
             return;
     }
 
-    if (domove_fight_ironbars(x, y))
-        return;
+    if (!displaceu) {
 
-    if (domove_fight_web(x, y))
-        return;
+        if (domove_fight_ironbars(x, y))
+            return;
 
-    if (domove_fight_empty(x, y))
-        return;
+        if (domove_fight_web(x, y))
+            return;
 
-    (void) unmap_invisible(x, y);
-    /* not attacking an animal, so we try to move */
-    if ((u.dx || u.dy) && u.usteed && stucksteed(FALSE)) {
-        nomul(0);
-        return;
-    }
+        if (domove_fight_empty(x, y))
+            return;
 
-    if (u_rooted())
-        return;
+        (void) unmap_invisible(x, y);
+        /* not attacking an animal, so we try to move */
+        if ((u.dx || u.dy) && u.usteed && stucksteed(FALSE)) {
+            nomul(0);
+            return;
+        }
+
+        if (u_rooted())
+            return;
 
     /* treat entering a visible gas cloud region like entering a trap;
        there could be a known trap as well as a region at the target spot;
@@ -2855,32 +2859,35 @@ domove_core(void)
         }
     }
 
-    if (u.utrap) {
-        boolean moved = trapmove(x, y, trap);
+        if (u.utrap) { /* when u.utrap is True, displaceu is False */
+            boolean moved = trapmove(x, y, trap);
 
-        if (!u.utrap) {
-            disp.botl = TRUE;
-            reset_utrap(TRUE); /* might resume levitation or flight */
+            if (!u.utrap) {
+                disp.botl = TRUE;
+                reset_utrap(TRUE); /* might resume levitation or flight */
+            }
+            /* might not have escaped, or did escape but remain in the same
+               spot */
+            if (!moved)
+                return;
         }
-        /* might not have escaped, or did escape but remain in same spot */
-        if (!moved)
-            return;
-    }
 
-    if (!test_move(u.ux, u.uy, x - u.ux, y - u.uy, DO_MOVE)) {
-        if (!svc.context.door_opened) {
+        if (!test_move(u.ux, u.uy, x - u.ux, y - u.uy, DO_MOVE)) {
+            if (!svc.context.door_opened) {
+                svc.context.move = 0;
+                nomul(0);
+            }
+            return;
+        }
+
+        /* Is it dangerous to swim in water or lava? */
+        if (swim_move_danger(x, y)) {
             svc.context.move = 0;
             nomul(0);
+            return;
         }
-        return;
-    }
 
-    /* Is it dangerous to swim in water or lava? */
-    if (swim_move_danger(x, y)) {
-        svc.context.move = 0;
-        nomul(0);
-        return;
-     }
+    } /* !dislacedu */
 
     /* Move ball and chain.  */
     if (Punished)

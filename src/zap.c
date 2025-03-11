@@ -6944,7 +6944,8 @@ u_adtyp_resistance_obj(int dmgtyp)
     if (u.uprops[prop].extrinsic)
         return 99;
 
-    /* Dwarvish cloaks give a 90% protection to items against heat and cold */
+    /* worn dwarvish cloaks give 90% protection against heat and cold to
+       carried items */
     if (uarmc && uarmc->otyp == DWARVISH_CLOAK
         && (dmgtyp == AD_COLD || dmgtyp == AD_FIRE))
         return 90;

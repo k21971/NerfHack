@@ -1,4 +1,4 @@
-NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.1533 $ $NHDT-Date: 1738638877 2025/02/03 19:14:37 $
+NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.1535 $ $NHDT-Date: 1740629713 2025/02/26 20:15:13 $
 
 General Fixes and Modified Features
 -----------------------------------
@@ -1504,6 +1504,8 @@ since introduction in 3.1.0, the definition for Mitre of Holiness has specified
 	that carrying it provides fire resistance, but that had never been
 	implemented; wearing it didn't confer fire resistance either--there is
 	no 'defends' capability for it since carrying should encompass that
+if a tree and a boulder or statue were at the same location, applying an axe
+	would break the boulder or statue rather than chop the tree
 
 
 Fixes to 3.7.0-x General Problems Exposed Via git Repository
@@ -2096,6 +2098,8 @@ when walking into/against a locked closed door, 'autounlock'==kick didn't
 having a 1% chance of creating rideable monsters with worn saddle gave knights
 	a 1% chance of creating an extra saddle for starting pony; it wasn't
 	tracked with other objects so produced a trivial memory leak
+hen attacking a displacer beast, using the 'F' forcefight prefix prevented it
+	from swapping places with the hero
 
 
 Fixes to 3.7.0-x Platform and/or Interface Problems Exposed Via git Repository
@@ -2436,6 +2440,8 @@ Unix: re-do command line parsing
 Unix: add ../include/nhlua.h to the alloc.o dependencies in Makefile.utl to
 	match Makefile.src
 Unix: implement SELF_RECOVER compile-time option, on by default on linux
+Unix: allow build to succeed with musl (instead of glibc), by specifying
+	musl=1 on the make command line
 user_sounds: move the message hook from inside individual window display ports
 	to the core where it allows MSGTYP_NOSHOW msgtyp's to still trigger
 	sounds to correct a reported github issue; also fixes a past reported

@@ -3009,7 +3009,7 @@ drop_boulder_on_monster(coordxy x, coordxy y, boolean confused, boolean byu)
  * the wand to explode (zapping or applying).
  */
 void
-wand_explode(struct obj* obj, int chg /* recharging */, struct monst *mon)
+wand_explode(struct obj *obj, int chg /* recharging */, struct monst *mon)
 {
     int dmg, charges, dmg_multiplier, expltype = EXPL_MAGICAL;
     boolean hero_broke = (mon == &gy.youmonst);
