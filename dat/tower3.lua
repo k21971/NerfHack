@@ -25,6 +25,8 @@ des.map({ halign = "half-left", valign = "center", map = [[
 15-----------  --- ---   ------   --- ---  -----------
 ]] });
 
+des.region({ region={00,00,55,15}, lit=1, type="ordinary" })
+
 -- Random 8 niches
 local niches = { {14,01}, {18,01}, {33,01}, {37,01},
                  {14,14}, {18,14}, {33,14}, {37,14} }
