@@ -783,6 +783,7 @@ Gloves_on(void)
            pline("Hey! You can swim!");
            spoteffects(TRUE);
         }
+        EWatertight |= W_ARMG;
         break;
     case GAUNTLETS_OF_POWER:
         makeknown(uarmg->otyp);
@@ -870,6 +871,7 @@ Gloves_off(void)
            You("begin to thrash about!");
            spoteffects(TRUE);
         }
+        EWatertight  &= ~W_ARMG;
         break;
     case GAUNTLETS_OF_POWER:
         makeknown(uarmg->otyp);

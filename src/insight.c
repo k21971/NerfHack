@@ -2211,6 +2211,10 @@ attributes_enlightenment(
     item_resistance_message(AD_ACID, " protected from acid", final);
     item_resistance_message(AD_DCAY, " protected from decay", final);
 
+    if (Watertight)
+        enl_msg("Your items ", "are", "were", " protected from water damage",
+                from_what(WATERTIGHT));
+    
     /*** Resistances to troubles ***/
     if (Invulnerable)
         you_are("invulnerable", from_what(INVULNERABLE));
