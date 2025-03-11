@@ -769,7 +769,6 @@ u_init_role(void)
         skill_init(Skill_Car);
         knows_object(PLAYING_CARD_DECK, FALSE);
         knows_object(DECK_OF_FATE, FALSE);
-        knows_object(SCR_ZAPPING, TRUE);
         knows_class(SPBOOK_CLASS); /* all rulebooks */
 
         change_luck(1); /* Little help vs mulching */
@@ -1353,6 +1352,9 @@ reroll:
     knows_object(SCR_BLANK_PAPER, FALSE);
     if (!Role_if(PM_CAVE_DWELLER))
         knows_object(SCR_IDENTIFY, FALSE);
+    /* All roles know zapping scrolls so that the scroll of wishing is
+       pre-known */
+    knows_object(SCR_ZAPPING, TRUE);
     return;
 }
 
