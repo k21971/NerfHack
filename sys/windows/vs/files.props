@@ -233,7 +233,7 @@
     <Luafiles Include = "wizard5.lua"/>
     <Luafiles Include = "wizard6.lua"/>
     <Luafiles Include = "wizard7.lua"/>
-    <Luafiles Include = "wizard8.lua"/>
+
     <Luafiles Include = "tomb-1.lua"/>
     <Luafiles Include = "tomb-2.lua"/>
     <Luafiles Include = "yeenog-1.lua"/>

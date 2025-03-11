@@ -865,9 +865,6 @@ static const struct instance_globals_w g_init_w = {
     UNDEFINED_VALUE, /* wc */
     /* mkmaze.c */
     UNDEFINED_PTR, /* wportal */
-    /* wizard.c */
-    /* wizpuzzle is a bit weird because it contains a 2D array */
-    { { UNDEFINED_VALUES }, UNDEFINED_VALUES, 0, 0, 0, 0 }, /* wizpuzzle */
     /* new */
     { wdmode_traditional, NO_COLOR },       /* wsettings */
     0L,                                     /* were.c, allmain.c */

@@ -391,7 +391,7 @@ dungeon = {
    {
       name = "The Wizard's Tower",
       bonetag = "W",
-      base = 8,
+      base = 7,
       flags = { "mazelike" },
       alignment = "unaligned",
       entry = -1,
@@ -423,18 +423,13 @@ dungeon = {
          },
          {
             name = "wizard6",
-            bonetag = "V",
-            base = 6
+            bonetag = "U",
+            base = 6,
          },
          {
             name = "wizard7",
-            bonetag = "U",
-            base = 7,
-         },
-         {
-            name = "wizard8",
             bonetag = "T",
-            base = 8
+            base = 7
          },
       }
    },

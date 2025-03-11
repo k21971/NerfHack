@@ -129,7 +129,6 @@ typedef struct branch {
 #define Is_sanctum(x)       (Lcheck(x, &sanctum_level))
 #define Is_rogue_level(x)   (Lcheck(x, &rogue_level))
 #define Is_telemaze_lev(x)  (Is_wiz4_level(x)) /* to avoid some hardcoding */
-#define Is_wizpuzzle_lev(x) (Is_wiz6_level(x)) /* to avoid some hardcoding */
 #define Is_stronghold(x)    (Lcheck(x, &stronghold_level))
 #define Is_bigroom(x)       (Lcheck(x, &bigroom_level))
 #define Is_qstart(x)        (Lcheck(x, &qstart_level))

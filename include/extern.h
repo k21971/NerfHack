@@ -3946,8 +3946,6 @@ extern void resurrect_cthulhu(void);
 extern void intervene(void);
 extern void wizdeadorgone(void);
 extern void cuss(struct monst *) NONNULLARG1;
-extern void wizpuzzle_enterchamber(int);
-extern void wizpuzzle_activate_mechanism(coordxy, coordxy);
 
 /* ### wizcmds.c ### */
 

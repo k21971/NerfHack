@@ -576,7 +576,6 @@ LUALIST = \
 	wizard5 	\
 	wizard6 	\
 	wizard7 	\
-	wizard8 	\
 	yeenog-1	\
 	yeenog-2	\
 	yeenog-3	\

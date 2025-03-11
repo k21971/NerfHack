@@ -1,161 +1,158 @@
--- NetHack yendor wizard3.lua	$NHDT-Date: 1652196040 2022/05/10 15:20:40 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.4 $
---	Copyright (c) 1989 by Jean-Christophe Collet
---	Copyright (c) 1992 by M. Stephenson and Izchak Miller
--- NetHack may be freely redistributed.  See license for details.
---
+-- # The bottom wizard level.
+-- MAZE:"wizard3",' '
+
 des.level_init({ style="mazegrid", bg ="-" });
+des.level_flags("mazelevel", "noteleport", "hardfloor", "nommap", "solidify")
 
-des.message("You enter an odd wedge-shaped chamber.")
+--0         1         2         3         4         5         6         7    7
+--0123456789012345678901234567890123456789012345678901234567890123456789012345
+local wiz2 = des.map({ halign = "center", valign = "center", map = [[
+00                                                                            
+01                 ---------------------------------------------              
+02                 |....|L...LL.....LLL|...|LLLLL....L...L|....|              
+03           --FF--|....|LL.L...LL....L|...|LLL....L...L.L|....|--FF--        
+04           |...|-|....|LL...L....L..L-----L...LL.....LLL|....|-|...|        
+05           F...F......|LL......LL...LLLLLLL.........LL.L|......F...F        
+06           |...F......|L...LLL....LLL...L.....LLLL.....L|......F...|        
+07           |...|--S-----------------------------------------S--|...|        
+08           F...F..........|.......|.........|.......|..........F...F        
+09           F...F..........|.......|...T.T...|.......|..........F...F        
+10           |...F..........|.......S..T...T..S.......|..........F...|        
+11           |...F..........|.......|...T.T...|.......|..........F...|        
+12           F...F..........|.......|.........|.......|..........F...F        
+13           |...|-----..---|.-----.|FFFF-FFFF|.-----.|---..-----|...|        
+14           --FF--|................|...F.F...|................|--FF--        
+15                 |................|...F.F...|................|              
+16                 -----------F---F-------------F---F-----------              
+17                                                                            
+18                                                                            
+19                                                                            
+]] });
 
--- Note the lack of nommap so that the player can use magic mapping to determine
--- where the gap is, if they choose to.
-des.level_flags("mazelevel", "noteleport", "noflip", "hardfloor")
+-- TELEPORT_REGION:(00,00,02,02),(00,00,00,00)
+-- # constrains monster migration
+des.region({ region={01,00,79,20}, lit=0, type="ordinary" })
+des.region({ region={16,02,62,15}, lit=0, type="ordinary" })
+des.region({ region={12,04,14,13}, lit=0, type="ordinary" })
+des.region({ region={64,04,66,13}, lit=0, type="ordinary" })
 
--- Note that this map has the top chamber open to start. (It will immediately
--- move the gap away when the player enters.)
-des.map([[
-            -------------            
-        -----...........-----        
-     ----...|...........|...----     
-   ---......-+-.......-+-......---   
- ---..........|.......|..........--- 
- |............---...---............| 
-------.......----...----.......------
-|....--+---.----}}}}}----.---+--....|
-|.........--|--}}---}}--|--.........|
-|...........||}}--.--}}||...........|
-|...........||}}|...|}}||...........|
-|.........--||}}--.--}}||--.........|
-|....--+---.|--}}---}}--|.---+--....|
-------......----}}}}}----......------
- |...........-----------...........| 
- ---..........---------..........--- 
-   ---........|.......|........---   
-     ----...-+-.......-+-...----     
-        -----...........-----        
-            -------------            
-]]);
+-- ladders
+des.ladder("down", 39,15)
+des.ladder("up", 39,02)
 
--- Define some areas
-local everything = selection.area(00,00,35,19)
-local outsidemoat = everything - selection.area(16,07,20,13) - selection.area(15,08,21,12)
-des.region(everything, 'lit')
+-- # doors
+des.door("locked",26,09)
+des.door("locked",26,11)
+des.door("locked",39,13)
+des.door("locked",52,09)
+des.door("locked",52,11)
+des.door("closed",39,04)
 
--- The traps here are specially handled in trap.c: they have 
-des.trap({ type='board', coord={18,03}, seen=1 })
-des.trap({ type='board', coord={10,05}, seen=1 })
-des.trap({ type='board', coord={26,05}, seen=1 })
-des.trap({ type='board', coord={07,10}, seen=1 })
-des.trap({ type='board', coord={29,10}, seen=1 })
-des.trap({ type='board', coord={10,15}, seen=1 })
-des.trap({ type='board', coord={26,15}, seen=1 })
-des.trap({ type='board', coord={18,17}, seen=1 })
+-- # random door
+if percent(50) then
+    des.door("locked",22,04)
+else
+    des.door("locked",56,04)
+end
 
-colors = { 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'white', 'black' }
-shuffle(colors)
-
-des.object({ id='worthless piece of '..colors[1]..' glass', coord={13,01} })
-des.object({ id='worthless piece of '..colors[1]..' glass', coord={15,01} })
-des.object({ id='worthless piece of '..colors[1]..' glass', coord={23,01} })
-des.object({ id='worthless piece of '..colors[1]..' glass', coord={21,01} })
-
-des.object({ id='worthless piece of '..colors[2]..' glass', coord={27,02} })
-des.object({ id='worthless piece of '..colors[2]..' glass', coord={30,03} })
-des.object({ id='worthless piece of '..colors[2]..' glass', coord={32,04} })
-des.object({ id='worthless piece of '..colors[2]..' glass', coord={34,05} })
-
-des.object({ id='worthless piece of '..colors[3]..' glass', coord={35,07} })
-des.object({ id='worthless piece of '..colors[3]..' glass', coord={35,09} })
-des.object({ id='worthless piece of '..colors[3]..' glass', coord={35,10} })
-des.object({ id='worthless piece of '..colors[3]..' glass', coord={35,12} })
-
-des.object({ id='worthless piece of '..colors[4]..' glass', coord={34,14} })
-des.object({ id='worthless piece of '..colors[4]..' glass', coord={32,15} })
-des.object({ id='worthless piece of '..colors[4]..' glass', coord={30,16} })
-des.object({ id='worthless piece of '..colors[4]..' glass', coord={27,17} })
-
-des.object({ id='worthless piece of '..colors[5]..' glass', coord={13,18} })
-des.object({ id='worthless piece of '..colors[5]..' glass', coord={15,18} })
-des.object({ id='worthless piece of '..colors[5]..' glass', coord={23,18} })
-des.object({ id='worthless piece of '..colors[5]..' glass', coord={21,18} })
-
-des.object({ id='worthless piece of '..colors[6]..' glass', coord={02,14} })
-des.object({ id='worthless piece of '..colors[6]..' glass', coord={04,15} })
-des.object({ id='worthless piece of '..colors[6]..' glass', coord={06,16} })
-des.object({ id='worthless piece of '..colors[6]..' glass', coord={09,17} })
-
-des.object({ id='worthless piece of '..colors[7]..' glass', coord={01,07} })
-des.object({ id='worthless piece of '..colors[7]..' glass', coord={01,09} })
-des.object({ id='worthless piece of '..colors[7]..' glass', coord={01,10} })
-des.object({ id='worthless piece of '..colors[7]..' glass', coord={01,12} })
-
-des.object({ id='worthless piece of '..colors[8]..' glass', coord={02,05} })
-des.object({ id='worthless piece of '..colors[8]..' glass', coord={04,04} })
-des.object({ id='worthless piece of '..colors[8]..' glass', coord={06,03} })
-des.object({ id='worthless piece of '..colors[8]..' glass', coord={09,02} })
+-- # random secret doors
+if percent(20) then
+  des.terrain({62,03}, "S")
+  des.terrain({62,04}, "S")
+end
 
 
--- Stairs to main Gehennom
-des.levregion({ region = {18,01,18,01}, type = "branch" })
--- Ladder up
-des.ladder("up", 18,10)
+-- # barracks / soldier areas
+des.region({ region={27,08,33,12},lit=1,type="migohive", filled=1 })
+des.region({ region={45,08,51,12},lit=1,type="migohive", filled=1 })
 
--- Doors between chambers
-des.door({ state="random", coord={13,03}, iron=0, locked=0 })
-des.door({ state="random", coord={23,03}, iron=0, locked=0 })
-des.door({ state="random", coord={07,07}, iron=0, locked=0 })
-des.door({ state="random", coord={29,07}, iron=0, locked=0 })
-des.door({ state="random", coord={07,12}, iron=0, locked=0 })
-des.door({ state="random", coord={29,12}, iron=0, locked=0 })
-des.door({ state="random", coord={13,17}, iron=0, locked=0 })
-des.door({ state="random", coord={23,17}, iron=0, locked=0 })
 
--- Define regions for each chamber so that we can later hook into entering them
--- and triggering effects
--- IMPORTANT: The wizard puzzle code makes several assumptions about these
--- chambers:
---    1) The chambers are the first 8 rooms defined on this level so that they
---       occupy indexes 0-7 in g.rooms. Do not define other rooms before these.
---    2) The chambers are defined in a specific order (clockwise from top).
---       Don't mess with the order.
---    3) The chambers have specific shapes, with the gaps that open and close
---       expressed in terms of hardcoded offsets (gap_spaces[]) from their top
---       left corners.
--- make the entry chamber a real room; it affects monster arrival
-des.region({ region={18,02,18,02}, lit=1, irregular=1, type='ordinary', arrival_room=true })
-des.region({ region={28,04,28,04}, lit=1, irregular=1, type='ordinary' })
-des.region({ region={31,10,31,10}, lit=1, irregular=1, type='ordinary' })
-des.region({ region={28,16,28,16}, lit=1, irregular=1, type='ordinary' })
-des.region({ region={18,18,18,18}, lit=1, irregular=1, type='ordinary' })
-des.region({ region={08,16,08,16}, lit=1, irregular=1, type='ordinary' })
-des.region({ region={05,10,05,10}, lit=1, irregular=1, type='ordinary' })
-des.region({ region={08,04,08,04}, lit=1, irregular=1, type='ordinary' })
+-- West wing
+des.monster("orb weaver",13,05)
+des.monster("orb weaver",13,12)
+des.monster("third eye",13,08)
+des.monster("third eye",13,09)
 
--- FIXME: This restricts branchports in, but also restricts falling down from
--- another level. Adding dir="up" allows falling down to put you anywhere, but
--- also allows branchporting in to put you anywhere.
--- Maybe it isn't a huge problem, because then if you get to a higher level
--- without solving the puzzle and fall back down, you won't wind up inside the
--- middle of the level.
-des.teleport_region({ region={17,01,19,02} })
+-- East wing
+des.monster("orb weaver",65,05)
+des.monster("orb weaver",65,12)
+des.monster("eye of fear and flame",65,08)
+des.monster("eye of fear and flame",65,09)
 
--- Non diggable walls
--- Walls inside the moat stay diggable
-des.non_diggable(outsidemoat)
-des.non_passwall(outsidemoat)
---
-des.monster("L", 17, 10)
-des.monster("vampire lord", 19, 10)
--- Some surrounding horrors
-des.monster("kraken")
-des.monster("giant eel")
-des.monster("kraken")
-des.monster("giant eel")
+-- Cold compartment (west)
 
--- Some loot
-if percent(40) then des.object(")") end
-if percent(40) then des.object("!") end
-if percent(40) then des.object("?") end
-if percent(40) then des.object("?") end
-if percent(40) then des.object("(") end
-des.object('"', 18, 10)
+des.monster("ice devil",28,14)
+des.monster("ice devil",28,15)
+des.monster("ice devil",29,14)
+des.monster("ice devil",29,15)
+des.monster("ice devil",30,14)
+des.monster("ice devil",30,15)
+des.monster("ice troll",31,14)
+des.monster("ice troll",31,15)
+
+-- Cold compartment (east)
+
+des.monster("ice devil",  46,14)
+des.monster("ice devil",  46,15)
+des.monster("ice devil",  47,14)
+des.monster("ice devil",  47,15)
+des.monster("ice vortex", 48,14)
+des.monster("ice vortex", 48,15)
+des.monster("frost giant",49,14)
+des.monster("frost giant",49,15)
+
+-- # mage quarters (left)
+des.monster("ghoul mage",19,03)
+des.monster("ghoul mage",19,04)
+des.monster("ghoul mage",20,04)
+des.monster("ghoul queen",20,05)
+
+-- # mage quarters (right)
+des.monster("ghoul mage",59,03)
+des.monster("ghoul mage",59,04)
+des.monster("ghoul mage",58,04)
+des.monster("ghoul queen",58,05)
+
+-- # lava room
+local lava = { 
+    {23,02}, {26,02}, {30,02}, {34,02},
+    {43,02}, {46,02}, {51,02}, {54,02},
+    {24,04}, {32,04}, {44,04}, {49,04},
+    {23,06}, {27,06}, {32,06}, {36,06},
+    {42,06}, {48,06}, {53,06}, {55,06}
+}
+shuffle(lava)
+
+-- TODO: Add other firey? fire vampire, vulpy?
+des.monster({ id = "red dragon", coord = lava[1], peaceful = 0 })
+des.monster({ id = "red dragon", coord = lava[2], peaceful = 0 })
+des.monster({ id = "lava demon", coord = lava[3], peaceful = 0 })
+des.monster({ id = "lava demon", coord = lava[4], peaceful = 0 })
+des.monster({ id = "flaming sphere", coord = lava[5], peaceful = 0 })
+des.monster({ id = "flaming sphere", coord = lava[6], peaceful = 0 })
+des.monster({ id = "salamander", coord = lava[7], peaceful = 0 })
+des.monster({ id = "salamander", coord = lava[8], peaceful = 0 })
+des.monster({ id = "salamander", coord = lava[9], peaceful = 0 })
+des.monster({ id = "salamander", coord = lava[10], peaceful = 0 })
+des.monster({ id = "salamander", coord = lava[11], peaceful = 0 })
+des.monster({ id = "salamander", coord = lava[12], peaceful = 0 })
+des.monster({ id = "fire elemental", coord = lava[13], peaceful = 0 })
+des.monster({ id = "fire elemental", coord = lava[14], peaceful = 0 })
+des.monster({ id = "balrog", coord = lava[15], peaceful = 0 })
+des.monster({ id = "balrog", coord = lava[16], peaceful = 0 })
+des.monster({ id = "pit fiend", coord = lava[17], peaceful = 0 })
+des.monster({ id = "pit fiend", coord = lava[18], peaceful = 0 })
+des.monster({ id = "barbed devil", coord = lava[19], peaceful = 0 })
+des.monster({ id = "barbed devil", coord = lava[20], peaceful = 0 })
+
+-- Some prisoners
+des.monster({ id = "prisoner", x = 36,y = 15, peaceful = 1 })
+des.monster({ id = "prisoner", x = 43,y = 15, peaceful = 1 })
+
+des.object("chest", 18,02)
+des.object("chest", 60,02)
+
+-- # none shall pass
+-- NON_PASSWALL:(11,01,67,16)
+des.non_diggable()
+des.non_passwall()

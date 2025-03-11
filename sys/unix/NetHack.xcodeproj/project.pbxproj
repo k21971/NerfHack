@@ -1620,7 +1620,6 @@
 				"$(NH_DAT_DIR)/wizard5.lua",
 				"$(NH_DAT_DIR)/wizard6.lua",
 				"$(NH_DAT_DIR)/wizard7.lua",
-				"$(NH_DAT_DIR)/wizard8.lua",
 				"$(NH_DAT_DIR)/yeenog-1.lua",
 				"$(NH_DAT_DIR)/yeenog-2.lua",
 				"$(NH_DAT_DIR)/yeenog-3.lua",
