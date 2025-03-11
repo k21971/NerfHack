@@ -398,7 +398,7 @@ end
 -- Add some prisoners to keep the player company
 local prisoners = { 
     'orb weaver', 'revenant', 'third eye', 'prisoner', 
-    'nalfeshnee', 'barrow-wight', 'iron golem', 'apprentice',
+    'nalfeshnee', 'barrow wight', 'iron golem', 'apprentice',
     'student', 'storm giant' };
 shuffle(prisoners)
 
