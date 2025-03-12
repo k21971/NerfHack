@@ -1551,8 +1551,19 @@ use_candle(struct obj **optr)
 
         You("attach %ld%s %s to %s.", obj->quan, !otmp->spe ? "" : " more", s,
             the(xname(otmp)));
-        if (!otmp->spe || otmp->age > obj->age)
+        if (obj->otyp == MAGIC_CANDLE) {
+            if (was_lamplit) {
+                pline_The("new %s %s very ordinary.", s, vtense(s, "look"));
+            } else {
+                pline("%s very ordinary.",
+                      (obj->quan > 1L) ? "They look" : "It looks");
+            }
+            if (!otmp->spe)
+                otmp->age = 600L;
+        } else if (!otmp->spe || otmp->age > obj->age) {
             otmp->age = obj->age;
+        }
+        
         otmp->spe += (int) obj->quan;
         if (otmp->lamplit && !was_lamplit)
             pline_The("new %s magically %s!", s, vtense(s, "ignite"));
@@ -1826,7 +1837,8 @@ use_lamp(struct obj *obj)
             pline("%s flame%s %s%s", s_suffix(Yname2(obj)), plur(obj->quan),
                   otense(obj, "burn"), Blind ? "." : " brightly!");
             if (obj->unpaid && costly_spot(u.ux, u.uy)
-                && obj->age == 20L * (long) objects[obj->otyp].oc_cost) {
+                && obj->age == 20L * (long) objects[obj->otyp].oc_cost
+                && obj->otyp != MAGIC_CANDLE) {
                 const char *ithem = (obj->quan > 1L) ? "them" : "it";
                 struct monst *shkp VOICEONLY
                                = shop_keeper(*in_rooms(u.ux, u.uy, SHOPBASE));
@@ -4887,6 +4899,7 @@ doapply(void)
         use_candelabrum(obj);
         break;
     case WAX_CANDLE:
+    case MAGIC_CANDLE:
     case TALLOW_CANDLE:
         use_candle(&obj);
         break;

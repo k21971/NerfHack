@@ -3984,7 +3984,8 @@ sellobj(
         || obj->oclass == BALL_CLASS || obj->oclass == CHAIN_CLASS
         || offer == 0L || (obj->oclass == FOOD_CLASS && obj->oeaten)
         || (Is_candle(obj)
-            && obj->age < 20L * (long) objects[obj->otyp].oc_cost)) {
+            && obj->age < 20L * (long) objects[obj->otyp].oc_cost
+            && obj->otyp != MAGIC_CANDLE)) {
         pline("%s seems uninterested%s.", Shknam(shkp),
               cgold ? " in the rest" : "");
         if (container)

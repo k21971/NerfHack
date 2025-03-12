@@ -1619,7 +1619,8 @@ doname_base(
                        not partly used after all) */
                     turns_left += peek_timer(BURN_OBJECT, &timer) - svm.moves;
                 }
-                if (turns_left < full_burn_time)
+                /* WAC - magic candles are never "partly used" */
+                if (turns_left < full_burn_time && obj->otyp != MAGIC_CANDLE)
                     Strcat(prefix, "partly used ");
             }
             if (obj->lamplit)
@@ -3492,7 +3493,7 @@ static NEARDATA const struct o_range o_ranges[] = {
     { "surprise me", RANDOM_CLASS, ARROW, IRON_CHAIN },
     { "bag", TOOL_CLASS, SACK, BAG_OF_TRICKS },
     { "lamp", TOOL_CLASS, OIL_LAMP, MAGIC_LAMP },
-    { "candle", TOOL_CLASS, TALLOW_CANDLE, WAX_CANDLE },
+    { "candle", TOOL_CLASS, TALLOW_CANDLE, MAGIC_CANDLE },
     { "horn", TOOL_CLASS, TOOLED_HORN, HORN_OF_PLENTY },
     { "shield", ARMOR_CLASS, SMALL_SHIELD, SHIELD_OF_REFLECTION },
     { "bracers", ARMOR_CLASS, LEATHER_BRACERS, BRACERS_VS_STONE },

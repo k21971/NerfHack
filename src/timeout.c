@@ -2064,13 +2064,17 @@ begin_burn(struct obj *obj, boolean already_lit)
     long turns = 0;
     boolean do_timer = TRUE;
 
-    if (obj->age == 0 && obj->otyp != MAGIC_LAMP && !artifact_light(obj))
+    if (obj->age == 0 && obj->otyp != MAGIC_LAMP && obj->otyp != MAGIC_CANDLE 
+        && !artifact_light(obj))
         return;
 
     switch (obj->otyp) {
     case MAGIC_LAMP:
+    case MAGIC_CANDLE:
         obj->lamplit = 1;
         do_timer = FALSE;
+        if (obj->otyp == MAGIC_CANDLE) 
+            obj->age = 300L;
         break;
 
     case POT_OIL:
@@ -2161,7 +2165,8 @@ end_burn(struct obj *obj, boolean timer_attached)
         return;
     }
 
-    if (obj->otyp == MAGIC_LAMP || artifact_light(obj))
+    if (obj->otyp == MAGIC_LAMP || obj->otyp == MAGIC_CANDLE
+        || artifact_light(obj))
         timer_attached = FALSE;
 
     if (!timer_attached) {
