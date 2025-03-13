@@ -770,8 +770,6 @@ u_init_role(void)
         knows_object(PLAYING_CARD_DECK, FALSE);
         knows_object(DECK_OF_FATE, FALSE);
         knows_class(SPBOOK_CLASS); /* all rulebooks */
-
-        change_luck(1); /* Little help vs mulching */
         break;
     case PM_CAVE_DWELLER:
         Cave_man[C_AMMO].trquan = rn1(11, 20); /* 20..30 */
