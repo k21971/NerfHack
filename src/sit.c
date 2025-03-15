@@ -625,7 +625,7 @@ mrndcurse(struct monst *mtmp) /* curse a few inventory items at random! */
     }
     if (mwep && mwep->oartifact == ART_LOAD_BRAND && rn2(20)) {
         if (vis)
-            You(mal_aura, "the magic-absorbing staff");
+            You(mal_aura, "the heavy sword");
         return;
     }
 
