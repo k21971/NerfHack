@@ -567,9 +567,8 @@ doforging(void)
                                                                            : "unwield");
         return 0;
     /* Artifacts can never be applied to a non-artifact base. */
-    } else if ((obj2->oartifact && !obj1->oartifact)
-               || (obj1->oartifact && !obj2->oartifact)) {
-        pline("Artifacts cannot be forged with lesser objects.");
+    } else if (obj2->oartifact || obj1->oartifact) {
+        pline("Artifacts cannot be used in forging!");
         return 0;
     /* dragon-scaled armor can never be fully metallic */
     } else if (Is_dragon_armor(obj1)) {
