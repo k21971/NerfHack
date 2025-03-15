@@ -3067,6 +3067,11 @@ mm_aggression(
     if (is_ghoul(magr->data) && mdef->data == &mons[PM_MAGGOT])
         return ALLOW_M | ALLOW_TM;
 
+    /* Genetic engineers gonna engineer */
+    if (magr->data == &mons[PM_GENETIC_ENGINEER] 
+        && mdef->data != &mons[PM_GENETIC_ENGINEER])
+        return ALLOW_M | ALLOW_TM;
+
     /* orcs vs lawfuls or watchguards */
     if (is_orc(magr->data) && (mdef->data == &mons[PM_WATCHMAN]
                                || mdef->data == &mons[PM_WATCH_CAPTAIN]))
