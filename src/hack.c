@@ -4523,7 +4523,7 @@ weight_cap(void)
 
     /* final adjustment: ring of carrying lets you carry more than usual and go
     * over the normal carrycap */
-    int pct_increase = ringbon(RIN_CARRYING) * 10;
+    int pct_increase = ringbon(RIN_CARRYING) * 5;
     carrcap = (carrcap * (100 + pct_increase)) / 100;
 
 
