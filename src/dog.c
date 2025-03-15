@@ -1561,9 +1561,6 @@ make_msummoned(
     else
         mtmp->msummoned = 15 + mtmp->m_lev * 4;
 
-    if (canseemon(mtmp)) {
-        pline("%s suddenly appears!", Amonnam(mtmp));
-    }
     return mtmp;
 }
 
