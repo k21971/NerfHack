@@ -557,6 +557,8 @@ bhitm(struct monst *mtmp, struct obj *otmp)
                         newsym(mtmp->mx, mtmp->my);
                     } else
                         mimic_hit_msg(mtmp, otyp);
+                } else if (mtmp->mhp == mtmp->mhpmax) {
+                    pline("%s looks fully healed.", Monnam(mtmp));
                 } else
                     pline("%s looks%s better.", Monnam(mtmp),
                           otyp == SPE_EXTRA_HEALING ? " much" : "");
