@@ -352,8 +352,8 @@ dmgval_core(
             damage_info->bonus_large = "+2d6";
             break;
         case HEAVY_SWORD:
-            tmp += d(2, 14);
-            damage_info->bonus_large = "+2d16";
+            tmp += d(2, 8);
+            damage_info->bonus_large = "+2d8";
             break;
         case BOULDER:
             tmp += d(5, 4);
@@ -403,8 +403,8 @@ dmgval_core(
             damage_info->bonus_small = "+1d6";
             break;
         case HEAVY_SWORD:
-            tmp += d(2, 10);
-            damage_info->bonus_small = "+2d10";
+            tmp += d(2, 66);
+            damage_info->bonus_small = "+2d6";
             break;
         case BOULDER:
             tmp += d(5, 4);
