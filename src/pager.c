@@ -1767,8 +1767,9 @@ add_obj_info(winid datawin, struct obj *obj, short otyp, char *usr_text)
      * subject to description shuffling that includes materials. If the player
      * has already discovered this object, though, then it's fine to show the
      * material.
-     * Object classes where this may matter: rings, wands. All randomized tools
-     * share materials, and all scrolls and potions are the same material. */
+    * Object classes where this may matter: rings, wands, spellbooks (leather
+     * vs cloth vs paper...). All randomized tools share materials, and all
+     * scrolls and potions are the same material. */
 
     /* char array converting materials to strings; if this is ever needed
      * anywhere else it should be externified. Corresponds exactly to the
@@ -1789,7 +1790,7 @@ add_obj_info(winid datawin, struct obj *obj, short otyp, char *usr_text)
     /* Generally the only */
     if (!reveal_info
         && ((olet == GEM_CLASS && !is_graystone(otyp))
-            || olet == RING_CLASS || olet == WAND_CLASS))
+            || olet == RING_CLASS || olet == WAND_CLASS || olet == SPBOOK_CLASS))
         Sprintf(buf, "Material: unknown");
     else
         Sprintf(buf, "Material: %s.", mat_str);
