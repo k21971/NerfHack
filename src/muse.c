@@ -3575,7 +3575,7 @@ mon_reflectsrc(struct monst *mon)
     } else if (m_carrying(mon, MIRROR)) {
         /* Also applies to the Magic Mirror of Merlin - put this before the
          * W_ART check */
-        return "mirror";
+        return Role_if(PM_CARTOMANCER) ? "shiny card" : "mirror";
     } else if (orefl && orefl->oartifact == ART_HOLOGRAPHIC_VOID_LILY) {
         /* Due to any carried artifact which grants reflection, which shows as W_ART */
         return "card";
@@ -3624,7 +3624,7 @@ ureflectsrc(void)
         /* Also applies to the Magic Mirror of Merlin - put this before the
          * W_ART check */
         makeknown(MIRROR);
-        return "mirror";
+        return Role_if(PM_CARTOMANCER) ? "shiny card" : "mirror";
     } else if (EReflecting & W_ART) {
         /* Only carried artifact which grants reflection is
          * the Holographic Void Lily, which shows as W_ART */
