@@ -2475,7 +2475,7 @@ seffect_flood(struct obj **sobjp, struct monst *mtmp)
         } else {
             pline("The air around you suddenly feels very humid.");
         }
-        rehydrate(rn1(1500, 3000));
+        rehydrate(rn1(1500, 4500));
         /* Cleanup when used in muse.c */
         if (!isyou)
             delobj(sobj);

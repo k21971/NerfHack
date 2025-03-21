@@ -951,7 +951,7 @@ peffect_hallucination(struct obj *otmp)
 staticfn void
 peffect_water(struct obj *otmp)
 {
-    rehydrate(rn1(75, 25));
+    rehydrate(rn1(100, 100));
 
     if (!otmp->blessed && !otmp->cursed) {
         pline("This tastes like %s.", hliquid("water"));
@@ -2806,7 +2806,7 @@ potionbreathe(struct obj *obj)
                 unambiguous = TRUE;
             }
         }
-        rehydrate(rn1(25, 25));
+        rehydrate(rn1(75, 25));
         break;
     case POT_ACID:
         dmg = rnd(4);

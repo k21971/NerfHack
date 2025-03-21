@@ -428,7 +428,7 @@ fix_worst_trouble(int trouble)
                                           * if trouble didn't get cured */
         break;
     case TROUBLE_DEHYDRATED:
-        rehydrate(1000);
+        rehydrate(2000);
         break;
     case TROUBLE_STARVING:
         /* temporarily lost strength recovery now handled by init_uhunger() */
