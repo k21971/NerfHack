@@ -581,6 +581,12 @@ struct obj {
 #define NAMED_PLAIN 0 /* nothing special, typical naming */
 #define NAMED_KEEP  1 /* historic statue, or stoned/killed monster */
 
+/* Does this object have a +/- charge or enchantment? */
+#define spe_means_plus(otmp) \
+    ((otmp)->oclass == WEAPON_CLASS || (otmp)->oclass == ARMOR_CLASS \
+    || is_weptool(otmp)                                              \
+    || ((otmp)->oclass == RING_CLASS && objects[(otmp)->otyp].oc_charged))
+
 /*
  *  Notes for adding new oextra structures:
  *
