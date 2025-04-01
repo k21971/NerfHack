@@ -1386,9 +1386,15 @@ Amulet_on(struct obj *amul)
         }
         break;
     case AMULET_OF_GUARDING:
-        makeknown(AMULET_OF_GUARDING);
-        find_ac();
-        uamul->known = 1;
+        /* usually learn enchantment and discover type; */
+        setworn((struct obj *) 0, W_AMUL);
+        int old_mc = magic_negation(&gy.youmonst);
+        setworn(amul, W_AMUL);
+        boolean observable = (amul->spe != 0 
+                              || (old_mc != magic_negation(&gy.youmonst)));
+        learnring(amul, observable);
+        if (amul->spe)
+            find_ac(); /* updates botl */
         break;
     case AMULET_OF_YENDOR:
         break;
@@ -1547,7 +1553,7 @@ learnring(struct obj *ring, boolean observed)
     /* make enchantment of charged ring known (might be +0) and update
        perm invent window if we've seen this ring and know its type */
     if (ring->dknown && objects[ringtype].oc_name_known) {
-        if (objects[ringtype].oc_charged)
+        if (objects[ringtype].oc_charged || ringtype == AMULET_OF_GUARDING)
             ring->known = 1;
         update_inventory();
     }
