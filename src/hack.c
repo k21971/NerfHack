@@ -1945,7 +1945,7 @@ domove_bump_mon(struct monst *mtmp, int glyph)
             /* m_monnam(): "dog" or "Fido", no "invisible dog" or "it" */
             pline("Pardon me, %s.", m_monnam(mtmp));
         else
-            You("%s right into %s.", Underwater ? "swim" : "move ",
+            You("%s right into %s.", Underwater ? "swim" : "move",
                 mon_nam(mtmp));
         return TRUE;
     }
