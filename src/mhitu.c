@@ -3565,6 +3565,7 @@ piercer_hit(struct monst *magr, struct monst *mdef)
                     helm->oeroded++;
                 else
                     helm->spe -= Luck < 0 ? rnd(2) : 1;
+                update_inventory();
             } else if (!helm->oartifact) {
                 pline("%s is pierced and breaks apart!", Yname2(helm));
                 if (youdefend) {
