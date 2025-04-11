@@ -1625,6 +1625,7 @@ seffect_scare_monster(struct obj **sobjp)
         You_hear("%s %s.", (confused || scursed) ? "sad wailing"
                  : "maniacal laughter",
                  !ct ? "in the distance" : "close by");
+        gk.known = TRUE;
     }
 }
 
