@@ -1504,6 +1504,10 @@ passivemm(
     case AD_DRDX:
     case AD_DRCO:
     case AD_HALU:
+        /* TODO: This should only catch violet fungi - I'll plan
+         * on adding confusion for passive hallucination later. */
+        if (!is_grung(mddat))
+            break;
         /* passive poison for grung's toxic skin */
         if (mon_underwater(mdef))
             break;
