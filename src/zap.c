@@ -315,7 +315,6 @@ bhitm(struct monst *mtmp, struct obj *otmp)
                 pline("Gotta go fast!");
                 if (!mtmp->mtame) {
                     (void) tamedog(mtmp, (struct obj *) 0, FALSE);
-                    mtmp->movement += VERY_FAST;
                     if (Hallucination)
                         mtmp = christen_monst(mtmp, "Sanic");
                 }

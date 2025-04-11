@@ -2510,7 +2510,8 @@ pray_revive(void)
     struct obj *otmp;
 
     for (otmp = svl.level.objects[u.ux][u.uy]; otmp; otmp = otmp->nexthere)
-        if (otmp->otyp == CORPSE && has_omonst(otmp)
+        if ((otmp->otyp == CORPSE || otmp->otyp == STATUE)
+            && has_omonst(otmp)
             && OMONST(otmp)->mtame && !OMONST(otmp)->isminion)
             break;
 
@@ -2522,7 +2523,11 @@ pray_revive(void)
         return FALSE;
     }
 
-    return (revive(otmp, TRUE) != NULL);
+    if (otmp->otyp == CORPSE)
+        return (revive(otmp, TRUE) != NULL);
+    else {
+        return (animate_statue(otmp, u.ux, u.uy, ANIMATE_SPELL, NULL) != NULL);
+    }
 }
 
 /* #pray command */

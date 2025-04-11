@@ -442,6 +442,7 @@ dig(void)
     }
 
     if (svc.context.digging.effort > 100) {
+        char digbuf[BUFSZ];
         const char *digtxt, *dmgtxt = (const char *) 0;
         struct obj *obj, *bobj;
         boolean shopedge = *in_rooms(dpx, dpy, SHOPBASE);
@@ -508,7 +509,9 @@ dig(void)
             if (!(lev->doormask & D_TRAPPED))
                 lev->doormask = D_BROKEN;
         } else if (closed_door(dpx, dpy)) {
-            digtxt = "You break through the door.";
+            Sprintf(digbuf, "You break through the door with your %s.",
+                    simpleonames(uwep));
+            digtxt = digbuf;
             if (shopedge) {
                 add_damage(dpx, dpy, SHOP_DOOR_COST);
                 dmgtxt = "break";
@@ -527,18 +530,9 @@ dig(void)
             pay_for_damage(dmgtxt, FALSE);
 
         if (Is_earthlevel(&u.uz) && !rn2(3)) {
-            struct monst *mtmp;
+            int mndx = rn2(2) ? PM_EARTH_ELEMENTAL : PM_XORN;
 
-            switch (rn2(2)) {
-            case 0:
-                mtmp = makemon(&mons[PM_EARTH_ELEMENTAL], dpx, dpy,
-                               MM_NOMSG);
-                break;
-            default:
-                mtmp = makemon(&mons[PM_XORN], dpx, dpy, MM_NOMSG);
-                break;
-            }
-            if (mtmp)
+            if (makemon(&mons[mndx], dpx, dpy, MM_NOMSG))
                 pline_The("debris from your digging comes to life!");
         }
         if (IS_DOOR(lev->typ) && (lev->doormask & D_TRAPPED)) {

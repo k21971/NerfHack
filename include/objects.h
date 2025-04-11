@@ -375,6 +375,10 @@ WEAPON("mace", NoDes,
        1, 0, 0, 40,  30,   5,  6,  6, 0, B,   P_MACE, IRON, HI_METAL,
                                                         MACE),
         /* +1 small */
+WEAPON("silver mace", NoDes,
+       1, 0, 0,  2,  36,  60,  6,  6, 0, B,   P_MACE, SILVER, HI_SILVER,
+                                                        SILVER_MACE),
+        /* +1 small */
 WEAPON("morning star", NoDes,
        1, 0, 0, 12,  50,  10,  4,  6, 0, B,   P_MORNING_STAR, IRON, HI_METAL,
                                                         MORNING_STAR),
@@ -1691,7 +1695,7 @@ COIN("gold piece", 1000, GOLD, 1, GOLD_PIECE),
     OBJECT(OBJ(name, desc),                                             \
            BITS(0, 1, 0, 0, 0, 0, 0, 0, 0,                              \
                 HARDGEM(mohs), 0, -P_SLING, glass),                     \
-           0, GEM_CLASS, prob, 0, 1, gval, 3, 3, 0, 0, nutr, color, sn)
+           0, GEM_CLASS, prob, 0, wt, gval, 3, 3, 0, 0, nutr, color, sn)
 #define ROCK(name,desc,kn,prob,wt,gval,sdam,ldam,mgc,nutr,mohs,glass,colr,sn) \
     OBJECT(OBJ(name, desc),                                             \
            BITS(kn, 1, 0, 0, mgc, 0, 0, 0, 0,                           \

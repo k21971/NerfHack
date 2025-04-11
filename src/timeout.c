@@ -1166,7 +1166,7 @@ nh_timeout(void)
                          * are to make noise when you fumble.  Adjustments
                          * to this number must be thoroughly play tested.
                          */
-                        if ((inv_weight() > -500)) {
+                        if ((inv_weight() > (WT_NOISY_INV * -1))) {
                             if (!Deaf)
                                 You("make a lot of noise!");
                             wake_nearby(FALSE);
@@ -2064,7 +2064,7 @@ begin_burn(struct obj *obj, boolean already_lit)
     long turns = 0;
     boolean do_timer = TRUE;
 
-    if (obj->age == 0 && obj->otyp != MAGIC_LAMP && obj->otyp != MAGIC_CANDLE 
+    if (obj->age == 0 && obj->otyp != MAGIC_LAMP && obj->otyp != MAGIC_CANDLE
         && !artifact_light(obj))
         return;
 
@@ -2073,7 +2073,7 @@ begin_burn(struct obj *obj, boolean already_lit)
     case MAGIC_CANDLE:
         obj->lamplit = 1;
         do_timer = FALSE;
-        if (obj->otyp == MAGIC_CANDLE) 
+        if (obj->otyp == MAGIC_CANDLE)
             obj->age = 300L;
         break;
 

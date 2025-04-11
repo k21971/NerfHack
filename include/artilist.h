@@ -109,7 +109,7 @@ static NEARDATA struct artifact artilist[] = {
       A_LAWFUL, NON_PM, NON_PM,
       4, ARTVAL, 400L, NO_COLOR, CARNWENNAN),
 
-    A("Demonbane", MACE,
+    A("Demonbane", SILVER_MACE,
       (SPFX_RESTR | SPFX_DFLAGH | SPFX_WARN), 0, MH_DEMON,
       PHYS(5, 0), NO_DFNS, NO_CARY, BANISH,
       A_LAWFUL, PM_CLERIC, NON_PM,

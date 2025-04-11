@@ -963,7 +963,7 @@ putting on water walking boots while underwater (maybe via magical breathing)
 	and rising to surface wasn't causing the boots to become discovered
 flying pets wouldn't target underwater food but if they happened to fly over
 	such food they could and would eat it
-praying on an altar with pet corpse on it can revive the pet
+praying on an altar with pet corpse or statue on it can revive the pet
 applying a cursed oil lamp can make your hands slippery
 valkyries start with a spear instead of a long sword
 grid bugs don't have hands
@@ -989,7 +989,7 @@ bigroom variant 3 may have some walls replaced with other terrain
 bigroom variant 4 may have two large squares of terrain in the middle
 bigroom variant 5 may have patches of ice or clouds
 some large monsters can knock back smaller monsters with a hit
-change Demonbane to a mace, make it the first sac gift for priests,
+change Demonbane to a silver mace, make it the first sac gift for priests,
 	and give it an invoke ability to banish demons
 wielding Giantslayer prevents knockback from larger monsters; likewise for
 	carried loadstone(s)
@@ -1506,6 +1506,7 @@ since introduction in 3.1.0, the definition for Mitre of Holiness has specified
 	no 'defends' capability for it since carrying should encompass that
 if a tree and a boulder or statue were at the same location, applying an axe
 	would break the boulder or statue rather than chop the tree
+avoid premapping outside Sokoban map to prevent showing stone glyphs
 
 
 Fixes to 3.7.0-x General Problems Exposed Via git Repository
@@ -2781,6 +2782,7 @@ blessed scroll of destroy armor asks which armor to destroy
 archeologists' fedora is lucky
 telepathic hero can discern which particular monster just read a scroll
 add "make fetch-docs" to download pre-formatted documentation
+monsters will use throw-and-return weapons such as an aklys
 
 
 Platform- and/or Interface-Specific New Features
@@ -2978,6 +2980,7 @@ split making pits on do_earthquake() into a separate function and
 	eliminate some gotos on do_earthquake() (pr #1287 by argrath)
 update the WASM cross-compile to work with the current
 	code (pr #1331 by guillaumebrunerie)
+add silver maces (pr #1405 by disperse)
 
 
 Code Cleanup and Reorganization

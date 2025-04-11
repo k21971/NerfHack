@@ -1594,7 +1594,7 @@ attributes_enlightenment(
         if_surroundings_permitted[] = " if surroundings permitted";
     int ltmp, armpro, warnspecies;
     char buf[BUFSZ], buf2[BUFSZ];
-    
+
     /*\
      *  Attributes
     \*/
@@ -2210,7 +2210,7 @@ attributes_enlightenment(
         strcat(buf, buf2);
     }
     you_are(buf, "");
-    
+
     /* Group these together for readability */
     item_resistance_message(AD_FIRE, " protected from fire", final);
     item_resistance_message(AD_COLD, " protected from cold", final);
@@ -2222,7 +2222,7 @@ attributes_enlightenment(
     if (Watertight)
         enl_msg("Your items ", "are", "were", " protected from water damage",
                 from_what(WATERTIGHT));
-    
+
     /*** Resistances to troubles ***/
     if (Invulnerable)
         you_are("invulnerable", from_what(INVULNERABLE));
@@ -2846,8 +2846,8 @@ show_gamelog(int final)
         if (!final && !wizard && spoilerevent(llmsg))
             continue;
         if (!eventcnt++)
-            putstr(win, ATR_SUBHEAD, " Turn");
-        Sprintf(buf, "%5ld: %s", llmsg->turn, llmsg->text);
+            putstr(win, 0, " Turn");
+        Snprintf(buf, sizeof buf, "%5ld: %s", llmsg->turn, llmsg->text);
         putstr(win, 0, buf);
     }
     /* since start of game is logged as a major event, 'eventcnt' should

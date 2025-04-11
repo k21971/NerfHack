@@ -685,7 +685,7 @@ mattacku(struct monst *mtmp)
     struct permonst *mdat = mtmp->data;
     /*
      * ranged: Is it near you?  Affects your actions.
-     * ranged2: Does it think it's near you?  Affects its actions.
+     * range2: Does it think it's near you?  Affects its actions.
      * foundyou: Is it attacking you or your image?
      * youseeit: Can you observe the attack?  It might be attacking your
      *     image around the corner, or invisible, or you might be blind.
@@ -714,12 +714,10 @@ mattacku(struct monst *mtmp)
             return 0;
         u.ustuck->mux = u.ux;
         u.ustuck->muy = u.uy;
-        range2 = 0;
-        ranged = FALSE;
-        foundyou = 1;
         if (u.uinvulnerable)
             return 0; /* stomachs can't hurt you! */
-
+        range2 = 0;
+        foundyou = 1;
     } else if (u.usteed) {
         if (mtmp == u.usteed)
             /* Your steed won't attack you */
@@ -1545,7 +1543,7 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             || (Role_if(PM_CLERIC) && uarmh && is_quest_artifact(uarmh)
                 && mon_hates_blessings(mtmp)))
             mhm.damage -= (mhm.damage + 1) / 4;
-        
+
         /* Archeologists are deathly afraid of snakes -
          * This handled a bit differently from the AD_PLYS attacks -
          * it's a bit weaker. If it was as strong as most paralyze
@@ -3484,7 +3482,7 @@ cloneu(void)
         return NULL;
     mon->mcloned = 1;
     mon = christen_monst(mon, svp.plname);
-    
+
     /* No permapets for cartomancers */
     if (Role_if(PM_CARTOMANCER)) {
         mon->mpeaceful = 1;

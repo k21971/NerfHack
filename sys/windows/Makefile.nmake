@@ -999,7 +999,7 @@ SOUNDLIBINCL = $(SOUNDLIBINCL)
 SOUNDLIBDEFS = $(SOUNDLIBDEFS) -DSND_LIB_WINDSOUND
 TTYSOUNDOBJS = $(TTYSOUNDOBJS) $(OTTY)windsound.o
 GUISOUNDOBJS = $(GUISOUNDOBJS) $(OGUI)windsound.o
-#WINDSOUNDLIBDIR = 
+#WINDSOUNDLIBDIR =
 #TTYSOUNDLIBS = $(TTYSOUNDLIBS)
 #GUISOUNDLIBS = $(GUISOUNDLIBS)
 #WINDSOUNDLIBDIR =
@@ -1142,7 +1142,7 @@ HACK_H = $(INCL)\hack.h $(CONFIG_H) $(INCL)\lint.h $(INCL)\align.h \
 		$(INCL)\attrib.h $(INCL)\monst.h $(INCL)\mextra.h \
 		$(INCL)\skills.h $(INCL)\timeout.h $(INCL)\trap.h \
 		$(INCL)\flag.h $(INCL)\winprocs.h $(INCL)\sndprocs.h \
-		$(INCL)\seffects.h $(INCL)\sys.h
+		$(INCL)\seffects.h $(INCL)\sys.h $(INCL)weight.h
 
 TILE_H      = ..\win\share\tile.h
 
@@ -2532,7 +2532,7 @@ PKGFILES = nerfhackrc.template Guidebook.txt license NerfHack.exe NetHack.txt \
 FILESTOZIP = $(BinDir)\nerfhackrc.template $(BinDir)\Guidebook.txt $(BinDir)\license \
 	$(BinDir)\NerfHack.exe $(BinDir)\NetHack.txt $(BinDir)\NerfHackW.exe \
 	$(BinDir)\opthelp $(BinDir)\nhdat220 $(BinDir)\record \
-	$(BinDir)\symbols $(BinDir)\sysconf.template 
+	$(BinDir)\symbols $(BinDir)\sysconf.template
 DBGSYMS = NerfHack.PDB NerfHackW.PDB
 PDBTOZIP = $(BinDir)\NerfHack.PDB $(BinDir)\NerfHackW.PDB
 MAINZIP = $(PkgDir)\nethack-$(NHV)-win-$(TARGET_CPU).zip
