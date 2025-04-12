@@ -1142,7 +1142,7 @@ HACK_H = $(INCL)\hack.h $(CONFIG_H) $(INCL)\lint.h $(INCL)\align.h \
 		$(INCL)\attrib.h $(INCL)\monst.h $(INCL)\mextra.h \
 		$(INCL)\skills.h $(INCL)\timeout.h $(INCL)\trap.h \
 		$(INCL)\flag.h $(INCL)\winprocs.h $(INCL)\sndprocs.h \
-		$(INCL)\seffects.h $(INCL)\sys.h $(INCL)weight.h
+		$(INCL)\seffects.h $(INCL)\sys.h $(INCL)\weight.h
 
 TILE_H      = ..\win\share\tile.h
 
