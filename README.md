@@ -101,7 +101,7 @@ Many items and mechanics in *NetHack* are underused due to stronger alternatives
 ---
 
 ### **Create Meaningful Resource Scarcity**
-Players should always feel that their resources are valuable and must be managed wisely. Excessive resources are quells in many ways.
+Players should always feel that their resources are valuable and must be managed wisely. Excessive resources are quelled in many ways.
 
 **Ways scarcity is enforced:**
 - **Item destruction and erosion** – More environmental hazards that can destroy or degrade items.
