@@ -36,6 +36,7 @@ newedog(struct monst *mtmp)
     if (!EDOG(mtmp)) {
         EDOG(mtmp) = (struct edog *) alloc(sizeof(struct edog));
         (void) memset((genericptr_t) EDOG(mtmp), 0, sizeof(struct edog));
+        EDOG(mtmp)->parentmid = mtmp->m_id;
     }
 }
 
@@ -50,34 +51,53 @@ free_edog(struct monst *mtmp)
 }
 
 void
-initedog(struct monst *mtmp)
+initedog(struct monst *mtmp, boolean everything)
 {
-    mtmp->mtame = is_domestic(mtmp->data) ? 10 : 5;
+    struct edog *edogp = EDOG(mtmp);
+    long minhungry = svm.moves + 1000L;
+    schar minimumtame = is_domestic(mtmp->data) ? 10 : 5;
+
+    mtmp->mtame = max(minimumtame, mtmp->mtame);
     mtmp->mpeaceful = 1;
     mtmp->mavenge = 0;
     set_malign(mtmp); /* recalc alignment now that it's tamed */
-    mtmp->mleashed = 0;
-    mtmp->meating = 0;
-    EDOG(mtmp)->droptime = 0;
-    EDOG(mtmp)->dropdist = 10000;
-    EDOG(mtmp)->apport = ACURR(A_CHA);
-    EDOG(mtmp)->whistletime = 0;
-    EDOG(mtmp)->hungrytime = 1000 + svm.moves;
-    EDOG(mtmp)->ogoal.x = -1; /* force error if used before set */
-    EDOG(mtmp)->ogoal.y = -1;
-    EDOG(mtmp)->abuse = 0;
-    EDOG(mtmp)->revivals = 0;
-    EDOG(mtmp)->mhpmax_penalty = 0;
-    EDOG(mtmp)->killed_by_u = 0;
+    if (everything) {
+        mtmp->mleashed = 0;
+        mtmp->meating = 0;
+        edogp->droptime = 0;
+        edogp->dropdist = 10000;
+        edogp->apport = ACURR(A_CHA);
+        edogp->whistletime = 0;
+        /* edogp->hungrytime = 0L; // set below */
+        edogp->ogoal.x = -1; /* force error if used before set */
+        edogp->ogoal.y = -1;
+        edogp->abuse = 0;
+        edogp->revivals = 0;
+        edogp->mhpmax_penalty = 0;
+        edogp->killed_by_u = 0;
+    }
+    /* always set for newly tamed pet or feral former pet; hungrytime might
+       already be higher when taming magic affects already tame monst */
+    if (edogp->hungrytime < minhungry)
+        edogp->hungrytime = minhungry;
+    /* livelog first pet, but only if you didn't start with one (the starting
+     * pet will be initialized before in_moveloop is true) */
+    if (!u.uconduct.pets && program_state.in_moveloop) {
+        /* "obtained" a pet rather than "tamed" it because it might have come
+         * from a figurine or some other method in which it was created tame
+         * using an() is safe unless it somehow becomes possible to tame a
+         * unique monster */
+        livelog_printf(LL_CONDUCT, "obtained %s first pet (%s)",
+                       uhis(), an(mon_pmname(mtmp)));
+    }
     u.uconduct.pets++;
 }
 
 staticfn int
 pet_type(void)
 {
-    if (Race_if(PM_VAMPIRE))
-        return PM_FAMILIAR;
-
+    if (Race_if(PM_ORC))
+        return PM_WARG_PUP;
     if (gu.urole.petnum != NON_PM)
         return  gu.urole.petnum;
     else if (gp.preferred_pet == 'c')
@@ -129,6 +149,7 @@ make_familiar(struct obj *otmp, coordxy x, coordxy y, boolean quietly)
     struct permonst *pm;
     struct monst *mtmp = 0;
     int chance, trycnt = 100;
+    boolean reallytame = TRUE;
 
     do {
         mmflags_nht mmflags;
@@ -151,7 +172,7 @@ make_familiar(struct obj *otmp, coordxy x, coordxy y, boolean quietly)
         mtmp = makemon(pm, x, y, mmflags);
         if (otmp) { /* figurine */
             if (!mtmp) {
-                /* monster has been genocided or target spot is occupied */
+                /* monster has been exiled or target spot is occupied */
                 if (!quietly)
                     pline_The(
                            "figurine writhes and then shatters into pieces!");
@@ -178,8 +199,6 @@ make_familiar(struct obj *otmp, coordxy x, coordxy y, boolean quietly)
     if (is_pool(mtmp->mx, mtmp->my) && minliquid(mtmp))
         return (struct monst *) 0;
 
-    initedog(mtmp);
-    mtmp->msleeping = 0;
     if (otmp) { /* figurine; resulting monster might not become a pet */
         chance = rn2(10); /* 0==tame, 1==peaceful, 2==hostile */
         if (chance > 2)
@@ -190,9 +209,8 @@ make_familiar(struct obj *otmp, coordxy x, coordxy y, boolean quietly)
             chance = 2;
 
         if (chance > 0) {
-            mtmp->mtame = 0;   /* not tame after all */
-            u.uconduct.pets--; /* doesn't count as creating a pet */
-            if (chance == 2) { /* hostile (cursed figurine) */
+            reallytame = FALSE; /* not tame after all */
+            if (chance == 2) {  /* hostile (cursed figurine) */
                 if (!quietly)
                     You("get a bad feeling about this.");
                 mtmp->mpeaceful = 0;
@@ -203,6 +221,9 @@ make_familiar(struct obj *otmp, coordxy x, coordxy y, boolean quietly)
         if (has_oname(otmp))
             mtmp = christen_monst(mtmp, ONAME(otmp));
     }
+    if (reallytame)
+        initedog(mtmp, TRUE);
+    mtmp->msleeping = 0;
     set_malign(mtmp); /* more alignment changes */
     newsym(mtmp->mx, mtmp->my);
 
@@ -227,10 +248,11 @@ makedog(void)
 
     pettype = pet_type();
     petname = (pettype == PM_LITTLE_DOG) ? gd.dogname
-              : (pettype == PM_KITTEN) ? gc.catname
-                : (pettype == PM_PONY) ? gh.horsename
-                  : (pettype == PM_FAMILIAR) ? gh.familiarname
-                    : "";
+              : (pettype == PM_REVENANT_PUP) ? gd.dogname
+                : (pettype == PM_WARG_PUP) ? gd.dogname
+                  : (pettype == PM_KITTEN) ? gc.catname
+                    : (pettype == PM_PONY) ? gh.horsename
+                      : "";
 
     /* default pet names */
     if (!*petname && pettype == PM_LITTLE_DOG) {
@@ -247,10 +269,6 @@ makedog(void)
             petname = "Sirius"; /* Orion's dog */
     }
 
-    /* default pet names */
-    if (!*petname && pettype == PM_FAMILIAR)
-        petname = "Guillermo"; /* What We Do in the Shadows */
-
     /* specifying NO_MINVENT prevents makemon() from having a 1% chance
        of creating a pony with an already worn saddle; dogs and cats
        aren't affected because they don't have any initial inventory
@@ -259,7 +277,7 @@ makedog(void)
     mtmp = makemon(&mons[pettype], u.ux, u.uy, MM_EDOG | NO_MINVENT);
 
     if (!mtmp)
-        return ((struct monst *) 0); /* pets were genocided [how?] */
+        return ((struct monst *) 0); /* pets were exiled [how?] */
 
     if (!svc.context.startingpet_mid) {
         svc.context.startingpet_mid = mtmp->m_id;
@@ -278,7 +296,7 @@ makedog(void)
     if (!gp.petname_used++ && *petname)
         mtmp = christen_monst(mtmp, petname);
 
-    initedog(mtmp);
+    initedog(mtmp, TRUE);
     return  mtmp;
 }
 
@@ -794,10 +812,11 @@ mon_leave(struct monst *mtmp)
 staticfn boolean
 keep_mon_accessible(struct monst *mon)
 {
-    /* the Wizard is kept accessible so that his harassment can fetch
-       him instead of creating a new instance but also so that he can
-       be put back at his current location if hero returns to his level */
-    if (mon->iswiz)
+    /* the Wizard and Cthulhu are kept accessible so that his harassment can
+       fetch them instead of creating a new instance but also so that they can
+       be put back at their current locations if hero returns to their levels
+     */
+    if (mon->iswiz || mon->iscthulhu)
         return TRUE;
     /* monsters with special attachment to a particular level only need
        to be kept accessible when on some other level */
@@ -969,10 +988,10 @@ discard_migrations(void)
     for (mprev = &gm.migrating_mons; (mtmp = *mprev) != 0; ) {
         dest.dnum = mtmp->mux;
         dest.dlevel = mtmp->muy;
-        /* the Wizard is kept regardless of location so that he is
+        /* the Wizard/Cthulhu is kept regardless of location so that he is
            ready to be brought back; nothing should be scheduled to
            migrate to the endgame but if we find such, we'll keep it */
-        if (mtmp->iswiz || In_endgame(&dest)) {
+        if (mtmp->iswiz || mtmp->iscthulhu || In_endgame(&dest)) {
             mprev = &mtmp->nmon; /* keep mtmp on migrating_mons */
         } else {
             *mprev = mtmp->nmon; /* remove mtmp from migrating_mons */
@@ -1034,8 +1053,8 @@ dogfood(struct monst *mon, struct obj *obj)
         return TABU;
 
     /* KMH -- Koalas can only eat eucalyptus */
-	if (mon->data == &mons[PM_KOALA])
-		return (obj->otyp == EUCALYPTUS_LEAF ? DOGFOOD : APPORT);
+    if (mon->data == &mons[PM_KOALA])
+	return (obj->otyp == EUCALYPTUS_LEAF ? DOGFOOD : APPORT);
 
     /* skip shop food and other items */
     if (obj->unpaid || (obj->where == OBJ_FLOOR && !obj->no_charge
@@ -1097,7 +1116,7 @@ dogfood(struct monst *mon, struct obj *obj)
           just like elves prefer starvation to cannibalism. */
         if (obj->otyp == CORPSE && fptr == &mons[PM_LIZARD] && mon->mstone)
             return DOGFOOD;
-        
+
 	/* vampires only "eat" very fresh corpses ...
 	 * Assume meat -> blood */
 	if (is_vampire(mptr)) {
@@ -1147,6 +1166,8 @@ dogfood(struct monst *mon, struct obj *obj)
                      : MANFOOD;
         case TIN:
             return metallivorous(mptr) ? ACCFOOD : MANFOOD;
+        case MISTLETOE:
+        case PINEAPPLE:
         case APPLE:
             return herbi ? DOGFOOD : starving ? ACCFOOD : MANFOOD;
         case CARROT:
@@ -1157,6 +1178,8 @@ dogfood(struct monst *mon, struct obj *obj)
             return (mptr->mlet == S_YETI && herbi) ? DOGFOOD
                    : (herbi || starving) ? ACCFOOD
                      : MANFOOD;
+	case PINCH_OF_CATNIP:
+	    return is_feline(mptr) ? DOGFOOD : MANFOOD;
         default:
             if (starving)
                 return ACCFOOD;
@@ -1209,11 +1232,8 @@ tamedog(
     boolean givemsg)
 {
     boolean blessed_scroll = FALSE;
-    boolean taming_familiar = Race_if(PM_VAMPIRE) 
-                              && (mtmp->data == &mons[PM_FAMILIAR]
-                                  || mtmp->data->mlet == S_VAMPIRE);
 
-    /* Spell of charm monster is limited at unskilled and basic -
+    /* Spell of charm monster is limited at unskilled -
      * it can only pacify. */
     boolean unskilled_charmer = obj && obj->otyp == SPE_CHARM_MONSTER
         && P_SKILL(P_ENCHANTMENT_SPELL) < P_BASIC;
@@ -1231,18 +1251,21 @@ tamedog(
     if (mtmp->msleeping)
         wake_nearto(mtmp->mx, mtmp->my, 1); /* [different from wakeup()] */
 
+    /* The Wiz, Medusa and the quest nemeses aren't even made peaceful. */
     if (non_tameable(mtmp->data) || mtmp->mrabid)
+        return FALSE;
+
+    /* Orcs are limited to taming evilish monsters */
+    if (Race_if(PM_ORC) &&
+        (mtmp->data->mlet != S_TROLL && mtmp->data->mlet != S_OGRE
+        && mtmp->data->mlet != S_ORC && mtmp->data->mlet != S_DRAGON
+        && mtmp->data->mlet != S_UMBER))
         return FALSE;
 
     if (mtmp->mberserk) {
         calm_berserker(mtmp);
         return FALSE;
     }
-
-    /* Vampires can only tame familiars and other vampire */
-    if (Race_if(PM_VAMPIRE) && !(mtmp->data == &mons[PM_FAMILIAR]
-                                  || mtmp->data->mlet == S_VAMPIRE))
-        return FALSE;
 
     /* worst case, at least it'll be peaceful. */
     if (givemsg && !mtmp->mpeaceful && canspotmon(mtmp)) {
@@ -1329,8 +1352,7 @@ tamedog(
            [note: the various mextra structures don't actually conflict
            with each other anymore] */
         || mtmp->isshk || mtmp->isgd || mtmp->ispriest || mtmp->isminion
-        || is_covetous(mtmp->data) 
-        || (is_human(mtmp->data) && !taming_familiar)
+        || is_covetous(mtmp->data) || is_human(mtmp->data)
         || (is_demon(mtmp->data) && !is_demon(gy.youmonst.data))
         || (obj && dogfood(mtmp, obj) >= MANFOOD))
         return FALSE;
@@ -1341,13 +1363,15 @@ tamedog(
     /* add the pet extension */
     if (!has_edog(mtmp)) {
         newedog(mtmp);
-        initedog(mtmp);
+        initedog(mtmp, TRUE);
+    } else {
+        initedog(mtmp, FALSE);
     }
 
     if (obj) { /* thrown food */
         /* defer eating until the edog extension has been set up */
         place_object(obj, mtmp->mx, mtmp->my); /* put on floor */
-        /* devour the food (might grow into larger, genocided monster) */
+        /* devour the food (might grow into larger, exiled monster) */
         if (dog_eat(mtmp, obj, mtmp->mx, mtmp->my, TRUE) == 2)
             return TRUE; /* oops, it died... */
         /* `obj' is now obsolete */
@@ -1513,10 +1537,10 @@ make_msummoned(
     } while (!mtmp && --trycnt > 0);
 
     if (!mtmp)
-        return (struct monst *) 0; /* genocided */
+        return (struct monst *) 0; /* exiled */
 
     if (tame) {
-        initedog(mtmp);
+        initedog(mtmp, TRUE);
 
         /* This is a bit weird and forced, but so is the way msummoned stuff works... */
         if (mtmp->mrabid)
@@ -1543,9 +1567,6 @@ make_msummoned(
     else
         mtmp->msummoned = 15 + mtmp->m_lev * 4;
 
-    if (canseemon(mtmp)) {
-        pline("%s suddenly appears!", Amonnam(mtmp));
-    }
     return mtmp;
 }
 

@@ -27,6 +27,7 @@ newegd(struct monst *mtmp)
     if (!EGD(mtmp)) {
         EGD(mtmp) = (struct egd *) alloc(sizeof (struct egd));
         (void) memset((genericptr_t) EGD(mtmp), 0, sizeof (struct egd));
+        EGD(mtmp)->parentmid = mtmp->m_id;
     }
 }
 
@@ -977,6 +978,7 @@ gd_move(struct monst *grd)
                 (void) rloc(grd, RLOC_MSG);
                 levl[m][n].typ = egrd->fakecorr[0].ftyp;
                 levl[m][n].flags = egrd->fakecorr[0].flags;
+                recalc_block_point(m, n); /* guard corridor goes away */
                 del_engr_at(m, n);
                 newsym(m, n);
                 grd->mpeaceful = 0;

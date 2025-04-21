@@ -68,7 +68,7 @@ throne_sit_effect(void)
         case 3:
             pline("A%s electric shock shoots through your body!",
                   (!hardly_resistant(SHOCK_RES)) ? "n" : " massive");
-            losehp(resist_reduce(rnd(24), SHOCK_RES)  + rnd(6), 
+            losehp(resist_reduce(rnd(24), SHOCK_RES)  + rnd(6),
                    "electric chair", KILLED_BY_AN);
             exercise(A_CON, FALSE);
             break;
@@ -103,11 +103,7 @@ throne_sit_effect(void)
                 if (!rn2(5)) {
                     makewish();
                     /* no farming thrones for multiple wishes */
-                    set_levltyp(u.ux, u.uy, ROOM);
-                    levl[u.ux][u.uy].flags = 0;
-                    pline_The("throne vanishes in a puff of logic.");
-                    maybe_unhide_at(u.ux, u.uy);
-                    newsym(u.ux, u.uy);
+                    goto rm_throne;
                 } else {
                     You_feel("your luck is changing...");
                     change_luck(-1); /* oops */
@@ -130,11 +126,9 @@ throne_sit_effect(void)
         case 8:
             /* Magical voice not affected by deafness */
             pline("A voice echoes:");
-            SetVoice((struct monst *) 0, 0, 80, voice_throne);
-            verbalize("By thine Imperious order, %s...",
+            verbalize("Your gold, %s...",
                       flags.female ? "Dame" : "Sire");
-            /* Dungeon wide */
-            do_genocide(5, FALSE);	/* REALLY|ONTHRONE, see do_genocide() */
+            (void) mkgold((long) rn1(5500, 2500), u.ux, u.uy);
             break;
         case 9:
             /* Magical voice not affected by deafness */
@@ -240,6 +234,7 @@ throne_sit_effect(void)
        started from.]  "Analyzing a throne" doesn't really make any sense
        but if the answer is yes than it will vanish in a puff of logic. */
     if (!rn2(3) && (!wizard || y_n("Analyze throne?") == 'y')) {
+rm_throne:
         levl[tx][ty].typ = ROOM, levl[tx][ty].flags = 0;
         maybe_unhide_at(tx, ty);
         map_background(tx, ty, FALSE);
@@ -332,7 +327,7 @@ dosit(void)
     }
 
     u_wipe_engr(rnd(5));
-    
+
     if (OBJ_AT(u.ux, u.uy)
         /* ensure we're not standing on the precipice */
         && !(uteetering_at_seen_pit(trap) || uescaped_shaft(trap))) {
@@ -372,7 +367,7 @@ dosit(void)
             } else if (u.utraptype == TT_PIT) {
                 if (trap && trap->ttyp == SPIKED_PIT) {
                     You("sit down on a spike.  Ouch!");
-                    losehp(Half_physical_damage ? rn2(2) : 1,
+                    losehp(Half_physical_damage ? rn2(4) : rn2(6),
                            "sitting on an iron spike", KILLED_BY);
                     exercise(A_STR, FALSE);
                 } else
@@ -416,6 +411,14 @@ dosit(void)
                     dryup(u.ux, u.uy, TRUE);
             }
             /* splitting--or failing to do so--protects gear from the water */
+        } else if (maybe_polyd(is_grung(gy.youmonst.data), Race_if(PM_GRUNG))) {
+            if (rehydrate(rn1(100, 100))) {
+                if (levl[u.ux][u.uy].typ == FOUNTAIN)
+                    dryup(u.ux, u.uy, TRUE);
+                else
+                    dryup_puddle(u.ux, u.uy, "dries up");
+            }
+            /* hydrating--or failing to do so--protects gear from the water */
         } else {
             if (!rn2(10) && uarm)
                 (void) water_damage(uarm, "armor", TRUE);
@@ -423,6 +426,12 @@ dosit(void)
                 (void) water_damage(uarmf, "armor", TRUE);
             dryup_puddle(u.ux, u.uy, "dries up");
         }
+    } else if (IS_FOUNTAIN(typ)) {
+        You(sit_message, defsyms[S_sink].explanation);
+        Your("%s gets wet.",
+             humanoid(gy.youmonst.data) ? "rump" : "underside");
+        if (rehydrate(rn1(100, 100)))
+            dryup(u.ux, u.uy, TRUE);
     } else if (IS_SINK(typ)) {
         You(sit_message, defsyms[S_sink].explanation);
         Your("%s gets wet.",
@@ -432,8 +441,6 @@ dosit(void)
 
         if (maybe_polyd(is_giant(gy.youmonst.data), Race_if(PM_GIANT))) {
             breaktoilet(u.ux, u.uy);
-        } else if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
-            pline("Vampires have no use of such things.");
         } else if (!Sick && u.uhs > 0
                 && (Upolyd ? u.mh == u.mhmax : u.uhp == u.uhpmax)) {
             You("don't have to go...");
@@ -556,7 +563,7 @@ rndcurse(void)
             }
 
             /* Tell the player what was cursed please. */
-            if (!Blind) 
+            if (!Blind)
                 Shk_Your(Your_buf, otmp);
 
             if (otmp->blessed) {
@@ -618,7 +625,7 @@ mrndcurse(struct monst *mtmp) /* curse a few inventory items at random! */
     }
     if (mwep && mwep->oartifact == ART_LOAD_BRAND && rn2(20)) {
         if (vis)
-            You(mal_aura, "the magic-absorbing staff");
+            You(mal_aura, "the heavy sword");
         return;
     }
 

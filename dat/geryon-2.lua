@@ -9,7 +9,7 @@
 --
 des.level_init({ style="mazegrid", bg ="-" });
 
-des.level_flags("mazelevel", "hardfloor")
+des.level_flags("mazelevel")
 
 des.level_init({ style="mines", fg=".", bg="}", smoothed=true, joined=true, walled=true })
 
@@ -50,7 +50,6 @@ des.region(selection.area(46,06,53,12),"unlit")
 
 -- Non diggable walls
 des.non_diggable(selection.area(45,05,54,13))
-des.non_passwall(selection.area(45,05,54,13));
 
 des.door("closed",28,07)
 des.door("closed",29,07)
@@ -117,24 +116,9 @@ des.object("[")
 des.object("[")
 des.object(")")
 des.object(")")
-des.object("(")
-
-des.object("/")
-des.object("=")
-des.object("?")
-des.object("?")
+des.object("*")
 des.object("!")
-des.object("!")
-
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
-
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
+des.object("?")
 
 -- traps!
 des.trap("fire")

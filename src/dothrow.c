@@ -16,6 +16,7 @@ staticfn int gem_accept(struct monst *, struct obj *);
 staticfn boolean toss_up(struct obj *, boolean) NONNULLARG1;
 staticfn void sho_obj_return_to_u(struct obj * obj);
 staticfn void throwit_return(boolean);
+staticfn void swallowit(struct obj *);
 staticfn struct obj *return_throw_to_inv(struct obj *, long, boolean,
                                        struct obj *);
 staticfn void tmiss(struct obj *, struct monst *, boolean);
@@ -170,7 +171,9 @@ throw_obj(struct obj *obj, int shotlimit)
                          : obj->oclass == WEAPON_CLASS)
         && !(Confusion || Stunned || Fumbling )) {
         /* some roles don't get a volley bonus until becoming expert */
-        weakmultishot = (Role_if(PM_WIZARD) || Role_if(PM_CLERIC)
+        weakmultishot = (Role_if(PM_WIZARD)
+                         || Role_if(PM_CLERIC)
+                         || Role_if(PM_UNDEAD_SLAYER)
                          || (Role_if(PM_HEALER) && skill != P_KNIFE)
                          || (Role_if(PM_TOURIST) && skill != -P_DART)
                          || (Role_if(PM_CARTOMANCER) && skill != -P_SHURIKEN)
@@ -833,7 +836,7 @@ hurtle_step(genericptr_t arg, coordxy x, coordxy y)
                    && bad_rock(gy.youmonst.data, u.ux, y)
                    && bad_rock(gy.youmonst.data, x, u.uy)) {
             boolean too_much = (gi.invent
-                                && (inv_weight() + weight_cap() > 600));
+                       && (inv_weight() + weight_cap() > WT_TOOMUCH_DIAGONAL));
 
             if (bigmonst(gy.youmonst.data) || too_much) {
                 why = "wedging into a narrow crevice";
@@ -877,13 +880,17 @@ hurtle_step(genericptr_t arg, coordxy x, coordxy y)
         if (!canspotmon(mon))
             map_invisible(mon->mx, mon->my);
         setmangry(mon, FALSE);
+
         if (touch_petrifies(mon->data)
             /* this is a bodily collision, so check for body armor */
             && !uarmu && !uarm && !uarmc) {
             Sprintf(svk.killer.name, "bumping into %s",
                     an(pmname(mon->data, NEUTRAL)));
             make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
+        } else if (is_grung(mon->data)) {
+            passive(mon, NULL, TRUE, 1, AT_NONE, FALSE);
         }
+
         if (touch_petrifies(gy.youmonst.data)
             && !(resists_ston(mon) || defended(mon, AD_STON))
             && !which_armor(mon, W_ARMU | W_ARM | W_ARMC)) {
@@ -891,6 +898,9 @@ hurtle_step(genericptr_t arg, coordxy x, coordxy y)
                 mon->mstone = 5;
                 mon->mstonebyu = TRUE;
             }
+        } else if (maybe_polyd(is_grung(gy.youmonst.data),
+                               Race_if(PM_GRUNG))) {
+            passiveum(gy.youmonst.data, mon, AT_NONE);
         }
         wake_nearto(x, y, 10);
         return FALSE;
@@ -1248,6 +1258,7 @@ harmless_missile(struct obj *obj)
     switch (otyp) {
     case SLING:
     case EUCALYPTUS_LEAF:
+    case MISTLETOE:
     case KELP_FROND:
     case SPRIG_OF_WOLFSBANE:
     case FORTUNE_COOKIE:
@@ -1321,6 +1332,9 @@ toss_up(struct obj *obj, boolean hitsroof)
             obj = 0; /* it's now gone */
 
         switch (otyp) {
+        case PINEAPPLE:
+            pline("Ouch! %s is covered in spikes!", Doname2(obj));
+            break;
         case EGG:
             if (petrifier && !Stone_resistance
                 && !(poly_when_stoned(gy.youmonst.data)
@@ -1371,7 +1385,7 @@ toss_up(struct obj *obj, boolean hitsroof)
                                    &dmg, rn1(18, 2));
 
         if (!dmg) { /* probably wasn't a weapon; base damage on weight */
-            dmg = ((int) obj->owt + 99) / 100;
+            dmg = ((int) obj->owt + (WT_TO_DMG - 1)) / WT_TO_DMG;
             dmg = (dmg <= 1) ? 1 : rnd(dmg);
             if (dmg > 6)
                 dmg = 6;
@@ -1387,6 +1401,8 @@ toss_up(struct obj *obj, boolean hitsroof)
                 dmg += rnd(4);
             if (is_silver(obj) && Hate_silver)
                 dmg += rnd(20);
+            if (obj->otyp == PINEAPPLE)
+                dmg = dmg + 2;
         }
         if (dmg > 2 && less_damage)
             dmg = (dmg > 2 ? dmg - 2 : 2);
@@ -1422,14 +1438,13 @@ toss_up(struct obj *obj, boolean hitsroof)
                    && !(poly_when_stoned(gy.youmonst.data)
                         && polymon(PM_STONE_GOLEM))) {
  petrify:
-            svk.killer.format = KILLED_BY;
             /* what goes up... */
             Strcpy(svk.killer.name, "elementary physics");
-            You("turn to stone.");
+            You("start turning to stone!");
             if (obj)
                 dropy(obj); /* bypass most of hitfloor() */
             gt.thrownobj = 0;  /* now either gone or on floor */
-            done(STONING);
+            make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
             return obj ? TRUE : FALSE;
         }
         if (is_silver(obj) && Hate_silver)
@@ -1484,6 +1499,15 @@ throwit_return(boolean clear_thrownobj)
         gt.thrownobj = (struct obj *) 0;
 }
 
+staticfn void
+swallowit(struct obj *obj){
+    if (obj != uball) {
+        (void) mpickobj(u.ustuck, obj); /* clears 'gt.thrownobj' */
+        throwit_return(FALSE);
+    } else
+        throwit_return(TRUE);
+}
+
 /* throw an object, NB: obj may be consumed in the process */
 void
 throwit(struct obj *obj,
@@ -1494,12 +1518,13 @@ throwit(struct obj *obj,
 {
     struct monst *mon;
     int range, urange;
+    const struct throw_and_return_weapon *arw = autoreturn_weapon(obj);
     boolean crossbowing,
             boomeranging = FALSE,
             cursed_launcher = (ammo_and_launcher(obj, uwep) && uwep->cursed),
             impaired = (Confusion || Stunned || Blind
                         || Hallucination || Fumbling),
-            tethered_weapon = (obj->otyp == AKLYS && (wep_mask & W_WEP) != 0);
+            tethered_weapon = (arw && arw->tethered && (wep_mask & W_WEP) != 0);
 
     boolean carding = Role_if(PM_CARTOMANCER)
                       && obj->otyp == SCR_CREATE_MONSTER;
@@ -1509,6 +1534,7 @@ throwit(struct obj *obj,
         struct obj pseudo;
         pseudo = cg.zeroobj;
         pseudo.otyp = obj->corpsenm;
+        pseudo.oclass = WAND_CLASS;
         pseudo.dknown = pseudo.obroken = 1; /* Don't id it */
 
         gc.current_wand = &pseudo;
@@ -1691,9 +1717,9 @@ throwit(struct obj *obj,
         else if (is_art(obj, ART_MJOLLNIR))
             range = (range + 1) / 2; /* it's heavy */
         else if (tethered_weapon) /* primary weapon is aklys */
-            /* if an aklys is going to return, range is limited by the
+            /* range of a tethered_weapon is limited by the
                length of the attached cord [implicit aspect of item] */
-            range = min(range, BOLT_LIM / 2);
+            range = min(range, isqrt(arw->range));
         else if (obj == uball && u.utrap && u.utraptype == TT_INFLOOR)
             range = 1;
 
@@ -1756,12 +1782,7 @@ throwit(struct obj *obj,
         if (tethered_weapon)
             tmp_at(DISP_END, 0);
     } else if (u.uswallow && !iflags.returning_missile) {
- swallowit:
-        if (obj != uball) {
-            (void) mpickobj(u.ustuck, obj); /* clears 'gt.thrownobj' */
-            throwit_return(FALSE);
-        } else
-            throwit_return(TRUE);
+        swallowit(obj);
         return;
     } else {
         /* Mjollnir must be wielded to be thrown--caller verifies this;
@@ -1807,8 +1828,10 @@ throwit(struct obj *obj,
                                KILLED_BY);
                     }
 
-                    if (u.uswallow)
-                        goto swallowit;
+                    if (u.uswallow) {
+                        swallowit(obj);
+                        return;
+                    }
                     if (!ship_object(obj, u.ux, u.uy, FALSE))
                         dropy(obj);
                 }
@@ -1826,8 +1849,10 @@ throwit(struct obj *obj,
                    capability back anyway, quivered or not shouldn't matter */
                 pline("%s to return!", Tobjnam(obj, "fail"));
 
-                if (u.uswallow)
-                    goto swallowit;
+                if (u.uswallow) {
+                    swallowit(obj);
+                    return;
+                }
                 /* continue below with placing 'obj' at target location */
             }
         }
@@ -1852,7 +1877,8 @@ throwit(struct obj *obj,
                 || (is_lava(gb.bhitpos.x, gb.bhitpos.y)
                     && !is_flammable(obj))) {
                 Soundeffect(se_splash, 50);
-                pline((weight(obj) > 9) ? "Splash!" : "Plop!");
+                pline((weight(obj) > WT_SPLASH_THRESHOLD)
+                      ? "Splash!" : "Plop!");
             }
         }
         if (flooreffects(obj, gb.bhitpos.x, gb.bhitpos.y, "fall")) {
@@ -1984,6 +2010,9 @@ omon_adj(struct monst *mon, struct obj *obj, boolean mon_notices)
     }
     /* some objects are more likely to hit than others */
     switch (obj->otyp) {
+    case PINEAPPLE:
+        tmp += 4;
+        break;
     case HEAVY_IRON_BALL:
         if (obj != uball)
             tmp += 2;
@@ -2376,7 +2405,7 @@ thitmonst(
                 } else
                     (void) mpickobj(mon, obj);
                 return 1;
-            } else 
+            } else
                 passive_obj(mon, obj, (struct attack *) 0);
         } else {
             tmiss(obj, mon, TRUE);
@@ -2408,7 +2437,7 @@ thitmonst(
         }
 
     } else if ((otyp == EGG || otyp == CREAM_PIE || otyp == BLINDING_VENOM
-                || otyp == ACID_VENOM)
+                || otyp == ACID_VENOM || otyp == PINEAPPLE)
                && (guaranteed_hit || ACURR(A_DEX) > rnd(25))) {
         (void) hmon(mon, obj, hmode, dieroll);
         return 1; /* hmon used it up */
@@ -2417,6 +2446,13 @@ thitmonst(
                && (guaranteed_hit || ACURR(A_DEX) > rnd(25))) {
         potionhit(mon, obj, POTHIT_HERO_THROW);
         return 1;
+
+   } else if (obj->otyp == PINCH_OF_CATNIP && is_feline(mon->data)) {
+       if (!Blind)
+           pline("%s chases %s tail!", Monnam(mon), mhis(mon));
+       (void) tamedog(mon, obj, TRUE);
+       mon->mconf = 1;
+       return 1;
 
     } else if ((befriend_with_obj(mon->data, obj) && !obj->cursed)
                || (mon->mtame && dogfood(mon, obj) <= ACCFOOD)) {
@@ -2539,7 +2575,7 @@ gem_accept(struct monst *mon, struct obj *obj)
         pline("Its %s %s.", xname(obj),
               canseemon(mon) ? "vanishes" : "seems to vanish");
     obfree(obj, (struct obj *) 0);
-    
+
     if (!tele_restrict(mon))
         (void) rloc(mon, RLOC_MSG);
     return ret;
@@ -2650,7 +2686,7 @@ breakobj(
     boolean fracture = FALSE;
     const char *ostr;
     int am;
-    
+
     if (IS_ALTAR(levl[x][y].typ))
         am = levl[x][y].altarmask & AM_MASK;
     else
@@ -2811,6 +2847,7 @@ breaktest(struct obj *obj)
     case MELON:
     case ACID_VENOM:
     case BLINDING_VENOM:
+    case PINCH_OF_CATNIP:
         return TRUE;
      case EGG:
         return (obj->corpsenm != PM_PHOENIX);
@@ -2859,6 +2896,10 @@ breakmsg(struct obj *obj, boolean in_view)
     case ACID_VENOM:
     case BLINDING_VENOM:
         pline("Splash!");
+        break;
+    case PINCH_OF_CATNIP:
+        if (in_view)
+            pline("Catnip flies everywhere!");
         break;
     }
 }

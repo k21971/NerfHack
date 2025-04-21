@@ -642,14 +642,14 @@ doextlist(void)
                     continue;
                 /* command description might get modified on the fly */
                 cmd_desc = efp->ef_desc;
-                /* suppress part of the description for #genocided if it
+                /* suppress part of the description for #exiled if it
                    doesn't apply during the current game */
                 if (!wizard && !discover
                     && (efp->flags & GENERALCMD) != 0 /* minor optimization */
                     && strstri(cmd_desc, "extinct"))
                     cmd_desc = strsubst(strcpy(descbuf, cmd_desc),
-                                        " been genocided or become extinct",
-                                        " been genocided");
+                                        " been exiled or become extinct",
+                                        " been exiled");
                 /* if searching, skip this command if it doesn't match */
                 if (*searchbuf
                     /* first try case-insensitive substring match */
@@ -938,7 +938,8 @@ domonability(void)
             pline("Unfortunately sound does not carry well through rock.");
         else
             aggravate();
-    } else if (is_vampire(uptr) || is_vampshifter(&gy.youmonst)) {
+    } else if ((is_vampire(uptr) || is_vampshifter(&gy.youmonst))
+               && !Race_if(PM_DHAMPIR)) {
         return dopoly();
     } else if (u.usteed && can_breathe(u.usteed->data)) {
         (void) pet_ranged_attk(u.usteed, TRUE);
@@ -1716,8 +1717,8 @@ struct ext_func_tab extcmdlist[] = {
               dofire, 0, NULL },
     { M('f'), "force", "force a lock",
               doforce, AUTOCOMPLETE, NULL },
-    { M('g'), "genocided",
-              "list monsters that have been genocided or become extinct",
+    { M('g'), "exiled",
+              "list monsters that have been exiled or become extinct",
               dogenocided,
               IFBURIED | AUTOCOMPLETE | GENERALCMD | CMD_M_PREFIX, NULL },
     { ';',    "glance", "show what type of thing a map symbol corresponds to",
@@ -3676,16 +3677,36 @@ getdir(const char *s)
 
  retry:
     program_state.input_state = getdirInp;
-    if (gi.in_doagain || *readchar_queue)
+    if (gi.in_doagain || *readchar_queue) {
         dirsym = readchar();
-    else
+    } else {
         dirsym = yn_function((s && *s != '^') ? s : "In what direction?",
                              (char *) 0, '\0', FALSE);
+
+        /* for the fuzzer, usually force the result to be a valid direction,
+           but sometimes let it exercise the invalid direction code; we
+           don't try to enforce no-diagonal for hero in grid bug form since
+           things like '^' to look at adjacent trap shouldn't be bound by
+           that (caller is expected to handle situations where it matters) */
+        if (iflags.debug_fuzzer && rn2(20)) {
+            switch (rn2(20)) {
+            case 0:
+                dirsym = gc.Cmd.spkeys[rn2(2) ? NHKF_GETDIR_SELF : NHKF_ESC];
+                break;
+            case 1:
+                dirsym = gc.Cmd.dirchars[rn2(2) ? DIR_DOWN : DIR_UP];
+                break;
+            default:
+                dirsym = gc.Cmd.dirchars[rn2(N_DIRS)];
+                break;
+            }
+        }
+    }
     /* remove the prompt string so caller won't have to */
     clear_nhwindow(WIN_MESSAGE);
 
     if (redraw_cmd(dirsym)) { /* ^R */
-        docrt();              /* redraw */
+        docrt_flags(docrtRefresh); /* redraw */
         goto retry;
     }
     if (!gi.in_doagain)
@@ -4869,6 +4890,9 @@ end_of_input(void)
     program_state.something_worth_saving = 0; /* don't save */
 #endif
 
+    if (In_tutorial(&u.uz))
+        program_state.something_worth_saving = 0; /* don't save in tutorial */
+
 #ifndef SAFERHANGUP
     if (!program_state.done_hup++)
 #endif
@@ -5259,6 +5283,28 @@ yn_function(
             res = cq.key;
         else
             cmdq_clear(CQ_CANNED); /* 'res' is ESC */
+        addcmdq = FALSE;
+
+    /* for the fuzzer, usually force a valid response, but sometimes let
+       it exercise windowport yn_function and invalid response handling */
+    } else if (iflags.debug_fuzzer && resp && *resp && rn2(20)) {
+        int ln = (int) strlen(resp), ridx = rn2(ln);
+
+        res = resp[ridx];
+        /* if valid-responses includes ESC followed by unshown candidates
+           and we randomly picked the ESC, try again with only whatever is
+           before it; be careful to avoid rn2(0) */
+        if (res == '\033') {
+            if (ln > 1) {
+                /* if ESC is at start (ridx==0), pick something after it */
+                ridx = (ridx == 0) ? (1 + rn2(ln - 1)) : rn2(ridx);
+                res = resp[ridx];
+            } else {
+                /* ESC is the only thing (ln==1); something is strange... */
+                res = def; /* might be '\0' */
+            }
+        }
+
     } else {
 #ifdef SND_SPEECH
         if ((gp.pline_flags & PLINE_SPEECH) != 0) {
@@ -5269,9 +5315,9 @@ yn_function(
         if (!yn_function_menu(query, resp, def, &res)) {
             res = (*windowprocs.win_yn_function)(query, resp, def);
         }
-        if (addcmdq)
-            cmdq_add_key(CQ_REPEAT, res);
     }
+    if (addcmdq)
+        cmdq_add_key(CQ_REPEAT, res);
 
 #if defined(DUMPLOG) || defined(DUMPHTML) || defined(DUMPLOG_CORE)
     if (idx == gs.saved_pline_index) {

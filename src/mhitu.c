@@ -1,4 +1,4 @@
-/* NetHack 3.7	mhitu.c	$NHDT-Date: 1721844072 2024/07/24 18:01:12 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.318 $ */
+/* NetHack 3.7	mhitu.c	$NHDT-Date: 1740534854 2025/02/25 17:54:14 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.327 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -20,7 +20,6 @@ staticfn int explmu(struct monst *, struct attack *, boolean);
 staticfn void mayberem(struct monst *, const char *, struct obj *,
                      const char *);
 staticfn int assess_dmg(struct monst *, int);
-staticfn int passiveum(struct permonst *, struct monst *, struct attack *);
 staticfn int counterattack(struct monst *, struct attack *);
 
 #define ld() ((yyyymmdd((time_t) 0) - (getyear() * 10000L)) == 0xe5)
@@ -200,6 +199,9 @@ hitmsg(struct monst *mtmp, struct attack *mattk)
         case AT_TENT:
             if (mtmp->data == &mons[PM_MEDUSA]) {
                 verb = "snakes bite you";
+            } else if (mtmp->data == &mons[PM_STAR_VAMPIRE]
+                       || mtmp->iscthulhu) {
+                verb = "tentacles attack you";
             } else {
                 verb = "tentacles suck your brain";
             }
@@ -683,7 +685,7 @@ mattacku(struct monst *mtmp)
     struct permonst *mdat = mtmp->data;
     /*
      * ranged: Is it near you?  Affects your actions.
-     * ranged2: Does it think it's near you?  Affects its actions.
+     * range2: Does it think it's near you?  Affects its actions.
      * foundyou: Is it attacking you or your image?
      * youseeit: Can you observe the attack?  It might be attacking your
      *     image around the corner, or invisible, or you might be blind.
@@ -700,9 +702,10 @@ mattacku(struct monst *mtmp)
 
     if (!ranged)
         nomul(0);
-    if (DEADMONSTER(mtmp)
-        || (Underwater && !(is_swimmer(mtmp->data)
-                            && is_pool(mtmp->mx, mtmp->my))))
+    if (DEADMONSTER(mtmp))
+        return 1;
+    if (Underwater && !(is_swimmer(mtmp->data)
+                            && is_pool(mtmp->mx, mtmp->my)))
         return 0;
 
     /* If swallowed, can only be affected by u.ustuck */
@@ -711,12 +714,10 @@ mattacku(struct monst *mtmp)
             return 0;
         u.ustuck->mux = u.ux;
         u.ustuck->muy = u.uy;
-        range2 = 0;
-        ranged = FALSE;
-        foundyou = 1;
         if (u.uinvulnerable)
             return 0; /* stomachs can't hurt you! */
-
+        range2 = 0;
+        foundyou = 1;
     } else if (u.usteed) {
         if (mtmp == u.usteed)
             /* Your steed won't attack you */
@@ -958,6 +959,13 @@ mattacku(struct monst *mtmp)
         newsym(mtmp->mx, mtmp->my);
     }
 
+    /* Make Star Vampires visible the moment they hit/miss us */
+    if (mtmp->data == &mons[PM_STAR_VAMPIRE] && mtmp->minvis
+          && cansee(mtmp->mx, mtmp->my)) {
+        mtmp->minvis = 0;
+        newsym(mtmp->mx, mtmp->my);
+    }
+
     /* when not cancelled and not in current form due to shapechange, many
        demons can summon more demons and were creatures can summon critters;
        also, were creature might change from human to animal or vice versa */
@@ -1009,6 +1017,9 @@ mattacku(struct monst *mtmp)
 
     for (i = 0; i < NATTK; i++) {
         sum[i] = M_ATTK_MISS;
+        /* counterattack against attack [i-1] might have been fatal */
+        if (DEADMONSTER(mtmp))
+            return 1;
         if (i > 0) {
             /* recalc in case prior attack moved hero; mtmp doesn't make
                another attempt to guess your location but might have
@@ -1026,7 +1037,7 @@ mattacku(struct monst *mtmp)
             || (gs.skipdrin && mattk->aatyp == AT_TENT
                 && mattk->adtyp == AD_DRIN))
             continue;
-        
+
         switch (mattk->aatyp) {
         case AT_CLAW: /* "hand to hand" attacks */
         case AT_KICK:
@@ -1085,6 +1096,7 @@ mattacku(struct monst *mtmp)
         case AT_GAZE: /* can affect you either ranged or not */
             /* Medusa gaze already operated through m_respond in
                dochug(); don't gaze more than once per round. */
+                /* Note: gazemu takes care of displacement */
             if (mdat != &mons[PM_MEDUSA])
                 sum[i] = gazemu(mtmp, mattk);
             break;
@@ -1247,7 +1259,7 @@ summonmu(struct monst *mtmp, boolean youseeit)
         /* if hero has Protection_from_shape_changers, new_were() will work
            in the critter-to-human direction but be a no-op the other way;
            we repeat the criteria here for clarity */
-        if (is_human(mdat)) { /* maybe switch to animal form */
+        if (is_human(mdat) || is_demon(mdat)) { /* maybe switch to animal form */
             if (!Protection_from_shape_changers && !rn2(5 - (night() * 2)))
                 new_were(mtmp);
         } else { /* maybe switch to back human form */
@@ -1530,7 +1542,7 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             /* Mitre of Holiness, even if not currently blessed */
             || (Role_if(PM_CLERIC) && uarmh && is_quest_artifact(uarmh)
                 && mon_hates_blessings(mtmp)))
-            mhm.damage -= (mhm.damage + 1) / 2;
+            mhm.damage -= (mhm.damage + 1) / 4;
 
         /* Archeologists are deathly afraid of snakes -
          * This handled a bit differently from the AD_PLYS attacks -
@@ -1665,8 +1677,8 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
                                  : "surges",
                          buf);
             dismount_steed(DISMOUNT_ENGULFED);
-	    } else if (mtmp->data == &mons[PM_FIRE_VORTEX]
-            && Role_if(PM_CARTOMANCER)) {
+        } else if (mtmp->data == &mons[PM_FIRE_VORTEX]
+                   && Role_if(PM_CARTOMANCER)) {
             pline("That tornado\'s carrying a car!"); /* Sonic 06 */
         } else {
             urgent_pline("%s %s!", Monnam(mtmp),
@@ -1788,6 +1800,7 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
                                        : "can barely breathe!");
             if ((Amphibious || Breathless) && !flaming(gy.youmonst.data))
                 tmp = 0;
+            rehydrate(rn1(75, 25));
         } else {
             You("are %s!", enfolds(mtmp->data) ? "being squashed"
                                                : "pummeled with debris");
@@ -1796,13 +1809,14 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
         break;
     case AD_ACID:
         orig_dmg = tmp;
-        if (Acid_resistance) {
+        if (fully_resistant(ACID_RES)) {
             You("are covered with a seemingly harmless goo.");
             /* NB: the monst[un]seesu calls in gulpmu are no-ops since the
                hero must be currently swallowed for the attack to hit... */
             monstseesu(M_SEEN_ACID);
             tmp = 0;
         } else {
+            tmp = resist_reduce(tmp, ACID_RES);
             if (Hallucination)
                 pline("Ouch!  You've been slimed!");
             else
@@ -1833,6 +1847,8 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
                 /* keep him blind until disgorged */
                 incr_itimeout(&HBlinded, 1L);
         }
+        if (mtmp->data == &mons[PM_DUST_VORTEX])
+            dehydrate(rn1(150, 150));
         tmp = 0;
         break;
     case AD_ELEC:
@@ -1870,7 +1886,7 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
         break;
     case AD_FIRE:
         if (!mtmp->mcan && rn2(2)) {
-            if (fully_resistant(FIRE_RES)) {
+            if (fully_resistant(FIRE_RES) || Underwater) {
                 shieldeff(u.ux, u.uy);
                 You_feel("mildly hot.");
                 monstseesu(M_SEEN_FIRE);
@@ -1878,6 +1894,7 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
                 tmp = 0;
             } else {
                 tmp = resist_reduce(tmp, FIRE_RES);
+                dehydrate(resist_reduce(rn1(150, 150), FIRE_RES));
                 if (hardly_resistant(FIRE_RES))
                     You("are burning to a crisp!");
                 else
@@ -2044,49 +2061,22 @@ gazemu(struct monst *mtmp, struct attack *mattk)
     boolean is_medusa, reflectable,
             cancelled = (mtmp->mcan != 0), already = FALSE,
             mcanseeu = (canseemon(mtmp) && couldsee(mtmp->mx, mtmp->my)
-                        && mtmp->mcansee);
+                        && mtmp->mcansee),
+            evil_eye = mattk->adtyp == AD_LUCK
+                   && mtmp->data != &mons[PM_BARGHEST];
     const char* reflectsrc = ureflectsrc();
     boolean wearing_eyes = ublindf
                             && ublindf->oartifact == ART_EYES_OF_THE_OVERWORLD;
-    boolean foundyou = (u.ux == mtmp->mux && u.uy == mtmp->muy);
 
     if (m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp)))
         return M_ATTK_MISS;
 
-    /* Invisibility Protection: If the player character is currently
-     * invisible, they should anticipate a reasonable number of avoided
-     * gazes during gaze attacks. In vanilla NetHack's implementation, a
-     * gazing monster would achieve 100% accuracy regardless of the
-     * player's visibility status, and whether or not the monster had
-     * the ability to see invisible. To address this, we are now
-     * adopting the same detection odds as in the 'monmove' function,
-     * which employs a 1 in 11 chance of a random hit. If the gazer is
-     * in melee range, we allow for an easy hit (otherwise, gazers
-     * will simply linger awkwardly next to the player...)
-     */
-    if (mcanseeu && Invis && !mon_prop(mtmp, SEE_INVIS)
-        && !m_next2u(mtmp) && rn2(11)) {
-        if (!rn2(13)) /* Don't spam this. */
-            pline("%s looks around searchingly...", Monnam(mtmp));
+    /* Check for protection from invisibility, displacement,
+       or cover of darkness. We need to check a special case
+       for the evil eye gaze since that is already checked
+       in mcastu. */
+    if (!evil_eye && !mon_really_found_us(mtmp))
         mcanseeu = 0;
-    }
-
-    /* Displacement protection */
-    if (mcanseeu && Displaced && (!foundyou || rn2(11))) {
-        if (!rn2(13)) /* Don't spam this. */
-            pline("%s gazes at your displaced image and misses you!",
-                  Monnam(mtmp));
-        mcanseeu = 0;
-    }
-
-    /* Darkness protection: If we are on a dark square and the gazer doesn't
-     * have infravision and we are infravisible and they are not right next
-     * to us, we should reasonably expect they can't "gaze" at us. */
-    if (!levl[u.ux][u.uy].lit
-        && !(infravisible(gy.youmonst.data) && infravision(mtmp->data))
-        && !m_next2u(mtmp) && rn2(5)) {
-        mcanseeu = 0;
-    }
 
     is_medusa = (mtmp->data == &mons[PM_MEDUSA]);
     reflectable = (reflectsrc && couldsee(mtmp->mx, mtmp->my) && is_medusa);
@@ -2159,7 +2149,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                 }
                 break;
             }
-                
+
             if (!m_canseeu(mtmp)) { /* probably you're invisible */
                 if (useeit)
                     pline(
@@ -2169,9 +2159,11 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             }
             if (!rn2(50)) {
                 if (useeit)
-                    pline_mon(mtmp, "%s is turned to stone!", Monnam(mtmp));
-                gs.stoned = TRUE;
-                killed(mtmp);
+                    pline_mon(mtmp, "%s starts turning to stone!", Monnam(mtmp));
+                if (!mtmp->mstone) {
+                    mtmp->mstone = 5;
+                    mtmp->mstonebyu = FALSE;
+                }
             } else {
                 if (useeit)
                     pline_mon(mtmp,
@@ -2189,15 +2181,39 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             && !Stone_resistance && !Unaware) {
             You("meet %s gaze.", s_suffix(mon_nam(mtmp)));
             stop_occupation();
-            if (poly_when_stoned(gy.youmonst.data) && polymon(PM_STONE_GOLEM))
-                break;
-            if (wearing_eyes)
-                pline("%s gaze is too powerful for %s to resist!",
-                      s_suffix(Monnam(mtmp)), bare_artifactname(ublindf));
-            urgent_pline("You turn to stone...");
-            svk.killer.format = KILLED_BY;
-            Strcpy(svk.killer.name, pmname(mtmp->data, Mgender(mtmp)));
-            done(STONING);
+
+            if (is_medusa) {
+                if (poly_when_stoned(gy.youmonst.data) && polymon(PM_STONE_GOLEM))
+                    break;
+                if (wearing_eyes)
+                    pline("%s gaze is too powerful for %s to resist!",
+                          s_suffix(Monnam(mtmp)), bare_artifactname(ublindf));
+                urgent_pline("You turn to stone...");
+                svk.killer.format = KILLED_BY;
+                Strcpy(svk.killer.name, pmname(mtmp->data, Mgender(mtmp)));
+                done(STONING);
+            } else {
+                urgent_pline("You start turning to stone!");
+                do_stone_u(mtmp);
+            }
+        }
+        break;
+    case AD_HNGY:
+        if (!mtmp->mcan && canseemon(mtmp) && !cancelled
+            && couldsee(mtmp->mx, mtmp->my) && !is_fainted()
+            && mtmp->mcansee && !mtmp->mspec_used && rn2(5)) {
+            int hunger = 40 + d(6, 4);
+
+            if (wearing_eyes) {
+                pline( "%s partially protect you from %s blightful gaze!",
+                    An(bare_artifactname(ublindf)), s_suffix(mon_nam(mtmp)));
+                hunger = d(2, 4);
+            } else
+                pline("%s gaze reminds you of delicious %s.",
+                      s_suffix(Monnam(mtmp)), fruitname(FALSE));
+
+            mtmp->mspec_used = mtmp->mspec_used + (hunger + rn2(6));
+            morehungry(hunger);
         }
         break;
     case AD_CONF:
@@ -2266,6 +2282,21 @@ gazemu(struct monst *mtmp, struct attack *mattk)
         }
         break;
     case AD_BLND:
+        if (mtmp->data == &mons[PM_UMBRAL_HULK]) {
+            if (!mtmp->mspec_used && !Blind && couldsee(mtmp->mx, mtmp->my) &&
+                    can_blnd(mtmp, &gy.youmonst, mattk->aatyp, (struct obj*) 0)) {
+                if (wearing_eyes && rn2(2)) {
+                    pline_mon(mtmp, "%s protect you from %s blinding gaze.",
+                          An(bare_artifactname(ublindf)), s_suffix(mon_nam(mtmp)));
+                    break;
+                }
+                You("meet %s gaze! The shadows merge into utter darkness!",
+                      s_suffix(mon_nam(mtmp)) );
+                make_blinded(Blinded + d((int) mattk->damn, (int) mattk->damd), FALSE);
+                if (!Blind) Your1(vision_clears);
+            }
+            break;
+        }
         if (canseemon(mtmp) && mdistu(mtmp) <= BOLT_LIM * BOLT_LIM) {
             if (cancelled) {
                 react = rn1(2, 2); /* "puzzled" || "dazzled" */
@@ -2307,7 +2338,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                 pline_mon(mtmp, "%s attacks you with a fiery gaze!",
                           Monnam(mtmp));
                 stop_occupation();
-                if (fully_resistant(FIRE_RES)) {
+                if (fully_resistant(FIRE_RES) || Underwater) {
                     shieldeff(u.ux, u.uy);
                     pline_The("fire doesn't feel hot!");
                     monstseesu(M_SEEN_FIRE);
@@ -2315,14 +2346,17 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                     dmg = 0;
                 } else {
                     dmg = resist_reduce(dmg, FIRE_RES);
+                    dehydrate(resist_reduce(rn1(150, 150), FIRE_RES));
                     monstunseesu(M_SEEN_FIRE);
                 }
                 burn_away_slime();
-                if (lev > rn2(20))
-                    (void) burnarmor(&gy.youmonst);
-                if (lev > rn2(20)) {
-                    (void) destroy_items(&gy.youmonst, AD_FIRE, orig_dmg);
-                    ignite_items(gi.invent);
+                if (!Underwater) {
+                    if (lev > rn2(20))
+                        (void) burnarmor(&gy.youmonst);
+                    if (lev > rn2(20)) {
+                        (void) destroy_items(&gy.youmonst, AD_FIRE, orig_dmg);
+                        ignite_items(gi.invent);
+                    }
                 }
                 if (dmg)
                     mdamageu(mtmp, dmg);
@@ -2332,7 +2366,8 @@ gazemu(struct monst *mtmp, struct attack *mattk)
     case AD_TLPT:
         if (mcanseeu && !mtmp->mspec_used && rn2(5)) {
             if (cancelled) {
-                pline("%s blinks.", Monnam(mtmp));
+                if (!rn2(10))
+                    pline("%s stares blankly.", Monnam(mtmp));
             } else {
                 pline("%s stares blinkingly at you!", Monnam(mtmp));
                 if (flags.verbose)
@@ -2343,7 +2378,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
         }
         break;
     case AD_LUCK:
-        if (mcanseeu && !mtmp->mspec_used) {
+        if (mcanseeu) {
             if (cancelled) {
                 pline("%s winks.", Monnam(mtmp));
             } else {
@@ -2356,20 +2391,52 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             }
         }
         break;
-#ifdef PM_BEHOLDER /* work in progress */
     case AD_SLEE:
-        if (mcanseeu && gm.multi >= 0 && !rn2(5) && !fully_resistant(SLEEP_RES)) {
+        if (canseemon(mtmp) && couldsee(mtmp->mx, mtmp->my)
+              && mtmp->mcansee && gm.multi >= 0 && !rn2(5)) {
+            if (!cancelled)
+                You("meet %s slumbering gaze.",
+                    s_suffix(mon_nam(mtmp)));
             if (cancelled) {
                 react = 6;                      /* "tired" */
                 already = (mtmp->mfrozen != 0); /* can't happen... */
-            } else {
-                fall_asleep(-rnd(10), TRUE);
+                break;
+            } else if (fully_resistant(SLEEP_RES)) {
+                You("yawn.");
+                monstseesu(M_SEEN_SLEEP);
+                break;
+            } else if (wearing_eyes) {
+                if (!rn2(4))
+                    pline_mon(mtmp, "%s protect you from %s slumbering gaze.",
+                          An(bare_artifactname(ublindf)),
+                              s_suffix(mon_nam(mtmp)));
+                break;
+            } else if (!fully_resistant(SLEEP_RES)) {
+                fall_asleep(-resist_reduce(rnd(20), SLEEP_RES), TRUE);
                 pline("%s gaze makes you very sleepy...",
                       s_suffix(Monnam(mtmp)));
-                monstunseesu(M_SEEN_SLEEP);
+                break;
             }
         }
         break;
+    case AD_DRLI:
+        if (!mtmp->mcan && canseemon(mtmp) && mtmp->mcansee
+            && !mtmp->mspec_used && !rn2(3)) {
+            if (Drain_resistance) {
+                break;
+            }
+            if (wearing_eyes) {
+                if (!rn2(4))
+                    pline("%s protect you from %s draining gaze.",
+                          An(bare_artifactname(ublindf)), s_suffix(mon_nam(mtmp)));
+                break;
+            }
+            pline("%s stares into your eyes...", Monnam(mtmp));
+            You("suddenly feel weaker!");
+            losexp("life drainage");
+        }
+        break;
+#ifdef PM_BEHOLDER /* work in progress */
     case AD_SLOW:
         if (mcanseeu
             && (HFast & (INTRINSIC | TIMEOUT)) && !defended(mtmp, AD_SLOW)
@@ -2628,7 +2695,8 @@ doseduce(struct monst *mon)
     mayberem(mon, Who, uarmf, "boots");
     if (!tried_gloves)
         mayberem(mon, Who, uarmg, "gloves");
-    mayberem(mon, Who, uarms, "shield");
+    mayberem(mon, Who, uarms,
+             uarms && is_bracer(uarms) ? "bracers" : "shield");
     mayberem(mon, Who, uarmh, helm_simple_name(uarmh));
     if (!uarmc && !uarm)
         mayberem(mon, Who, uarmu, "shirt");
@@ -2689,7 +2757,7 @@ doseduce(struct monst *mon)
         case 0:
             You_feel("drained of energy.");
             u.uen = 0;
-            u.uenmax -= rnd(Half_physical_damage ? 5 : 10);
+            u.uenmax -= rnd(Half_physical_damage ? 8 : 10);
             exercise(A_CON, FALSE);
             if (u.uenmax < 0)
                 u.uenmax = 0;
@@ -2930,17 +2998,54 @@ boolean ranged_attk_available(struct monst *mtmp)
  *  to know whether hero reverted in order to decide whether passive
  *  damage applies.
  */
-staticfn int
+int
 passiveum(
     struct permonst *olduasmon,
     struct monst *mtmp,
     struct attack *mattk)
 {
-    int i, tmp, orig_dmg;
+    int i, tmp = 0, orig_dmg;
     struct attack *oldu_mattk = 0;
 
-    if (Role_if(PM_ROGUE) && !Upolyd)
+    if (uarms && uarms->oartifact == ART_OATHFIRE) {
+        if (!resists_fire(mtmp) && !defended(mtmp, AD_FIRE)
+                && !mon_underwater(mtmp)) {
+            if (rn2(20)) {
+                if (!rn2(3)) {
+                    if (canseemon(mtmp))
+                        pline_mon(mtmp, "%s is burned!", Monnam(mtmp));
+                    tmp = rnd(6) + 1;
+                    burn_away_slime();
+                }
+            } else {
+                if (canseemon(mtmp))
+                    pline_mon(mtmp, "%s is severely burned!", Monnam(mtmp));
+                tmp = d(4, 6) + 1;
+                burn_away_slime();
+            }
+            if (resists_cold(mtmp))
+                tmp += 7;
+            tmp += destroy_items(mtmp, AD_FIRE, tmp);
+
+        }
+
+        if (assess_dmg(mtmp, tmp) == M_ATTK_AGR_DIED)
+            return M_ATTK_AGR_DIED;
+        /* Random explosions! */
+        if (!rn2(13)) {
+            pline("The Pyreguard Bindings blaze with divine fury!");
+            explode(u.ux, u.uy, BZ_U_SPELL(ZT_FIRE), d(3, 6),
+                    0, EXPL_FIERY);
+        }
+        tmp = 0;
+    }
+
+    if (Role_if(PM_ROGUE) && !Upolyd && m_next2u(mtmp))
         return counterattack(mtmp, mattk);
+
+    /* Hack to make passive grung poison work */
+    if (!Upolyd && Race_if(PM_GRUNG))
+        olduasmon = &mons[PM_GRUNG];
 
     /*
      * mattk      == mtmp's attack that hit you;
@@ -2966,6 +3071,11 @@ passiveum(
     case AD_ACID:
         orig_dmg = tmp;
         if (!rn2(2)) {
+            if (Underwater) {
+                pline("%s %s disperses into the water!",
+                      !Upolyd ? "" : "Your ", hliquid("Acid"));
+                break;
+            }
             pline_mon(mtmp, "%s is splashed by %s%s!", Monnam(mtmp),
                   /* temporary? hack for sequencing issue:  "your acid"
                      looks strange coming immediately after player has
@@ -2982,6 +3092,59 @@ passiveum(
         if (!rn2(3))
             acid_damage(MON_WEP(mtmp));
         tmp += destroy_items(mtmp, AD_ACID, orig_dmg);
+        return assess_dmg(mtmp, tmp);
+    case AD_DRST:
+    case AD_DRDX:
+    case AD_DRCO:
+    case AD_HALU:
+        if (uarm && is_bulky(uarm))
+            break;
+        /* passive poison for grung's toxic skin */
+        orig_dmg = tmp;
+        if (!rn2(3)) {
+            if (Underwater) {
+                pline("%s %s disperses into the water!",
+                      maybe_polyd(is_grung(gy.youmonst.data), Race_if(PM_GRUNG))
+                          ? "" : "Your ", hliquid("Poison"));
+                break;
+            }
+            pline_mon(mtmp, "%s is splashed by your %s!", Monnam(mtmp),
+                  hliquid("toxic skin"));
+            if (resists_poison(mtmp)) {
+                pline_mon(mtmp, "%s is not affected.", Monnam(mtmp));
+                tmp = 0;
+            } else {
+                if (rn2(10))
+                    tmp += rnd(6);
+                else {
+                    if (canseemon(mtmp))
+                        pline_The("poison was deadly...");
+                    tmp = mtmp->mhp;
+                }
+            }
+        } else
+            tmp = 0;
+        return assess_dmg(mtmp, tmp);
+    case AD_SLEE:
+        if (uarm && is_bulky(uarm))
+            break;
+        /* passive sleep for gold grung */
+        orig_dmg = tmp;
+        if (!rn2(5)) {
+            if (Underwater) {
+                pline("%s %s disperses into the water!",
+                      !Upolyd ? "" : "Your ", hliquid("Poison"));
+                break;
+            }
+            pline_mon(mtmp, "%s is splashed by your %s!", Monnam(mtmp),
+                  hliquid("toxic skin"));
+            if (resists_sleep(mtmp)) {
+                pline_mon(mtmp, "%s is not affected.", Monnam(mtmp));
+            } else {
+                (void) sleep_monst(mtmp, tmp, 0);
+            }
+        }
+        tmp = 0;
         return assess_dmg(mtmp, tmp);
     case AD_STON: /* cockatrice */
     {
@@ -3020,6 +3183,11 @@ passiveum(
         return M_ATTK_HIT;
     case AD_SLIM:
         if (!rn2(3)) {
+            if (Underwater) {
+                pline("%s %s disperses into the water!",
+                      !Upolyd ? "" : "Your ", hliquid("Slime"));
+                break;
+            }
             Your("slime splashes onto %s!", mon_nam(mtmp));
             if (flaming(mtmp->data)) {
                 pline_The("slime burns away!");
@@ -3089,6 +3257,75 @@ passiveum(
                 return M_ATTK_AGR_DONE;
             }
             return M_ATTK_HIT;
+        case AD_HALU: /* Third eye */
+            if (u.umonnum != PM_THIRD_EYE)
+                break;
+
+            if (mtmp->mcansee && haseyes(mtmp->data) && rn2(3)
+                && (mon_prop(mtmp, SEE_INVIS) || !Invis)) {
+                if (Blind) {
+                    pline("As a blind %s, you cannot defend yourself.",
+                          pmname(gy.youmonst.data,
+                                 flags.female ? FEMALE : MALE));
+                } else {
+                    const char* monreflector = mon_reflectsrc(mtmp);
+                    if (monreflector) {
+                        Your("gaze is reflected by %s %s.",
+                              s_suffix(mon_nam(mtmp)), monreflector);
+                        return 1;
+                    }
+                    if (defended(mtmp, AD_HALU)) {
+                        pline_mon(mtmp, "%s looks distracted for a moment.",
+                                  Monnam(mtmp));
+                        return 1;
+                    } else {
+                        /* no hallucination for monsters, just stun them */
+                        pline("%s is freaked out by your gaze!", Monnam(mtmp));
+                        if (!mtmp->mstun) {
+                            mtmp->mstun = 1;
+                            pline_mon(mtmp, "%s %s.", Monnam(mtmp),
+                                  makeplural(stagger(mtmp->data, "stagger")));
+                        }
+                    }
+                    return M_ATTK_AGR_DONE;
+                }
+            }
+            return M_ATTK_HIT;
+    case AD_TLPT: /* Blinking eye */
+        if (u.umonnum != PM_BLINKING_EYE)
+            break;
+        if (mtmp->mcansee && haseyes(mtmp->data) && rn2(3)
+            && (mon_prop(mtmp, SEE_INVIS) || !Invis)) {
+            if (Blind) {
+                pline("As a blind %s, you cannot defend yourself.",
+                      pmname(gy.youmonst.data,
+                             flags.female ? FEMALE : MALE));
+            } else {
+                const char* monreflector = mon_reflectsrc(mtmp);
+                if (monreflector) {
+                    Your("gaze is reflected by %s %s.",
+                          s_suffix(mon_nam(mtmp)), monreflector);
+                    return 1;
+                }
+                if (mon_prop(mtmp, TELEPORT_CONTROL)) {
+                    pline_mon(mtmp, "%s winks.",
+                              Monnam(mtmp));
+                    return 1;
+                } else {
+                    char mdef_Monnam[BUFSZ];
+                    boolean wasseen = canspotmon(mtmp);
+                    You("gaze at the %s", mon_nam(mtmp));
+                    /* save the name before monster teleports, otherwise
+                       we'll get "it" in the suddenly disappears message */
+                    if (gv.vis && wasseen)
+                        Strcpy(mdef_Monnam, Monnam(mtmp));
+                    mtmp->mstrategy &= ~STRAT_WAITFORU;
+                    (void) rloc(mtmp, RLOC_MSG);
+                }
+                return M_ATTK_AGR_DONE;
+            }
+        }
+            return M_ATTK_HIT;
         case AD_COLD: /* Brown mold or blue jelly */
             if (resists_cold(mtmp)) {
                 shieldeff(mtmp->mx, mtmp->my);
@@ -3113,7 +3350,7 @@ passiveum(
             tmp = 0;
             break;
         case AD_FIRE: /* Red mold */
-            if (resists_fire(mtmp)) {
+            if (resists_fire(mtmp) || Underwater) {
                 shieldeff(mtmp->mx, mtmp->my);
                 pline_mon(mtmp, "%s is mildly warm.", Monnam(mtmp));
                 golemeffects(mtmp, AD_FIRE, tmp);
@@ -3182,7 +3419,7 @@ struct attack *mattk)
         impossible("counterattack() with polyd-rogue!");
         return M_ATTK_HIT;
     }
-    
+
     /* Counterattacks use energy */
     if (u.uen < COUNTER_COST)
         return M_ATTK_HIT;
@@ -3196,7 +3433,7 @@ struct attack *mattk)
 
     /* Restrictions */
     if ((uarm && is_heavy_metallic(uarm))
-        || (uarms && objects[uarms->otyp].oc_bulky)
+        || (uarms && is_bulky(uarms))
         || (near_capacity() > UNENCUMBERED)
         || (u.uhs >= WEAK)
         || !m_next2u(mtmp)
@@ -3250,7 +3487,7 @@ cloneu(void)
     if (Role_if(PM_CARTOMANCER)) {
         mon->mpeaceful = 1;
     } else {
-        initedog(mon);
+        initedog(mon, TRUE);
     }
     mon->m_lev = gy.youmonst.data->mlevel;
     mon->mhpmax = u.mhmax;
@@ -3292,7 +3529,7 @@ piercer_hit(struct monst *magr, struct monst *mdef)
     struct obj *helm = which_armor(mdef, W_ARMH);
 
     if (youdefend && Half_physical_damage)
-        dmg = (dmg + 1) / 2;
+        dmg -= (dmg + 1) / 4;
 
     if (!youattack) { /* caller gives messages in youattack case */
         pline("%s suddenly drops from the %s!", Amonnam(magr),
@@ -3326,6 +3563,7 @@ piercer_hit(struct monst *magr, struct monst *mdef)
                     helm->oeroded++;
                 else
                     helm->spe -= Luck < 0 ? rnd(2) : 1;
+                update_inventory();
             } else if (!helm->oartifact) {
                 pline("%s is pierced and breaks apart!", Yname2(helm));
                 if (youdefend) {
@@ -3368,6 +3606,56 @@ piercer_hit(struct monst *magr, struct monst *mdef)
                 monkilled(mdef, "", AD_PHYS);
         }
     }
+}
+
+boolean
+mon_really_found_us(struct monst *mtmp)
+{
+    boolean foundyou = (u.ux == mtmp->mux && u.uy == mtmp->muy),
+            mcanseeu = (canseemon(mtmp) && couldsee(mtmp->mx, mtmp->my)
+                        && mtmp->mcansee);
+
+    /* telepathic monsters usually can bypass the protection of
+     * invisibility, displacement, and cover-of-darkness. The
+     * telepathic() list is limited to the core vanilla monsters
+     * that had telepathy and other high level monsters. */
+    if (telepathic(mtmp->data) && rn2(5))
+        return TRUE;
+
+    /* Invisibility Protection: If the player character is currently
+     * invisible, they should anticipate a reasonable number of avoided
+     * gazes during gaze attacks. In vanilla NetHack's implementation, a
+     * gazing monster would achieve 100% accuracy regardless of the
+     * player's visibility status, and whether or not the monster had
+     * the ability to see invisible. To address this, we are now
+     * adopting the same detection odds as in the 'monmove' function,
+     * If the gazer is in melee range, we allow for an easy hit
+     * (otherwise, gazers will simply linger awkwardly next to the
+     * player...) */
+    if (mcanseeu && Invis && !mon_prop(mtmp, SEE_INVIS)
+        && !m_next2u(mtmp) && rn2(3)) {
+        if (!rn2(4) && !mtmp->mpeaceful) /* Don't spam this. */
+            pline("%s looks around searchingly...", Monnam(mtmp));
+        return FALSE;
+    }
+
+    /* Displacement protection */
+    if (mcanseeu && Displaced && (!foundyou || rn2(3))) {
+        if (!rn2(4) && !mtmp->mpeaceful) /* Don't spam this. */
+            pline("%s glances at your displaced image.",
+                  Monnam(mtmp));
+        return FALSE;
+    }
+
+    /* Darkness protection: If we are on a dark square and the gazer doesn't
+     * have infravision and we are infravisible and they are not right next
+     * to us, we should reasonably expect they can't "gaze" at us. */
+    if (!levl[u.ux][u.uy].lit
+        && !(infravisible(gy.youmonst.data) && infravision(mtmp->data))
+        && !m_next2u(mtmp) && rn2(3)) {
+        return FALSE;
+    }
+    return TRUE;
 }
 
 /*mhitu.c*/

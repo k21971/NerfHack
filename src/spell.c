@@ -44,7 +44,7 @@ staticfn void sortspells(void);
 staticfn boolean spellsortmenu(void);
 staticfn boolean dospellmenu(const char *, int, int *);
 staticfn int percent_success(int);
-staticfn char *spellretention(int, char *);
+staticfn long spellretention(int, char *);
 staticfn int throwspell(void);
 staticfn void cast_protection(void);
 staticfn void spell_backfire(int);
@@ -57,6 +57,7 @@ staticfn void propagate_chain_lightning(struct chain_lightning_queue *,
             struct chain_lightning_zap);
 staticfn int repair_ok(struct obj *);
 staticfn int cartomancer_combo(void);
+staticfn void divine_reckon(void);
 
 /* The roles[] table lists the role-specific values for tuning
  * percent_success().
@@ -322,7 +323,7 @@ deadbook(struct obj *book2)
         /* last place some monsters around you */
         mm.x = u.ux;
         mm.y = u.uy;
-        mkundead(&mm, TRUE, NO_MINVENT);
+        mkundead((struct monst *) 0, &mm, TRUE, NO_MINVENT);
     } else if (book2->blessed) {
         iter_mons(deadbook_pacify_undead);
     } else {
@@ -362,11 +363,11 @@ learn(void)
     boolean costly = TRUE, faded_to_blank = FALSE;
     struct obj *book = svc.context.spbook.book;
     short booktype;
-    
+
     /* Safety check in case spellbook doesn't exist anymore */
     if (!book)
         return 0; /* This should stop the occupation */
-        
+
     booktype = book->otyp;
     skill = objects[booktype].oc_skill;
 
@@ -582,6 +583,7 @@ study_book(struct obj *spellbook)
                 -objects[booktype].oc_level * objects[booktype].oc_delay;
             break;
         case 7:
+        case 8:
             svc.context.spbook.delay = -8 * objects[booktype].oc_delay;
             break;
         default:
@@ -1445,7 +1447,7 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
      */
     otyp = pseudo->otyp;
     skill = spell_skilltype(otyp);
-    role_skill = Role_if(PM_CARTOMANCER) ? P_EXPERT : P_SKILL(skill);
+    role_skill = cartcast ? P_EXPERT : P_SKILL(skill);
 
     switch (otyp) {
     /*
@@ -1520,7 +1522,10 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
     case SPE_CURE_SICKNESS:
     case SPE_DRAIN_LIFE:
     case SPE_STONE_TO_FLESH:
+    case SPE_FLESH_TO_STONE:
     case SPE_FIRE_BOLT:
+    case SPE_LIGHTNING:
+    case SPE_POISON_BLAST:
         if (objects[otyp].oc_dir != NODIR) {
             if (otyp == SPE_HEALING || otyp == SPE_EXTRA_HEALING) {
                 /* healing and extra healing are actually potion effects,
@@ -1576,12 +1581,13 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
             (void) seffects(pseudo);
         else
             (void) make_msummoned(0, &gy.youmonst, FALSE, u.ux, u.uy);
-        
+
         break;
     /* these are all duplicates of potion effects */
     case SPE_HASTE_SELF:
     case SPE_DETECT_TREASURE:
     case SPE_DETECT_MONSTERS:
+    case SPE_SACRED_VISION:
     case SPE_LEVITATION:
     case SPE_RESTORE_ABILITY:
         /* high skill yields effect equivalent to blessed potion */
@@ -1602,6 +1608,26 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
     case SPE_CREATE_FAMILIAR:
         (void) make_familiar((struct obj *) 0, u.ux, u.uy, FALSE);
         break;
+    case SPE_DIVINE_RECKONING:
+        divine_reckon();
+        break;
+    case SPE_WATERPROOFING: {
+        long t = (HWatertight & TIMEOUT);
+        int nbase = max(5, role_skill * role_skill * 5);
+
+        if (!Watertight) {
+             if (!Blind)
+                 Your("belongings briefly glisten with an uncanny dryness.");
+             else
+                 pline("You sense a ward safeguarding your possessions.");
+        }
+        /* after a while, repeated uses become less effective */
+        if (t > 40L)
+            incr_itimeout(&HWatertight, 1);
+        else
+            incr_itimeout(&HWatertight, rn1(11, nbase));
+        break;
+    }
     case SPE_CLAIRVOYANCE:
         if (!BClairvoyant) {
             if (role_skill >= P_SKILLED) {
@@ -1619,6 +1645,26 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
     case SPE_PROTECTION:
         cast_protection();
         break;
+    case SPE_FLAME_SPHERE:
+    case SPE_FREEZE_SPHERE: {
+        struct monst *mtmp;
+        struct permonst *pm;
+        pm = otyp == SPE_FLAME_SPHERE ? &mons[PM_FLAMING_SPHERE]
+                                      : &mons[PM_FREEZING_SPHERE];
+        You("conjure elemental energy...");
+        for (n = 0; n < max(role_skill - 1, 1); n++) {
+            mtmp = make_msummoned(pm, &gy.youmonst, TRUE, u.ux, u.uy);
+            if (!mtmp) {
+                pline("But it quickly fades away.");
+                break;
+            } else {
+                mtmp->mhpmax = mtmp->mhp = 1;
+                mtmp->msummoned = role_skill >= P_SKILLED ? rnd(100) + 100
+                                                          : rnd(50) + 50;
+            }
+        }
+        break;
+    }
     case SPE_JUMPING:
         if (!(jump(max(role_skill, 1)) & ECMD_TIME))
             pline1(nothing_happens);
@@ -1665,7 +1711,7 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
        four times faster when at basic skill or lower, two times
        when above. */
     if (!force) {
-        boolean spbonus = role_skill <= P_BASIC 
+        boolean spbonus = role_skill <= P_BASIC
                           && !can_advance(skill, FALSE);
         use_skill(skill, (spellev(spell) * (spbonus ? 4 : 2)));
     }
@@ -2152,12 +2198,12 @@ dospellmenu(
     int *spell_no)
 {
     winid tmpwin;
-    int i, n, how, splnum;
+    int i, n, how, splnum, clr = NO_COLOR;
     char buf[BUFSZ], retentionbuf[24];
     const char *fmt;
     menu_item *selected;
     anything any;
-    int clr = NO_COLOR;
+    boolean casting = !strcmp(prompt, "Choose which spell to cast");
 
     tmpwin = create_nhwindow(NHW_MENU);
     start_menu(tmpwin, MENU_BEHAVE_STANDARD);
@@ -2182,10 +2228,13 @@ dospellmenu(
     add_menu_heading(tmpwin, buf);
     for (i = 0; i < MAXSPELL && spellid(i) != NO_SPELL; i++) {
         splnum = !gs.spl_orderindx ? i : gs.spl_orderindx[i];
+        /* Hide spells that are 0% */
+        long turnsleft = spellretention(splnum, retentionbuf);
+        if (casting && turnsleft < 1L && flags.hide_old_spells)
+            continue;
         Sprintf(buf, fmt, spellname(splnum), spellev(splnum),
                 spelltypemnemonic(spell_skilltype(spellid(splnum))),
-                100 - percent_success(splnum),
-                spellretention(splnum, retentionbuf));
+                100 - percent_success(splnum), retentionbuf);
         any.a_int = splnum + 1; /* must be non-zero */
         add_menu(tmpwin, &nul_glyphinfo, &any, spellet(splnum), 0,
                  ATR_NONE, clr, buf,
@@ -2268,7 +2317,7 @@ percent_success(int spell)
         splcaster -= 3; /* On top of the quarterstaff */
 
     /* Mirrorbright doesn't impede spellcasting */
-    if (uarms && uarms->oartifact != ART_MIRRORBRIGHT)
+    if (uarms && !is_bracer(uarms) && uarms->oartifact != ART_MIRRORBRIGHT)
         splcaster += gu.urole.spelshld;
 
     if (!paladin_bonus) {
@@ -2365,7 +2414,7 @@ percent_success(int spell)
     return chance;
 }
 
-staticfn char *
+staticfn long
 spellretention(int idx, char * outbuf)
 {
     long turnsleft, percent;
@@ -2390,7 +2439,7 @@ spellretention(int idx, char * outbuf)
         percent = (turnsleft - 1L) / ((long) KEEN / 100L) + 1L;
         Sprintf(outbuf, "%ld%%", percent);
     }
-    return outbuf;
+    return turnsleft;
 }
 
 /* Learn a spell during creation of the initial inventory */
@@ -2616,6 +2665,62 @@ cartomancer_combo(void)
     pline("Your combo ends.");
     u.combotime = rn1(500, 1000); /* tech timeout */
     return 1;
+}
+
+staticfn void
+divine_reckon(void)
+{
+    struct monst *mtmp;
+    struct obj *pseudo = mksobj(SCR_LIGHT, FALSE, FALSE);
+    int unseen;
+
+    bless(pseudo);
+    pseudo->ox = u.ux, pseudo->oy = u.uy;
+
+    if (!Blind)
+        pline("A blinding light erupts, punishing the unworthy!");
+    else
+        You_feel("a holy warmth surround you!");
+    litroom(TRUE, pseudo);
+    obfree(pseudo, NULL);
+    vision_recalc(0);
+
+    if (is_undead(gy.youmonst.data)) {
+        You("burn in the radiance!");
+        /* This is ground zero.  Not good news ... */
+        u.uhp /= 100;
+        if (u.uhp < 1) {
+            u.uhp = 0;
+            svk.killer.format = KILLED_BY;
+            Strcpy(svk.killer.name, "the light of divine reckoning");
+            done(DIED);
+        }
+    }
+
+    /* Undead and Demonics can't stand the light */
+    unseen = 0;
+    for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
+        if (DEADMONSTER(mtmp))
+            continue;
+        if (distu(mtmp->mx, mtmp->my) > 9 * 9)
+            continue;
+        if (couldsee(mtmp->mx, mtmp->my)
+            && (is_undead(mtmp->data) || is_demon(mtmp->data))
+            && !resist(mtmp, '\0', 0, TELL)) {
+            if (canseemon(mtmp))
+                pline("%s burns in the radiance!", Monnam(mtmp));
+            else
+                unseen++;
+
+            /* damage depends on distance, divisor ranges from 10 to 2 */
+            mtmp->mhp /= (10 - (distu(mtmp->mx, mtmp->my) / 10));
+            if (mtmp->mhp < 1)
+                mtmp->mhp = 1;
+        }
+    }
+    if (unseen)
+        You_hear("%s of intense pain!",
+                 unseen > 1 ? "cries" : "a cry");
 }
 
 /*spell.c*/

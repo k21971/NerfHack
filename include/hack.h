@@ -12,6 +12,7 @@
 #include "lint.h"
 
 #include "align.h"
+#include "weight.h"
 #include "dungeon.h"
 #include "stairs.h"
 #include "objclass.h"
@@ -29,13 +30,11 @@
 #include "mkroom.h"
 #include "obj.h"
 #include "quest.h"
-#include "rect.h"
 #include "region.h"
 #include "rm.h"
 #include "selvar.h"
 #include "sndprocs.h"
 #include "spell.h"
-#include "sym.h"
 #include "sys.h"
 #include "timeout.h"
 #include "winprocs.h"
@@ -48,7 +47,6 @@
 #define ON 1
 #define OFF 0
 #define BOLT_LIM 8        /* from this distance ranged attacks will be made */
-#define MAX_CARR_CAP 1250 /* so that boulders can be heavier */
 #define DUMMY { 0 }       /* array initializer, letting [1..N-1] default */
 #define DEF_NOTHING ' '   /* default symbol for NOTHING and UNEXPLORED  */
 
@@ -66,9 +64,6 @@
 #define CXN_PFX_THE 4   /* prefix with "the " (unless pname) */
 #define CXN_ARTICLE 8   /* include a/an/the prefix */
 #define CXN_NOCORPSE 16 /* suppress " corpse" suffix */
-
-/* weight increment of heavy iron ball */
-#define IRON_BALL_W_INCR 160
 
 /* number of turns it takes for vault guard to show up */
 #define VAULT_GUARD_TIME 30
@@ -172,6 +167,13 @@ struct PotionRecipe {
 };
 
 extern const struct PotionRecipe potionrecipes[]; /* table of fusions */
+
+struct HydrationTier {
+    int threshold;
+    const char *description;
+};
+
+extern const struct HydrationTier hydration_tiers[]; /* table of hydrations */
 
 #define MAX_BMASK 4
 
@@ -390,6 +392,8 @@ struct dgn_topology { /* special dungeon levels for speed */
     d_level d_wiz1_level;
     d_level d_wiz2_level;
     d_level d_wiz3_level;
+    d_level d_wiz4_level;
+    d_level d_wiz6_level;
     d_level d_juiblex_level;
     d_level d_orcus_level;
     d_level d_baalzebub_level; /* unused */
@@ -423,6 +427,8 @@ struct dgn_topology { /* special dungeon levels for speed */
 #define wiz1_level              (svd.dungeon_topology.d_wiz1_level)
 #define wiz2_level              (svd.dungeon_topology.d_wiz2_level)
 #define wiz3_level              (svd.dungeon_topology.d_wiz3_level)
+#define wiz4_level              (svd.dungeon_topology.d_wiz4_level)
+#define wiz6_level              (svd.dungeon_topology.d_wiz6_level)
 #define juiblex_level           (svd.dungeon_topology.d_juiblex_level)
 #define orcus_level             (svd.dungeon_topology.d_orcus_level)
 #define baalzebub_level         (svd.dungeon_topology.d_baalzebub_level)
@@ -463,6 +469,8 @@ enum earlyarg {
     , ARG_DUMPENUMS
 #endif
     , ARG_DUMPGLYPHIDS
+    , ARG_DUMPMONGEN
+    , ARG_DUMPWEIGHTS
 #ifdef WIN32
     , ARG_WINDOWS
 #endif
@@ -786,11 +794,12 @@ struct rogueroom {
     int nroom; /* Only meaningful for "real" rooms */
 };
 
-#define NUM_ROLES (14)
+#define NUM_ROLES (15)
 struct role_filter {
     boolean roles[NUM_ROLES + 1];
     short mask;
 };
+#define NUM_RACES (7)
 
 enum saveformats {
     invalid = 0,
@@ -889,6 +898,12 @@ enum stoning_checks {
     st_petrifies = 0x4,  /* does the corpse petrify on touch? */
     st_resists   = 0x8,  /* do you have stoning resistance? */
     st_all = (st_gloves | st_corpse | st_petrifies | st_resists)
+};
+
+struct throw_and_return_weapon {
+    short otyp;
+    int range;
+    Bitfield(tethered, 1);
 };
 
 struct trapinfo {
@@ -1129,6 +1144,7 @@ typedef struct {
     (Warn_of_mon                                                        \
      && ((svc.context.warntype.obj & (mon)->data->mhflags) != 0           \
          || (svc.context.warntype.polyd & (mon)->data->mhflags) != 0      \
+         || (svc.context.warntype.intrins & (mon)->data->mhflags) != 0      \
          || (svc.context.warntype.species                                 \
              && (svc.context.warntype.species == (mon)->data))))
 
@@ -1216,16 +1232,17 @@ typedef uint32_t mmflags_nht;     /* makemon MM_ flags */
 #define DF_ALL      0x04
 
 /* special mhpmax value when loading bones monster to flag as extinct or
- * genocided */
+ * exiled */
 #define DEFUNCT_MONSTER (-100)
 
 /* macro form of adjustments of physical damage based on Half_physical_damage.
  * Can be used on-the-fly with the 1st parameter to losehp() if you don't
  * need to retain the dmg value beyond that call scope.
  * Take care to ensure it doesn't get used more than once in other instances.
+ * NOTE: This is now 1/4 damage reduction.
  */
 #define Maybe_Half_Phys(dmg) \
-    ((Half_physical_damage) ? (((dmg) + 1) / 2) : (dmg))
+    ((Half_physical_damage) ? ((dmg) - (((dmg) + 1) / 4)) : (dmg))
 
 /* flags for special ggetobj status returns */
 #define ALL_FINISHED 0x01 /* called routine already finished the job */

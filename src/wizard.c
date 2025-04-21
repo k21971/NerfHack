@@ -1,4 +1,4 @@
-/* NetHack 3.7	wizard.c	$NHDT-Date: 1718303204 2024/06/13 18:26:44 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.110 $ */
+/* NetHack 3.7	wizard.c	$NHDT-Date: 1741407262 2025/03/07 20:14:22 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.116 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2016. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -21,6 +21,7 @@ staticfn boolean you_have(int);
 staticfn unsigned long target_on(int, struct monst *) NONNULLARG2;
 staticfn unsigned long strategy(struct monst *) NONNULLARG1;
 
+    
 /* adding more neutral creatures will tend to reduce the number of monsters
    summoned by nasty(); adding more lawful creatures will reduce the number
    of monsters summoned by lawfuls; adding more chaotic creatures will reduce
@@ -31,14 +32,13 @@ staticfn unsigned long strategy(struct monst *) NONNULLARG1;
 static NEARDATA const int nasties[] = {
     /* neutral */
     PM_COCKATRICE, PM_ETTIN, PM_STALKER, PM_MINOTAUR,
-    PM_OWLBEAR, PM_PURPLE_WORM, PM_XAN, PM_UMBER_HULK,
+    PM_OWLBEAR, PM_PURPLE_WORM, PM_XAN, PM_UMBER_HULK, PM_WATER_HULK,
     PM_XORN, PM_ZRUTY, PM_LEOCROTTA, PM_BALUCHITHERIUM,
     PM_CARNIVOROUS_APE, PM_FIRE_ELEMENTAL, PM_JABBERWOCK,
     PM_IRON_GOLEM, PM_OCHRE_JELLY, PM_GREEN_SLIME,
-    PM_DISPLACER_BEAST, PM_GENETIC_ENGINEER,
-    PM_GIANT_CENTIPEDE,
+    PM_DISPLACER_BEAST, PM_GENETIC_ENGINEER, PM_GIANT_CENTIPEDE,
     /* chaotic */
-    PM_BLACK_DRAGON, PM_RED_DRAGON, PM_ARCH_LICH, PM_VAMPIRE_LEADER,
+    PM_BLACK_DRAGON, PM_RED_DRAGON, PM_ARCH_LICH, PM_VAMPIRE_ROYAL,
     PM_MASTER_MIND_FLAYER, PM_DISENCHANTER, PM_WINGED_GARGOYLE,
     PM_STORM_GIANT, PM_OLOG_HAI, PM_ELF_NOBLE, PM_ELVEN_MONARCH,
     PM_OGRE_TYRANT, PM_CAPTAIN, PM_GREMLIN, PM_GUG, PM_SHOGGOTH,
@@ -46,7 +46,7 @@ static NEARDATA const int nasties[] = {
     PM_SILVER_DRAGON, PM_ORANGE_DRAGON, PM_GREEN_DRAGON,
     PM_YELLOW_DRAGON, PM_GUARDIAN_NAGA, PM_FIRE_GIANT,
     PM_ALEAX, PM_COUATL, PM_HORNED_DEVIL, PM_BARBED_DEVIL,
-    PM_PHOENIX, PM_SPINED_DEVIL,
+    PM_PHOENIX, PM_SPINED_DEVIL, PM_MONADIC_DEVA, PM_MOVANIC_DEVA,
     /* (Archons, titans, ki-rin, and golden nagas are suitably nasty, but
        they're summoners so would aggravate excessive summoning) */
 };
@@ -137,9 +137,6 @@ mon_has_special(struct monst *mtmp)
  *      The strategy section decides *what* the monster is going
  *      to attempt, the tactics section implements the decision.
  */
-#define STRAT(w, x, y, typ)                            \
-    ((unsigned long) (w) | ((unsigned long) (x) << 16) \
-     | ((unsigned long) (y) << 8) | (unsigned long) (typ))
 
 #define M_Wants(mask) (mtmp->data->mflags3 & (mask))
 
@@ -249,17 +246,25 @@ target_on(int mask, struct monst *mtmp)
 
     otyp = which_arti(mask);
     if (!mon_has_arti(mtmp, otyp)) {
-        if (you_have(mask))
-            return STRAT(STRAT_PLAYER, u.ux, u.uy, mask);
-        else if ((otmp = on_ground(otyp)))
-            return STRAT(STRAT_GROUND, otmp->ox, otmp->oy, mask);
-        else if ((mtmp2 = other_mon_has_arti(mtmp, otyp)) != 0
+        if (you_have(mask)) {
+            mtmp->mgoal.x = u.ux;
+            mtmp->mgoal.y = u.uy;
+            return (STRAT_PLAYER | mask);
+        } else if ((otmp = on_ground(otyp))) {
+            mtmp->mgoal.x = otmp->ox;
+            mtmp->mgoal.y = otmp->oy;
+            return (STRAT_GROUND | mask);
+        } else if ((mtmp2 = other_mon_has_arti(mtmp, otyp)) != 0
                  /* when seeking the Amulet, avoid targeting the Wizard
                     or temple priests (to protect Moloch's high priest) */
                  && (otyp != AMULET_OF_YENDOR
-                     || (!mtmp2->iswiz && !inhistemple(mtmp2))))
-            return STRAT(STRAT_MONSTR, mtmp2->mx, mtmp2->my, mask);
+                     || (!mtmp2->iswiz && !inhistemple(mtmp2)))) {
+            mtmp->mgoal.x = mtmp2->mx;
+            mtmp->mgoal.y = mtmp2->my;
+            return (STRAT_MONSTR | mask);
+        }
     }
+    mtmp->mgoal.x = mtmp->mgoal.y = 0;
     return (unsigned long) STRAT_NONE;
 }
 
@@ -371,7 +376,7 @@ tactics(struct monst *mtmp)
     mtmp->mstrategy =
         (mtmp->mstrategy & (STRAT_WAITMASK | STRAT_APPEARMSG)) | strat;
 
-    if (covetous_nonwarper(mtmp->data))
+    if (covetous_nonwarper(mtmp->data) && mtmp->mavenge)
         /* currently every strategy below this involves warping; for
          * non-warpers, we still want to set mstrategy but don't want to go any
          * further */
@@ -411,17 +416,23 @@ tactics(struct monst *mtmp)
         /*FALLTHRU*/
 
     case STRAT_NONE: /* harass */
-        if (!rn2(!mtmp->mflee ? 5 : 33))
+        if (!rn2(!mtmp->mflee ? 5 : 33)) {
             mnexto(mtmp, RLOC_MSG);
+            if (covetous_nonwarper(mtmp->data))
+                mtmp->mavenge = 1;
+        }
         return 0;
 
     default: /* kill, maim, pillage! */
     {
         long where = (strat & STRAT_STRATMASK);
-        coordxy tx = STRAT_GOALX(strat), ty = STRAT_GOALY(strat);
+        coordxy tx = mtmp->mgoal.x, ty = mtmp->mgoal.y;
         int targ = (int) (strat & STRAT_GOAL);
         struct obj *otmp;
-
+        
+        if (covetous_nonwarper(mtmp->data))
+            mtmp->mavenge = 1;
+        
         if (!targ) { /* simply wants you to close */
             return 0;
         }
@@ -539,18 +550,18 @@ pick_nasty(
         && !('A' <= monsym(&mons[res]) && monsym(&mons[res]) <= 'Z'))
         res = ROLL_FROM(nasties);
 
-    /* if genocided or too difficult or out of place, try a substitute
+    /* if exiled or too difficult or out of place, try a substitute
        when a suitable one exists
            arch-lich -> master lich,
            master mind flayer -> mind flayer,
-       but the substitutes are likely to be genocided too */
+       but the substitutes are likely to be exiled too */
     alt = res;
     if ((svm.mvitals[res].mvflags & G_GENOD) != 0
         || (difcap > 0 && mons[res].difficulty >= difcap)
          /* note: nasty() -> makemon() ignores G_HELL|G_NOHELL;
             arch-lich and master lich are both flagged as hell-only;
             this filtering demotes arch-lich to master lich when
-            outside of Gehennom (unless the latter has been genocided) */
+            outside of Gehennom (unless the latter has been exiled) */
         || (mons[res].geno & (Inhell ? G_NOHELL : G_HELL)) != 0)
         alt = big_to_little(res);
     if (alt != res && (svm.mvitals[alt].mvflags & G_GENOD) == 0) {
@@ -651,7 +662,7 @@ nasty(struct monst *summoner, boolean centered_on_stairs)
                 if (summoner && !enexto(&bypos, summoner->mux, summoner->muy,
                                         &mons[makeindex]))
                     continue;
-                /* this honors genocide but overrides extinction; it ignores
+                /* this honors exile but overrides extinction; it ignores
                    inside-hell-only (G_HELL) & outside-hell-only (G_NOHELL) */
                 if ((mtmp = makemon(&mons[makeindex], bypos.x, bypos.y,
                                     mmflags)) != 0) {
@@ -665,6 +676,9 @@ nasty(struct monst *summoner, boolean centered_on_stairs)
                                         bypos.x, bypos.y, mmflags)) != 0) {
                         m_cls = mtmp->data->mlet;
                         if ((difcap > 0 && mtmp->data->difficulty >= difcap
+                             /* always capping for substitutes made wanton
+                                genocide become too strong in the endgame */
+                             && rn2(In_endgame(&u.uz) ? 3 : 7) /* usually */
                              && attacktype(mtmp->data, AT_MAGC))
                             || (s_cls == S_DEMON && m_cls == S_ANGEL)
                             || (s_cls == S_ANGEL && m_cls == S_DEMON))
@@ -673,10 +687,11 @@ nasty(struct monst *summoner, boolean centered_on_stairs)
                 }
 
                 if (mtmp) {
-                    /* create at most one arch-lich or Archon regardless
-                       of who is doing the summoning (note: Archon is
-                       not in nasties[] but could be chosen as random
-                       replacement for a genocided selection) */
+                    /* if creating an arch-lich or Archon, further directly
+                       selected nasties will have to be less difficult, and
+                       substitues for geno victims will usually be less
+                       (note: Archon is not in nasties[] but could be chosen
+                       as random replacement for a genocided selection) */
                     if (mtmp->data == &mons[PM_ARCH_LICH]
                         || mtmp->data == &mons[PM_ARCHON]) {
                         tmp = min(mons[PM_ARCHON].difficulty, /* A:26 */
@@ -775,13 +790,85 @@ resurrect(void)
     }
 }
 
+/* Let's resurrect Cthulhu, for some unexpected fun. */
+void
+resurrect_cthulhu(void)
+{
+    struct monst *mtmp, **mmtmp;
+    long elapsed;
+
+    if (!svc.context.no_of_cthulhu) {
+        /* make a new Cthulhu */
+        mtmp = makemon(&mons[PM_CTHULHU], u.ux, u.uy, MM_NOWAIT);
+        /* affects experience; he's not coming back from a corpse
+           but is subject to repeated killing like a revived corpse */
+        if (mtmp)
+            mtmp->mrevived = 1;
+    } else {
+        /* look for a migrating Cthulhu */
+        mmtmp = &gm.migrating_mons;
+        while ((mtmp = *mmtmp) != 0) {
+            if (mtmp->data == &mons[PM_CTHULHU]
+                /* if he has the Amulet, he won't bring it to you */
+                && !mon_has_amulet(mtmp)
+                && (elapsed = svm.moves - mtmp->mlstmv) > 0L) {
+                mon_catchup_elapsed_time(mtmp, elapsed);
+                if (elapsed >= LARGEST_INT)
+                    elapsed = LARGEST_INT - 1;
+                elapsed /= 50L;
+                if (mtmp->msleeping && rn2((int) elapsed + 1))
+                    mtmp->msleeping = 0;
+                if (mtmp->mfrozen == 1) { /* would unfreeze on next move */
+                    mtmp->mfrozen = 0;
+                    maybe_moncanmove(mtmp);
+                }
+                if (!helpless(mtmp)) {
+                    *mmtmp = mtmp->nmon;
+                    mon_arrive(mtmp, -1); /* -1: Wiz_arrive (dog.c) */
+                    /* mx: mon_arrive() might have sent mtmp into limbo */
+                    if (!mtmp->mx)
+                        mtmp = 0;
+                    /* note: there might be a second Wizard; if so,
+                       he'll have to wait til the next resurrection */
+                    break;
+                }
+            }
+            mmtmp = &mtmp->nmon;
+        }
+    }
+
+    if (mtmp) {
+        /* FIXME: when a new wizard is created by makemon(), it gives
+           a "<mon> appears" message, delivered after he's been placed
+           on the map; however, when an existing wizard comes off
+           migrating_mons, he ends up triggering "<mon> vanishes and
+           reappears" on his first move (tactics when hero is carrying
+           the Amulet); setting STRAT_WAITMASK suppresses that but then
+           he just sits wherever he is, "meditating", contradicting the
+           threatening message below */
+        mtmp->mstrategy &= ~STRAT_WAITMASK;
+
+        mtmp->mtame = 0, mtmp->mpeaceful = 0; /* paranoia */
+        set_malign(mtmp);
+        if (!Deaf) {
+            pline("A voice booms out...");
+            SetVoice(mtmp, 0, 80, 0);
+            verbalize("Foolish mortal... I do not die.");
+        }
+    }
+}
+
+
+
+
+
 /* Here, we make trouble for the poor shmuck who actually
    managed to do in the Wizard. */
 void
 intervene(void)
 {
     struct monst *mtmp = (struct monst *) 0;
-    int which = Is_astralevel(&u.uz) ? rnd(4) : rn2(7);
+    int which = Is_astralevel(&u.uz) ? rnd(4) : rn2(9);
 
     /* cases 0 and 5 don't apply on the Astral level */
     switch (which) {
@@ -821,6 +908,13 @@ intervene(void)
         }
         break;
     case 6:
+    case 7:
+        if (carrying(AMULET_OF_YENDOR))
+            resurrect_cthulhu();
+        else
+            You_feel("vaguely nervous.");
+        break;
+    case 8:
         resurrect();
         break;
     }

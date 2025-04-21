@@ -1,4 +1,4 @@
-/* NetHack 3.7	polyself.c	$NHDT-Date: 1703845752 2023/12/29 10:29:12 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.207 $ */
+/* NetHack 3.7	polyself.c	$NHDT-Date: 1740534595 2025/02/25 17:49:55 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.223 $ */
 /*      Copyright (C) 1987, 1988, 1989 by Ken Arromdee */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -60,15 +60,16 @@ set_uasmon(void)
         else                                           \
             u.uprops[PropIndx].intrinsic &= ~FROMFORM; \
     } while (0)
+#define resist_from_form(MRtyp) ((gy.youmonst.data->mresists & (MRtyp)) != 0)
 
-    PROPSET(FIRE_RES, resists_fire(&gy.youmonst));
-    PROPSET(COLD_RES, resists_cold(&gy.youmonst));
-    PROPSET(SLEEP_RES, resists_sleep(&gy.youmonst));
-    PROPSET(DISINT_RES, resists_disint(&gy.youmonst));
-    PROPSET(SHOCK_RES, resists_elec(&gy.youmonst));
-    PROPSET(POISON_RES, resists_poison(&gy.youmonst));
-    PROPSET(ACID_RES, resists_acid(&gy.youmonst));
-    PROPSET(STONE_RES, resists_ston(&gy.youmonst));
+    PROPSET(FIRE_RES, resist_from_form(MR_FIRE));
+    PROPSET(COLD_RES, resist_from_form( MR_COLD));
+    PROPSET(SLEEP_RES, resist_from_form(MR_SLEEP));
+    PROPSET(DISINT_RES, resist_from_form(MR_DISINT));
+    PROPSET(SHOCK_RES, resist_from_form(MR_ELEC));
+    PROPSET(POISON_RES, resist_from_form(MR_POISON));
+    PROPSET(ACID_RES, resist_from_form(MR_ACID));
+    PROPSET(STONE_RES, resist_from_form(MR_STONE));
     {
         /* resists_drli() takes wielded weapon into account; suppress it */
         struct obj *save_uwep = uwep;
@@ -112,6 +113,7 @@ set_uasmon(void)
     PROPSET(BLND_RES, (dmgtype_fromattack(mdat, AD_BLND, AT_EXPL)
                        || dmgtype_fromattack(mdat, AD_BLND, AT_GAZE)));
 #undef PROPSET
+#undef resist_from_form
 
     /* whether the player is flying/floating depends on their steed,
        which won't be known during the restore process: but BFlying
@@ -121,10 +123,26 @@ set_uasmon(void)
         float_vs_flight(); /* maybe toggle (BFlying & I_SPECIAL) */
     polysense();
 
+    /* Grung need their hydration; start them off with less than a standard
+     * grung would get. */
+    if (!program_state.restoring && svm.moves > 1L) {
+        if (is_grung(gy.youmonst.data)) {
+            if (u.hydration == 0)
+                u.hydration = rn1(250, 250);
+        } else if (Race_if(PM_GRUNG)) {
+            /* Polymorphing costs hydration as a grung */
+            dehydrate(rn1(150, 150));
+        } else {
+            u.hydration = 0;
+        }
+    }
+
 #ifdef STATUS_HILITES
     if (VIA_WINDOWPORT())
         status_initialize(REASSESS_ONLY);
 #endif
+    /* we can reset this now, having just done what it is meant to trigger */
+    gw.were_changes = 0L;
 }
 
 /* Levitation overrides Flying; set or clear BFlying|I_SPECIAL */
@@ -200,7 +218,7 @@ DISABLE_WARNING_FORMAT_NONLITERAL
 staticfn void
 polyman(const char *fmt, const char *arg)
 {
-    boolean sticking = (sticks(gy.youmonst.data) && u.ustuck && !u.uswallow),
+    boolean sticking,
             was_mimicking = (U_AP_TYPE != M_AP_NOTHING);
     boolean was_blind = !!Blind;
 
@@ -217,6 +235,8 @@ polyman(const char *fmt, const char *arg)
     skinback(FALSE);
     u.uundetected = 0;
 
+    /* Check this here, after set_uasmon, in case grung died of dehydration.*/
+    sticking = (sticks(gy.youmonst.data) && u.ustuck && !u.uswallow);
     if (sticking)
         uunstick();
     find_ac();
@@ -230,9 +250,9 @@ polyman(const char *fmt, const char *arg)
     newsym(u.ux, u.uy);
 
     urgent_pline(fmt, arg);
-    /* check whether player foolishly genocided self while poly'd */
+    /* check whether player foolishly exiled self while poly'd */
     if (ugenocided()) {
-        /* intervening activity might have clobbered genocide info */
+        /* intervening activity might have clobbered exile info */
         struct kinfo *kptr = find_delayed_killer(POLYMORPH);
 
         if (kptr != (struct kinfo *) 0 && kptr->name[0]) {
@@ -240,7 +260,7 @@ polyman(const char *fmt, const char *arg)
             Strcpy(svk.killer.name, kptr->name);
         } else {
             svk.killer.format = KILLED_BY;
-            Strcpy(svk.killer.name, "self-genocide");
+            Strcpy(svk.killer.name, "self-exile");
         }
         dealloc_killer(kptr);
         done(GENOCIDED);
@@ -258,7 +278,7 @@ polyman(const char *fmt, const char *arg)
     }
     check_strangling(TRUE);
 
-    if (!Levitation && !u.ustuck 
+    if (!Levitation && !u.ustuck
         && (is_pool_or_lava(u.ux, u.uy) || is_puddle(u.ux, u.uy)))
         spoteffects(TRUE);
 
@@ -439,6 +459,7 @@ newman(void)
                    ? gu.urace.individual.m
                    : gu.urace.noun;
     polyman("You feel like a new %s!", newform);
+    break_armor();
 
     newgend = poly_gender();
     /* note: newman() bypasses achievements for new ranks attained and
@@ -478,8 +499,9 @@ polyself(int psflags)
              * arbitrary monster */
             draconian_only = ((psflags & POLY_DRAGON_ONLY) != 0),
             iswere = (ismnum(u.ulycn)),
-            isvamp = (is_vampire(gy.youmonst.data)
-                      || is_vampshifter(&gy.youmonst)),
+            isvamp = ((is_vampire(gy.youmonst.data)
+                       || is_vampshifter(&gy.youmonst))
+                      && !Race_if(PM_DHAMPIR)),
             controllable_poly = Polymorph_control && !(Stunned || Unaware);
 
     if (Unchanging) {
@@ -679,7 +701,8 @@ polyself(int psflags)
         } else if (isvamp) {
  do_vampyr:
             if (mntmp < LOW_PM || (mons[mntmp].geno & G_UNIQ)) {
-                mntmp = (gy.youmonst.data == &mons[PM_VAMPIRE_LEADER]
+                mntmp = ((gy.youmonst.data == &mons[PM_VAMPIRE_LEADER]
+                        || gy.youmonst.data == &mons[PM_VAMPIRE_ROYAL])
                          && !rn2(10)) ? PM_WOLF
                                       : !rn2(4) ? PM_FOG_CLOUD
                                                 : PM_VAMPIRE_BAT;
@@ -714,7 +737,7 @@ polyself(int psflags)
         } while (--tryct > 0);
     }
 
-    /* The below polyok() fails either if everything is genocided, or if
+    /* The below polyok() fails either if everything is exiled, or if
      * we deliberately chose something illegal to force newman().
      */
     gs.sex_change_ok++;
@@ -814,13 +837,13 @@ polymon(int mntmp)
     You("%s %s!", (u.umonnum != mntmp) ? "turn into" : "feel like", an(buf));
 
     if (Stoned && poly_when_stoned(&mons[mntmp])) {
-        /* poly_when_stoned already checked stone golem genocide */
+        /* poly_when_stoned already checked stone golem exile */
         mntmp = PM_STONE_GOLEM;
         make_stoned(0L, "You turn to stone!", 0, (char *) 0);
     }
 
     if (uarmc && objdescr_is(uarmc, "opera cloak") &&
-        maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
+        maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR))) {
         ABON(A_CHA) -= 1;
         disp.botl = 1;
     }
@@ -847,7 +870,7 @@ polymon(int mntmp)
     }
 
     if (uarmc && objdescr_is(uarmc, "opera cloak") &&
-        maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
+        maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR))) {
         You("%s very impressive in your %s.", Blind ||
             (Invis && !See_invisible) ? "feel" : "look",
             OBJ_DESCR(objects[uarmc->otyp]));
@@ -993,7 +1016,7 @@ polymon(int mntmp)
     }
 
     find_ac();
-    if (((!Levitation && !u.ustuck && !Flying 
+    if (((!Levitation && !u.ustuck && !Flying
         && (is_pool_or_lava(u.ux, u.uy) || is_puddle(u.ux, u.uy)))
          || (Underwater && !Swimming))
         /* if expelled above, expels() already called spoteffects() */
@@ -1091,7 +1114,8 @@ polymon(int mntmp)
             pline(use_thec, monsterc, "shriek");
         if (uptr->msound == MS_ATHOL) /* worthless, actually */
             pline(use_thec, monsterc, "athool");
-        if (is_vampire(uptr) || is_vampshifter(&gy.youmonst))
+        if ((is_vampire(uptr) || is_vampshifter(&gy.youmonst))
+                && !Race_if(PM_DHAMPIR))
             pline(use_thec, monsterc, "change shape");
         if (lays_eggs(uptr) && flags.female
             && !(uptr == &mons[PM_GIANT_EEL]
@@ -1189,7 +1213,8 @@ staticfn void
 break_armor(void)
 {
     struct obj *otmp;
-    struct permonst *uptr = gy.youmonst.data;
+    struct permonst *uptr = Upolyd ? gy.youmonst.data
+                                   : &mons[gu.urace.mnum];
 
     if (breakarm(uptr)) {
         if ((otmp = uarm) != 0) {
@@ -1285,7 +1310,9 @@ break_armor(void)
             dropp(otmp);
         }
         if ((otmp = uarms) != 0) {
-            You("can no longer hold your shield!");
+            You("can no longer %s!",
+                   is_bracer(uarms) ? "wear your bracers"
+                                    : "hold your shield");
             (void) Shield_off();
             dropp(otmp);
         }
@@ -1298,8 +1325,8 @@ break_armor(void)
             dropp(otmp);
         }
     }
-    if (nohands(uptr) || verysmall(uptr)
-        || slithy(uptr) || uptr->mlet == S_CENTAUR) {
+    if (nohands(uptr) || verysmall(uptr) || slithy(uptr)
+        || uptr->mlet == S_CENTAUR || uptr->mlet == S_GRUNG) {
         if ((otmp = uarmf) != 0) {
             if (donning(otmp))
                 cancel_don();
@@ -1420,8 +1447,13 @@ rehumanize(void)
 
     if (emits_light(gy.youmonst.data))
         del_light_source(LS_MONSTER, monst_to_any(&gy.youmonst));
-    polyman("You return to %s form!", gu.urace.adj);
 
+    /* Don't keep this timer going when we revert to normal */
+    if (u.hydration && !Race_if(PM_GRUNG))
+        u.hydration = 0;
+
+    polyman("You return to %s form!", gu.urace.adj);
+    break_armor();
     if (u.uhp < 1) {
         /* can only happen if some bit of code reduces u.uhp
            instead of u.mh while poly'd */
@@ -1679,7 +1711,7 @@ dogaze(void)
     struct monst *mtmp;
     int looked = 0;
     char qbuf[QBUFSZ];
-    int i;
+    int i, dmg;
     uchar adtyp = 0;
 
     for (i = 0; i < NATTK; i++) {
@@ -1689,16 +1721,14 @@ dogaze(void)
         }
     }
 
-    /* Monsters don't have luck - convert to confusion instead. */
-    if (adtyp == AD_LUCK)
+    /* Monsters don't have luck/hunger - convert to confusion instead. */
+    if (adtyp == AD_LUCK || adtyp == AD_HNGY|| adtyp == AD_HALU)
         adtyp = AD_CONF;
 
-    if (adtyp != AD_CONF
-        && adtyp != AD_FIRE
-        && adtyp != AD_BLND
-        && adtyp != AD_TLPT
-        && adtyp != AD_HALU
-        && adtyp != AD_STUN) {
+    if (adtyp != AD_CONF && adtyp != AD_FIRE
+        && adtyp != AD_BLND && adtyp != AD_TLPT
+        && adtyp != AD_STON && adtyp != AD_STUN
+        && adtyp != AD_SLEE && adtyp != AD_DRLI) {
         impossible("gaze attack %d?", adtyp);
         return ECMD_OK;
     }
@@ -1714,7 +1744,7 @@ dogaze(void)
         You("lack the energy to use your special gaze!");
         return ECMD_OK;
     }
-    u.uen -= 15;
+    u.uen -= (adtyp == AD_STON) ? 25 : 15;
     disp.botl = TRUE;
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
@@ -1749,29 +1779,26 @@ dogaze(void)
                 /* No reflection check for consistency with when a monster
                  * gazes at *you*--only medusa gaze gets reflected then.
                  */
-                if (adtyp == AD_CONF) {
+                switch (adtyp) {
+                case AD_CONF:
                     if (!mtmp->mconf)
                         Your("gaze confuses %s!", mon_nam(mtmp));
                     else
                         pline("%s is getting more and more confused.",
                               Monnam(mtmp));
                     mtmp->mconf = 1;
-                } else if (adtyp == AD_HALU && !mon_prop(mtmp, HALLUC_RES)) {
-                    if (!mtmp->mconf)
-                        Your("gaze confuses %s!", mon_nam(mtmp));
-                    else
-                        pline("%s is getting more and more confused.",
-                              Monnam(mtmp));
-                    mtmp->mconf = 1;
-                } else if (adtyp == AD_FIRE) {
-                    int dmg = d(2, 6), orig_dmg = dmg, lev = (int) u.ulevel;
+                    break;
+                case AD_FIRE:
+                    dmg = d(2, 6);
+                    int orig_dmg = dmg, lev = (int) u.ulevel;
 
                     You("attack %s with a fiery gaze!", mon_nam(mtmp));
-                    if (resists_fire(mtmp)) {
+                    if (resists_fire(mtmp) || defended(mtmp, AD_FIRE)
+                        || mon_underwater(mtmp)) {
                         pline_The("fire doesn't burn %s!", mon_nam(mtmp));
                         dmg = 0;
                     }
-                    if (lev > rn2(20)) {
+                    if (lev > rn2(20) || !mon_underwater(mtmp)) {
                         dmg += destroy_items(mtmp, AD_FIRE, orig_dmg);
                         ignite_items(mtmp->minvent);
                     }
@@ -1781,10 +1808,12 @@ dogaze(void)
                     }
                     if (DEADMONSTER(mtmp))
                         killed(mtmp);
-                } else if (adtyp == AD_BLND) {
-                    int dmg = d(2, 6);
+                    break;
+                case AD_BLND:
+                    dmg = d(2, 6);
                     You("attack %s with a blinding gaze!", mon_nam(mtmp));
-                    if (!can_blnd(&gy.youmonst, mtmp, AT_GAZE, NULL)) {
+                    if (!can_blnd(&gy.youmonst, mtmp, AT_GAZE, NULL)
+                        || resists_blnd(mtmp) || defended(mtmp, AD_BLND)) {
                         pline("%s doesn't seem affected.", Monnam(mtmp));
                         dmg = 0;
                     }
@@ -1797,11 +1826,26 @@ dogaze(void)
                         if (DEADMONSTER(mtmp))
                             killed(mtmp);
                     }
-                } else if (adtyp == AD_STUN) {
-                    pline("%s %s for a moment.", Monnam(mtmp),
+                    break;
+                case AD_SLEE:
+                    You("attack %s with a sleepy gaze!", mon_nam(mtmp));
+                    if (resists_sleep(mtmp) || defended(mtmp, AD_SLEE)) {
+                        pline("%s doesn't seem affected.", Monnam(mtmp));
+                    } else {
+                        pline("%s falls into a trance.", Monnam(mtmp));
+                        mtmp->msleeping = 1;
+                    }
+                    break;
+                case AD_STUN:
+                    if (resists_stun(mtmp->data) || defended(mtmp, AD_STUN)) {
+                        pline("%s doesn't seem affected.", Monnam(mtmp));
+                    } else {
+                        pline("%s %s for a moment.", Monnam(mtmp),
                         makeplural(stagger(mtmp->data, "stagger")));
-                    mtmp->mstun = 1;
-                } else if (adtyp == AD_TLPT) {
+                        mtmp->mstun = 1;
+                    }
+                    break;
+                case AD_TLPT: {
                     char nambuf[BUFSZ];
                     /* record the name before losing sight of monster */
                     Strcpy(nambuf, Monnam(mtmp));
@@ -1812,7 +1856,48 @@ dogaze(void)
                     }
                     if (u_teleport_mon(mtmp, FALSE) && !(canseemon(mtmp)))
                         pline("%s suddenly disappears!", nambuf);
+                    break;
                 }
+                case AD_STON:
+                    if (mtmp->mstone)
+                        break;
+                    if (resists_ston(mtmp) || defended(mtmp, AD_STON)) {
+                        pline("%s doesn't seem affected.", Monnam(mtmp));
+                    } else {
+                        mtmp->mstone = 5;
+                        mtmp->mstonebyu = TRUE;
+                    }
+                    Your("gaze starts to petrify %s!", mon_nam(mtmp));
+                    break;
+                case AD_DRLI:
+                    dmg = d(2, 6);
+                    You("attack %s with a deathly gaze!", mon_nam(mtmp));
+                    if (resists_drli(mtmp) || defended(mtmp, AD_DRLI)) {
+                        pline_The("gaze doesn't affect %s!", mon_nam(mtmp));
+                        dmg = 0;
+                    } else {
+                        if (mtmp->mhpmax - dmg > (int) mtmp->m_lev) {
+                            mtmp->mhpmax -= dmg;
+                        } else {
+                            /* limit floor of mhpmax reduction to current m_lev + 1;
+                               avoid increasing it if somehow already less than that */
+                            if (mtmp->mhpmax > (int) mtmp->m_lev)
+                                mtmp->mhpmax = (int) mtmp->m_lev + 1;
+                        }
+                        showdamage(dmg, FALSE);
+                        mtmp->mhp -= dmg;
+                        /* !m_lev: level 0 monster is killed regardless of hit points
+                           rather than drop to level -1; note: some non-living creatures
+                           (golems, vortices) are subject to life-drain */
+                        if (DEADMONSTER(mtmp) || !mtmp->m_lev) {
+                            pline("%s %s!", Monnam(mtmp),
+                                  nonliving(mtmp->data) ? "expires" : "dies");
+                            xkilled(mtmp, XKILL_NOMSG);
+                        } else
+                            mtmp->m_lev--;
+                    }
+                }
+
                 /* For consistency with passive() in uhitm.c, this only
                  * affects you if the monster is still alive.
                  */
@@ -2331,8 +2416,10 @@ polysense(void)
     case PM_BABY_PURPLE_WORM:
         warnidx = PM_SHRIEKER;
         break;
+    case PM_DHAMPIR:
     case PM_VAMPIRE:
     case PM_VAMPIRE_LEADER:
+    case PM_VAMPIRE_ROYAL:
     case PM_VAMPIRE_MAGE:
         svc.context.warntype.polyd = MH_HUMAN | MH_ELF;
         HWarn_of_mon |= FROMRACE;
@@ -2345,7 +2432,7 @@ polysense(void)
     }
 }
 
-/* True iff hero's role or race has been genocided */
+/* True iff hero's role or race has been exiled */
 boolean
 ugenocided(void)
 {
@@ -2353,11 +2440,11 @@ ugenocided(void)
             || (svm.mvitals[gu.urace.mnum].mvflags & G_GENOD));
 }
 
-/* how hero feels "inside" after self-genocide of role or race */
+/* how hero feels "inside" after self-exile of role or race */
 const char *
 udeadinside(void)
 {
-    /* self-genocide used to always say "you feel dead inside" but that
+    /* self-exile used to always say "you feel dead inside" but that
        seems silly when you're polymorphed into something undead;
        monkilled() distinguishes between living (killed) and non (destroyed)
        for monster death message; we refine the nonliving aspect a bit */

@@ -9,7 +9,7 @@
 #
 #       Visual Studio Compilers Tested:
 #            - Microsoft Visual Studio 2019 Community Edition v 16.11.42
-#            - Microsoft Visual Studio 2022 Community Edition v 17.12.4
+#            - Microsoft Visual Studio 2022 Community Edition v 17.13.3
 #
 #==============================================================================
 #   This is used for building two distinct executables of NetHack:
@@ -144,7 +144,7 @@ GIT_AVAILABLE=Y
 #==============================================================================
 #
 #  The version of the game this Makefile was designed for
-NETHACK_VERSION="2.1.0"
+NETHACK_VERSION="2.2.0"
 
 # A brief version for use in macros
 NHV=$(NETHACK_VERSION:.=)
@@ -565,6 +565,7 @@ LUA_FILES = $(DAT)\air.lua  $(DAT)\Arc-fila.lua $(DAT)\Arc-filb.lua \
 	$(DAT)\bigrm-20.lua \
 	$(DAT)\bigrm-21.lua \
 	$(DAT)\bridge.lua   \
+	$(DAT)\invoke.lua   \
 	$(DAT)\dragons.lua   \
 	$(DAT)\castle-1.lua \
 	$(DAT)\castle-2.lua \
@@ -601,7 +602,7 @@ LUA_FILES = $(DAT)\air.lua  $(DAT)\Arc-fila.lua $(DAT)\Arc-filb.lua \
 	$(DAT)\Kni-strt.lua \
 	$(DAT)\knox-1.lua   \
 	$(DAT)\knox-2.lua   \
-	$(DAT)\knox-2.lua   \
+	$(DAT)\knox-3.lua   \
 	$(DAT)\medusa-1.lua \
 	$(DAT)\medusa-2.lua \
 	$(DAT)\medusa-3.lua \
@@ -626,6 +627,7 @@ LUA_FILES = $(DAT)\air.lua  $(DAT)\Arc-fila.lua $(DAT)\Arc-filb.lua \
 	$(DAT)\minetn-9.lua \
 	$(DAT)\minetn-10.lua \
 	$(DAT)\minetn-11.lua \
+	$(DAT)\minetn-12.lua \
 	$(DAT)\Mon-fila.lua \
 	$(DAT)\Mon-filb.lua \
 	$(DAT)\Mon-goal.lua \
@@ -670,6 +672,7 @@ LUA_FILES = $(DAT)\air.lua  $(DAT)\Arc-fila.lua $(DAT)\Arc-filb.lua \
 	$(DAT)\soko1-6.lua  \
 	$(DAT)\soko1-7.lua  \
 	$(DAT)\soko1-8.lua  \
+	$(DAT)\soko1-9.lua  \
 	$(DAT)\soko2-1.lua  \
 	$(DAT)\soko2-2.lua  \
 	$(DAT)\soko2-3.lua  \
@@ -709,6 +712,11 @@ LUA_FILES = $(DAT)\air.lua  $(DAT)\Arc-fila.lua $(DAT)\Arc-filb.lua \
 	$(DAT)\tower1.lua   \
 	$(DAT)\tower2.lua   \
 	$(DAT)\tower3.lua   \
+    $(DAT)\Und-fila.lua \
+    $(DAT)\Und-filb.lua \
+    $(DAT)\Und-goal.lua \
+    $(DAT)\Und-loca.lua \
+    $(DAT)\Und-strt.lua \
 	$(DAT)\Val-fila.lua \
 	$(DAT)\Val-filb.lua \
 	$(DAT)\Val-goal.lua \
@@ -724,8 +732,13 @@ LUA_FILES = $(DAT)\air.lua  $(DAT)\Arc-fila.lua $(DAT)\Arc-filb.lua \
 	$(DAT)\Wiz-loca.lua \
 	$(DAT)\Wiz-strt.lua \
 	$(DAT)\wizard1.lua  \
-	$(DAT)\wizard2.lua  \
+	$(DAT)\wizard2-1.lua  \
+	$(DAT)\wizard2-2.lua  \
 	$(DAT)\wizard3.lua  \
+	$(DAT)\wizard4.lua  \
+	$(DAT)\wizard5.lua  \
+	$(DAT)\wizard6.lua  \
+	$(DAT)\wizard7.lua  \
 	$(DAT)\tut-1.lua    \
 	$(DAT)\tut-2.lua    \
 	$(DAT)\tomb-1.lua		\
@@ -966,7 +979,7 @@ SOUNDLIBINCL = $(SOUNDLIBINCL)
 SOUNDLIBDEFS = $(SOUNDLIBDEFS) -DSND_LIB_WINDSOUND
 TTYSOUNDOBJS = $(TTYSOUNDOBJS) $(OTTY)windsound.o
 GUISOUNDOBJS = $(GUISOUNDOBJS) $(OGUI)windsound.o
-#WINDSOUNDLIBDIR = 
+#WINDSOUNDLIBDIR =
 #TTYSOUNDLIBS = $(TTYSOUNDLIBS)
 #GUISOUNDLIBS = $(GUISOUNDLIBS)
 #WINDSOUNDLIBDIR =
@@ -1109,7 +1122,7 @@ HACK_H = $(INCL)\hack.h $(CONFIG_H) $(INCL)\lint.h $(INCL)\align.h \
 		$(INCL)\attrib.h $(INCL)\monst.h $(INCL)\mextra.h \
 		$(INCL)\skills.h $(INCL)\timeout.h $(INCL)\trap.h \
 		$(INCL)\flag.h $(INCL)\winprocs.h $(INCL)\sndprocs.h \
-		$(INCL)\seffects.h $(INCL)\sys.h
+		$(INCL)\seffects.h $(INCL)\sys.h $(INCL)\weight.h
 
 TILE_H      = ..\win\share\tile.h
 
@@ -1154,7 +1167,7 @@ rc=Rc.exe
 #
 # Recently tested versions:
 TESTEDVS2019 = 14.29.30157.0
-TESTEDVS2022 = 14.42.34436.0
+TESTEDVS2022 = 14.43.34809.0
 
 VS2019CUR = $(TESTEDVS2019:.=)
 VS2022CUR = $(TESTEDVS2022:.=)
@@ -1693,29 +1706,28 @@ binary.tag: 	$(DAT)\data $(DAT)\rumors $(DAT)\oracles $(DLB) \
 	copy $(DAT)\license       $(GAMEDIR)
 	copy $(DAT)\opthelp       $(GAMEDIR)
 ! ELSE
-	copy $(DAT)\bogusmon $(GAMEDIR)
-	copy $(DAT)\cmdhelp $(GAMEDIR)
-	copy $(DAT)\data $(GAMEDIR)
-	copy $(DAT)\dungeon $(GAMEDIR)
-	copy $(DAT)\engrave $(GAMEDIR)
-	copy $(DAT)\epitaph $(GAMEDIR)
-	copy $(DAT)\help $(GAMEDIR)
-	copy $(DAT)\hh $(GAMDEDIR)
-	copy $(DAT)\history $(GAMEDIR)
-	copy $(DAT)\license $(GAMEDIR)
-	copy $(DAT)\optmenu $(GAMEDIR)
-	copy $(DAT)\oracles $(GAMEDIR)
-	copy $(DAT)\rumors $(GAMEDIR)
-	copy $(DAT)\symbols $(GAMEDIR)
-	copy $(DAT)\tribute $(GAMEDIR)
-	copy $(DAT)\wizhelp $(GAMEDIR)
-	copy $(DAT)\*.lua $(GAMEDIR)
-	if exist $(DAT)\guioptions copy $(DAT)\guioptions $(GAMEDIR)
-	if exist $(DAT)\keyhelp copy $(DAT)\keyhelp $(GAMEDIR)
-	if exist $(DAT)\opthelp copy $(DAT)\opthelp $(GAMEDIR)
-	if exist $(DAT)\options copy $(DAT)\options $(GAMEDIR)
-	if exist $(DAT)\porthelp copy $(DAT)\porthelp $(GAMEDIR)
-	if exist $(DAT)\ttyoptions copy $(DAT)\ttyoptions $(GAMEDIR)
+	copy $(DAT)bogusmon $(GAMEDIR)
+	copy $(DAT)ntrymsgs $(GAMEDIR)
+	copy $(DAT)cmdhelp $(GAMEDIR)
+	copy $(DAT)data $(GAMEDIR)
+	copy $(DAT)engrave $(GAMEDIR)
+	copy $(DAT)epitaph $(GAMEDIR)
+	copy $(DAT)help $(GAMEDIR)
+	copy $(DAT)hh $(GAMEDIR)
+	copy $(DAT)history $(GAMEDIR)
+	copy $(DAT)license $(GAMEDIR)
+	copy $(DAT)optmenu $(GAMEDIR)
+	copy $(DAT)oracles $(GAMEDIR)
+	copy $(DAT)rumors $(GAMEDIR)
+	copy $(DAT)symbols $(GAMEDIR)
+	copy $(DAT)tribute $(GAMEDIR)
+	copy $(DAT)wizhelp $(GAMEDIR)
+	copy /Y $(DAT)*.lua $(GAMEDIR)
+	if exist $(DAT)guioptions copy $(DAT)guioptions $(GAMEDIR)
+	if exist $(DAT)keyhelp copy $(DAT)keyhelp $(GAMEDIR)
+	if exist $(DAT)options copy $(DAT)options $(GAMEDIR)
+	if exist $(DAT)porthelp copy $(DAT)porthelp $(GAMEDIR)
+	if exist $(DAT)ttyoptions copy $(DAT)ttyoptions $(GAMEDIR)
 ! ENDIF
 <<<<<<< HEAD
 =======
@@ -2069,7 +2081,7 @@ $(DAT)\porthelp: $(MSWSYS)\porthelp
 nhdat$(NHV):	$(U)dlb.exe $(DAT)\data $(DAT)\oracles $(OPTIONS_FILE) $(LUA_FILES) \
 	$(DAT)\rumors $(DAT)\help $(DAT)\hh $(DAT)\cmdhelp $(DAT)\keyhelp \
 	$(DAT)\history $(DAT)\opthelp $(DAT)\optmenu $(DAT)\wizhelp $(DAT)\porthelp \
-	$(DAT)\license $(DAT)\engrave $(DAT)\epitaph $(DAT)\bogusmon $(DAT)\tribute
+	$(DAT)\license $(DAT)\engrave $(DAT)\epitaph $(DAT)\bogusmon $(DAT)\ntrymsgs $(DAT)\tribute
 	@echo Building $@
 	@cd $(DAT)
 	@echo data >dlb.lst
@@ -2091,6 +2103,7 @@ nhdat$(NHV):	$(U)dlb.exe $(DAT)\data $(DAT)\oracles $(OPTIONS_FILE) $(LUA_FILES)
 	@echo engrave >>dlb.lst
 	@echo epitaph >>dlb.lst
 	@echo bogusmon >>dlb.lst
+	@echo ntrymsgs >>dlb.lst
 	@echo tribute >>dlb.lst
 	@for %%N in (*.lua) do @echo %%N >>dlb.lst
 	@$(U)dlb cIf dlb.lst $(SRC)\nhdat
@@ -2442,6 +2455,9 @@ $(DAT)\epitaph: $(U)makedefs.exe $(DAT)\epitaph.txt
 $(DAT)\bogusmon: $(U)makedefs.exe $(DAT)\bogusmon.txt
 	$(U)makedefs -s
 
+$(DAT)\ntrymsgs: $(U)makedefs.exe $(DAT)\ntrymsgs.txt
+	$(U)makedefs -s
+
 #===============================================================================
 # Integrated sound files
 #===============================================================================
@@ -2524,11 +2540,11 @@ MAINZIP = $(PkgDir)nethack-$(NHV)-win-$(TARGET_CPU).zip
 DBGSYMZIP = $(PkgDir)nethack-$(NHV)-win-$(TARGET_CPU)-debugsymbols.zip
 =======
 PKGFILES = nerfhackrc.template Guidebook.txt license NerfHack.exe NetHack.txt \
-	 NerfHackW.exe opthelp nhdat210 record symbols sysconf.template
+	 NerfHackW.exe opthelp nhdat220 record symbols sysconf.template
 FILESTOZIP = $(BinDir)\nerfhackrc.template $(BinDir)\Guidebook.txt $(BinDir)\license \
 	$(BinDir)\NerfHack.exe $(BinDir)\NetHack.txt $(BinDir)\NerfHackW.exe \
-	$(BinDir)\opthelp $(BinDir)\nhdat210 $(BinDir)\record \
-	$(BinDir)\symbols $(BinDir)\sysconf.template 
+	$(BinDir)\opthelp $(BinDir)\nhdat220 $(BinDir)\record \
+	$(BinDir)\symbols $(BinDir)\sysconf.template
 DBGSYMS = NerfHack.PDB NerfHackW.PDB
 PDBTOZIP = $(BinDir)\NerfHack.PDB $(BinDir)\NerfHackW.PDB
 MAINZIP = $(PkgDir)\nethack-$(NHV)-win-$(TARGET_CPU).zip
@@ -2558,7 +2574,8 @@ binary:  envchk.tag libdir.tag ottydir$(TARGET_CPU).tag \
 		$(LUASRC)\lua.h $(PDCDEP) \
 		$(INCL)\nhlua.h $(OUTL)utility.tag \
 		$(DAT)\data $(DAT)\rumors $(DAT)\oracles $(DAT)\engrave \
-		$(DAT)\epitaph $(DAT)\bogusmon $(GAMEDIR)\NerfHack.exe \
+		$(DAT)\epitaph $(DAT)\bogusmon $(DAT)\ntrymsgs \
+		$(GAMEDIR)\NerfHack.exe \
 		$(GAMEDIR)\NerfHackW.exe $(GAMEDIRDLLS) binary.tag
 >>>>>>> fc416534f38cda19d608ffeacd2a5738076e8445
 	@echo NetHack is up to date.
@@ -2592,7 +2609,8 @@ spotless: clean
 	if exist $(DAT)\engrave         del $(DAT)\engrave
 	if exist $(DAT)\epitaph         del $(DAT)\epitaph
 	if exist $(DAT)\bogusmon        del $(DAT)\bogusmon
-	if exist $(DAT)\porthelp	del $(DAT)\porthelp
+	if exist $(DAT)\ntrymsgs        del $(DAT)\ntrymsgs
+	if exist $(DAT)\porthelp	    del $(DAT)\porthelp
 	if exist nhdat$(NHV).	        del nhdat$(NHV).
 	if exist outldirx86.tag         del outldirx86.tag
 	if exist ottydirx86.tag         del ottydirx86.tag

@@ -69,7 +69,7 @@ dev_name(void)
 }
 
 staticfn void
-get_mplname(struct monst* mtmp, char *nam)
+get_mplname(struct monst *mtmp, char *nam)
 {
     boolean fmlkind = is_female(mtmp->data);
     const char *devnam;
@@ -256,6 +256,12 @@ mk_mplayer(struct permonst *ptr, coordxy x, coordxy y, boolean special)
         case PM_VALKYRIE:
             if (rn2(2))
                 weapon = WAR_HAMMER;
+            if (rn2(2))
+                armor = rnd_class(PLATE_MAIL, CHAIN_MAIL);
+            break;
+        case PM_UNDEAD_SLAYER:
+            if (rn2(2))
+                weapon = WOODEN_STAKE;
             if (rn2(2))
                 armor = rnd_class(PLATE_MAIL, CHAIN_MAIL);
             break;

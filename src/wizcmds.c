@@ -774,6 +774,8 @@ wiz_map_levltyp(void)
             Strcat(dsc, " fungus farm");
         if (svl.level.flags.has_lair)
             Strcat(dsc, " dragon lair");
+        if (svl.level.flags.has_terrorhall)
+            Strcat(dsc, " terror hall");
         if (svl.level.flags.has_swamp)
             Strcat(dsc, " swamp");
         /* level flags */
@@ -1260,6 +1262,8 @@ size_monst(struct monst *mtmp, boolean incl_wsegs)
             sz += (int) sizeof (struct emin);
         if (EDOG(mtmp))
             sz += (int) sizeof (struct edog);
+        if (EBONES(mtmp))
+            sz += (int) sizeof (struct ebones);
         /* mextra->mcorpsenm doesn't point to more memory */
     }
     return sz;
@@ -1447,7 +1451,18 @@ you_sanity_check(void)
                    u.uen, u.uenmax);
         u.uen = u.uenmax;
     }
-
+    /* Grung hydration checks */
+    if (is_grung(gy.youmonst.data) || Race_if(PM_GRUNG)) {
+        if (u.hydration == 0)
+            impossible("grung hydration is 0");
+        if (u.hydration < 0)
+            impossible("grung hydration is negative");
+        if (u.hydration > HYDRATION_MAX)
+            impossible("grung hydration is over maximum (%d)", HYDRATION_MAX);
+    } else {
+        if (u.hydration != 0)
+            impossible("non-grung hydration is non-0");
+    }
     check_wornmask_slots();
     (void) check_invent_gold("invent");
 }

@@ -38,6 +38,7 @@ staticfn void foundone(coordxy, coordxy, int);
 staticfn void findone(coordxy, coordxy, genericptr_t);
 staticfn void openone(coordxy, coordxy, genericptr_t);
 staticfn int mfind0(struct monst *, boolean);
+staticfn boolean skip_premap_detect(coordxy, coordxy);
 staticfn int reveal_terrain_getglyph(coordxy, coordxy, unsigned, int,
                                      unsigned);
 
@@ -482,7 +483,7 @@ food_detect(struct obj *sobj)
     struct monst *mtmp;
     int ct = 0, ctu = 0;
     boolean confused = (Confusion || (sobj && sobj->cursed)), stale;
-    char oclass = (confused || Race_if(PM_VAMPIRE))
+    char oclass = (confused || Race_if(PM_DHAMPIR))
                        ? POTION_CLASS : FOOD_CLASS;
     const char *what = confused ? something : "food";
 
@@ -983,9 +984,12 @@ display_trap_map(int cursed_src)
     }
     (void) detect_obj_traps(gi.invent, TRUE, cursed_src, NULL);
 
-    for (ttmp = gf.ftrap; ttmp; ttmp = ttmp->ntrap)
+    for (ttmp = gf.ftrap; ttmp; ttmp = ttmp->ntrap) {
+        if (ttmp->ttyp == MAGIC_PORTAL)
+            continue; /* Portals are not traps */
         sense_trap(ttmp, 0, 0, cursed_src);
-
+    }
+    
     dummytrap.ttyp = TRAPPED_DOOR;
     for (door = 0; door < gd.doorindex; door++) {
         cc = svd.doors[door];
@@ -2138,6 +2142,16 @@ warnreveal(void)
         }
 }
 
+/* skip premap detection of areas outside Sokoban map */
+staticfn boolean
+skip_premap_detect(coordxy x, coordxy y)
+{
+    if ((levl[x][y].typ == STONE)
+        && (levl[x][y].wall_info & (W_NONDIGGABLE | W_NONPASSWALL)) != 0)
+        return TRUE;
+    return FALSE;
+}
+
 /* Pre-map (the sokoban) levels */
 void
 premap_detect(void)
@@ -2149,6 +2163,8 @@ premap_detect(void)
     /* Map the background and boulders */
     for (x = 1; x < COLNO; x++)
         for (y = 0; y < ROWNO; y++) {
+            if (skip_premap_detect(x, y))
+                continue;
             levl[x][y].seenv = SVALL;
             levl[x][y].waslit = TRUE;
             if (levl[x][y].typ == SDOOR)

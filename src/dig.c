@@ -1,4 +1,4 @@
-/* NetHack 3.7	dig.c	$NHDT-Date: 1736530208 2025/01/10 09:30:08 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.225 $ */
+/* NetHack 3.7	dig.c	$NHDT-Date: 1740629713 2025/02/26 20:15:13 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.227 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Michael Allison, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -168,29 +168,27 @@ pick_can_reach(struct obj *pick, coordxy x, coordxy y)
 int
 dig_typ(struct obj *otmp, coordxy x, coordxy y)
 {
-    boolean ispick;
+    int ltyp;
 
-    if (!otmp)
-        return DIGTYP_UNDIGGABLE;
-    ispick = is_pick(otmp);
-    if (!ispick && !is_axe(otmp))
+    if (!isok(x, y) || !otmp || (!is_pick(otmp) && !is_axe(otmp)))
         return DIGTYP_UNDIGGABLE;
 
-    return ((ispick && sobj_at(STATUE, x, y)
-             && pick_can_reach(otmp, x, y))
-               ? DIGTYP_STATUE
-               : (ispick && sobj_at(BOULDER, x, y)
-                  && pick_can_reach(otmp, x, y))
-                  ? DIGTYP_BOULDER
-                  : closed_door(x, y)
-                     ? DIGTYP_DOOR
-                     : IS_TREE(levl[x][y].typ)
-                        ? (ispick ? DIGTYP_UNDIGGABLE : DIGTYP_TREE)
-                        : (ispick && IS_OBSTRUCTED(levl[x][y].typ)
-                           && (!svl.level.flags.arboreal
-                               || IS_WALL(levl[x][y].typ)))
-                           ? DIGTYP_ROCK
-                           : DIGTYP_UNDIGGABLE);
+    ltyp = levl[x][y].typ;
+    if (is_axe(otmp))
+        return closed_door(x, y) ? DIGTYP_DOOR
+               : IS_TREE(ltyp) ? DIGTYP_TREE /* axe vs tree */
+                 : DIGTYP_UNDIGGABLE;
+    /*assert(is_pick(otmp));*/
+    return (sobj_at(STATUE, x, y) && pick_can_reach(otmp, x, y))
+           ? DIGTYP_STATUE
+           : (sobj_at(BOULDER, x, y) && pick_can_reach(otmp, x, y))
+             ? DIGTYP_BOULDER
+             : closed_door(x, y) ? DIGTYP_DOOR
+               : IS_TREE(ltyp) ? DIGTYP_UNDIGGABLE /* pick vs tree */
+                 : (IS_OBSTRUCTED(ltyp)
+                    && (!svl.level.flags.arboreal || IS_WALL(ltyp)))
+                   ? DIGTYP_ROCK
+                   : DIGTYP_UNDIGGABLE;
 }
 
 boolean
@@ -444,22 +442,24 @@ dig(void)
     }
 
     if (svc.context.digging.effort > 100) {
+        char digbuf[BUFSZ];
         const char *digtxt, *dmgtxt = (const char *) 0;
-        struct obj *obj;
+        struct obj *obj, *bobj;
         boolean shopedge = *in_rooms(dpx, dpy, SHOPBASE);
+        int digtyp = dig_typ(uwep, dpx, dpy);
 
-        if ((obj = sobj_at(STATUE, dpx, dpy)) != 0) {
+        if (digtyp == DIGTYP_STATUE
+            && (obj = sobj_at(STATUE, dpx, dpy)) != 0) {
             if (break_statue(obj))
                 digtxt = "The statue shatters.";
             else
                 /* it was a statue trap; break_statue()
-                 * printed a message and updated the screen
-                 */
+                   printed a message and updated the screen */
                 digtxt = (char *) 0;
-        } else if ((obj = sobj_at(BOULDER, dpx, dpy)) != 0) {
-            struct obj *bobj;
-
+        } else if (digtyp == DIGTYP_BOULDER
+                   && (obj = sobj_at(BOULDER, dpx, dpy)) != 0) {
             fracture_rock(obj);
+            /*[3.7: this probably isn't necessary anymore]*/
             if ((bobj = sobj_at(BOULDER, dpx, dpy)) != 0) {
                 /* another boulder here, restack it to the top */
                 obj_extract_self(bobj);
@@ -478,7 +478,7 @@ dig(void)
                     goto cleanup;
                 }
             }
-            if (IS_TREE(lev->typ)) {
+            if (digtyp == DIGTYP_TREE) {
                 digtxt = "You cut down the tree.";
                 lev->typ = ROOM, lev->flags = 0;
                 if (!rn2(5))
@@ -509,7 +509,9 @@ dig(void)
             if (!(lev->doormask & D_TRAPPED))
                 lev->doormask = D_BROKEN;
         } else if (closed_door(dpx, dpy)) {
-            digtxt = "You break through the door.";
+            Sprintf(digbuf, "You break through the door with your %s.",
+                    simpleonames(uwep));
+            digtxt = digbuf;
             if (shopedge) {
                 add_damage(dpx, dpy, SHOP_DOOR_COST);
                 dmgtxt = "break";
@@ -528,18 +530,9 @@ dig(void)
             pay_for_damage(dmgtxt, FALSE);
 
         if (Is_earthlevel(&u.uz) && !rn2(3)) {
-            struct monst *mtmp;
+            int mndx = rn2(2) ? PM_EARTH_ELEMENTAL : PM_XORN;
 
-            switch (rn2(2)) {
-            case 0:
-                mtmp = makemon(&mons[PM_EARTH_ELEMENTAL], dpx, dpy,
-                               MM_NOMSG);
-                break;
-            default:
-                mtmp = makemon(&mons[PM_XORN], dpx, dpy, MM_NOMSG);
-                break;
-            }
-            if (mtmp)
+            if (makemon(&mons[mndx], dpx, dpy, MM_NOMSG))
                 pline_The("debris from your digging comes to life!");
         }
         if (IS_DOOR(lev->typ) && (lev->doormask & D_TRAPPED)) {
@@ -1458,7 +1451,7 @@ mdig_tunnel(struct monst *mtmp)
         sawit = canseemon(mtmp); /* before door state change and unblock_pt */
         trapped = (here->doormask & D_TRAPPED) ? TRUE : FALSE;
         here->doormask = trapped ? D_NODOOR : D_BROKEN;
-        unblock_point(mtmp->mx, mtmp->my); /* vision */
+        recalc_block_point(mtmp->mx, mtmp->my); /* vision */
         newsym(mtmp->mx, mtmp->my);
         if (trapped) {
             seeit = canseemon(mtmp);

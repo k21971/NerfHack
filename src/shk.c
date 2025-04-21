@@ -650,7 +650,8 @@ rob_shop(struct monst *shkp)
     livelog_printf(LL_ACHIEVE, "stole %ld %s worth of merchandise from %s %s",
                    total, currency(total), s_suffix(shkname(shkp)),
                    shtypes[eshkp->shoptype - SHOPBASE].name);
-    if (!Role_if(PM_ROGUE) && !Uevil) /* stealing is unlawful */
+
+    if (!Role_if(PM_ROGUE)) /* stealing is unlawful */
         adjalign(-sgn(u.ualign.type));
 
     hot_pursuit(shkp);
@@ -3551,7 +3552,7 @@ append_honorific(char *buf)
     };
 
     Strcat(buf, honored[rn2(SIZE(honored) - 1) + u.uevent.udemigod]);
-    if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE)))
+    if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR)))
         Strcat(buf, (flags.female) ? " dark lady" : " dark lord");
     else if (maybe_polyd(is_elf(gy.youmonst.data), Race_if(PM_ELF)))
         Strcat(buf, (flags.female) ? " hiril" : " hir");
@@ -3909,7 +3910,7 @@ sellobj(
         else
             verbalize("Your %s reeks, get it out of here!", xname(obj));
     }
-    
+
     /* you dropped something of your own - probably want to sell it */
     rouse_shk(shkp, TRUE); /* wake up sleeping or paralyzed shk */
     eshkp = ESHK(shkp);
@@ -3924,7 +3925,7 @@ sellobj(
         subfrombill(obj, shkp);
         return;
     }
-    
+
     /* get one case out of the way: nothing to sell, and no gold */
     if (!(isgold || cgold)
         && ((offer + gltmp) == 0L || gs.sell_how == SELL_DONTSELL)) {
@@ -3983,7 +3984,8 @@ sellobj(
         || obj->oclass == BALL_CLASS || obj->oclass == CHAIN_CLASS
         || offer == 0L || (obj->oclass == FOOD_CLASS && obj->oeaten)
         || (Is_candle(obj)
-            && obj->age < 20L * (long) objects[obj->otyp].oc_cost)) {
+            && obj->age < 20L * (long) objects[obj->otyp].oc_cost
+            && obj->otyp != MAGIC_CANDLE)) {
         pline("%s seems uninterested%s.", Shknam(shkp),
               cgold ? " in the rest" : "");
         if (container)
@@ -4326,7 +4328,7 @@ getprice(struct obj *obj, boolean shk_buying)
         if (obj->otyp == POT_WATER && !obj->blessed && !obj->cursed)
             tmp = 0L;
         /* vampire hunger check, (2-4)*cost */
-        if (Race_if(PM_VAMPIRE) &&
+        if (Race_if(PM_DHAMPIR) &&
                 (obj->otyp == POT_BLOOD || obj->otyp == POT_VAMPIRE_BLOOD))
             if (u.uhs >= HUNGRY && !shk_buying)
                 tmp *= (long) u.uhs;
@@ -4351,7 +4353,7 @@ getprice(struct obj *obj, boolean shk_buying)
        (erosion cases) */
     if (tmp < 0L)
         tmp = 0L;
-    
+
     return tmp;
 }
 
@@ -5340,8 +5342,7 @@ pay_for_damage(const char *dmgstr, boolean cant_mollify)
         } else
             growl(shkp);
         hot_pursuit(shkp);
-        if (!Uevil)
-            adjalign(-sgn(u.ualign.type));
+        adjalign(-sgn(u.ualign.type));
     }
 }
 

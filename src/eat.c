@@ -1,4 +1,4 @@
-/* NetHack 3.7	eat.c	$NHDT-Date: 1715177703 2024/05/08 14:15:03 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.334 $ */
+/* NetHack 3.7	eat.c	$NHDT-Date: 1740534854 2025/02/25 17:54:14 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.344 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -19,7 +19,6 @@ staticfn struct obj *touchfood(struct obj *);
 staticfn void do_reset_eat(void);
 staticfn void done_eating(boolean);
 staticfn void cprefx(int);
-staticfn void givit(int, struct permonst *);
 staticfn void eye_of_newt_buzz(void);
 staticfn void cpostfx(int);
 staticfn void use_up_tin(struct obj *) NONNULLARG1;
@@ -48,7 +47,7 @@ staticfn void regen_hunger(void);
 
 /* also used to see if you're allowed to eat cats and dogs */
 #define CANNIBAL_ALLOWED() (Role_if(PM_CAVE_DWELLER) || Race_if(PM_ORC) \
-	|| Race_if(PM_VAMPIRE))
+	|| Race_if(PM_DHAMPIR))
 /* Rider corpses are treated as non-rotting so that attempting to eat one
    will be sure to reach the stage of eating where that meal is fatal;
    acid blob corpses eventually rot away to nothing but before that happens
@@ -119,8 +118,8 @@ is_edible(struct obj *obj)
                          || (obj->otyp == EGG));
 
     /* Vampires can only draw blood from the living or potions of blood. */
-    if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE)))
-	    return FALSE;
+    if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR)))
+	return FALSE;
 
     if (is_bigeater(gy.youmonst.data) && is_organic(obj)
         /* [g-cubes can eat containers and retain all contents
@@ -274,7 +273,7 @@ choke(struct obj *food)
             return;
         }
         You("%s yourself and then vomit voluminously.",
-            maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))
+            maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR))
                 ? "gorge" : "stuff");
         morehungry(Hunger ? (u.uhunger - 60) : 1000); /* just got very sick! */
         vomit();
@@ -639,6 +638,12 @@ eat_brains(
     boolean give_nutrit = FALSE;
     int result = M_ATTK_HIT, xtra_dmg = rnd(10);
 
+    /* previous tentacle attack might have triggered fatal passive
+       counterattack [callers ought to be updated to avoid this situation] */
+    if (magr != &gy.youmonst && DEADMONSTER(magr)) {
+        return M_ATTK_AGR_DIED;
+    }
+
     if (noncorporeal(pd)) {
         if (visflag)
             pline("%s brain is unharmed.",
@@ -840,12 +845,12 @@ cprefx(int pm)
 
             Sprintf(svk.killer.name, "tasting %s meat",
                     mons[pm].pmnames[NEUTRAL]);
-            svk.killer.format = KILLED_BY;
-            You("turn to stone.");
-            done(STONING);
+            You("start turning to stone!");
+            make_stoned(5L, (char *) 0, KILLED_BY, svk.killer.name);
+            
             if (svc.context.victual.piece)
                 svc.context.victual.eating = 0;
-            return; /* lifesaved */
+            return;
         }
     }
 
@@ -888,7 +893,8 @@ cprefx(int pm)
         return;
     }
     case PM_GREEN_SLIME:
-        if (!Slimed && !Unchanging && !slimeproof(gy.youmonst.data)) {
+        if (!Slimed && (!Unchanging || can_slime_with_unchanging())
+            && !slimeproof(gy.youmonst.data)) {
             You("don't feel very well.");
             make_slimed(10L, (char *) 0);
             delayed_killer(SLIMED, KILLED_BY_AN, "");
@@ -1034,7 +1040,7 @@ should_givit(int type, struct permonst *ptr)
 /* givit() tries to give you an intrinsic based on the monster's level
  * and what type of intrinsic it is trying to give you.
  */
-staticfn void
+void
 givit(int type, struct permonst *ptr)
 {
     const char *adj;
@@ -1047,6 +1053,12 @@ givit(int type, struct permonst *ptr)
     if (increase > MAX_GAIN)
         increase = MAX_GAIN;
 
+    if (Race_if(PM_DHAMPIR)) {
+        /* Allow for partial intrinsics */
+        if (type > POISON_RES)
+            return;
+        increase = 1;
+    }
     if (increase == 24)
         adj = "much";
     else if (increase > 16)
@@ -1064,7 +1076,7 @@ givit(int type, struct permonst *ptr)
     /* All these use the new system, which is based on corpse weight. */
     case FIRE_RES:
         debugpline0("Trying to give fire resistance");
-        if ((HFire_resistance & (TIMEOUT | FROMRACE | FROMEXPER)) < 100) {
+        if (intrinsic_res(FIRE_RES) < MAX_PARTIAL) {
             incr_resistance(&HFire_resistance, increase);
             if ((HFire_resistance & TIMEOUT) == 100)
                 You(Hallucination ? "be chillin'." : "feel completely chilled.");
@@ -1074,7 +1086,7 @@ givit(int type, struct permonst *ptr)
         break;
     case COLD_RES:
         debugpline0("Trying to give cold resistance");
-        if ((HCold_resistance & (TIMEOUT | FROMRACE | FROMEXPER)) < 100) {
+        if (intrinsic_res(COLD_RES) < MAX_PARTIAL) {
             incr_resistance(&HCold_resistance, increase);
             if ((HCold_resistance & TIMEOUT) == 100)
                 You_feel("full of hot air.");
@@ -1084,7 +1096,7 @@ givit(int type, struct permonst *ptr)
         break;
     case SHOCK_RES: /* shock (electricity) resistance */
         debugpline0("Trying to give shock resistance");
-        if ((HShock_resistance & (TIMEOUT | FROMRACE | FROMEXPER)) < 100) {
+        if (intrinsic_res(SHOCK_RES) < MAX_PARTIAL) {
             incr_resistance(&HShock_resistance, increase);
             if ((HShock_resistance & TIMEOUT) == 100)
                 pline(Hallucination ? "You feel grounded in reality."
@@ -1095,7 +1107,7 @@ givit(int type, struct permonst *ptr)
         break;
     case SLEEP_RES:
         debugpline0("Trying to give sleep resistance");
-        if ((HSleep_resistance & (TIMEOUT | FROMRACE | FROMEXPER)) < 100) {
+        if (intrinsic_res(SLEEP_RES) < MAX_PARTIAL) {
             incr_resistance(&HSleep_resistance, increase);
             if ((HSleep_resistance & TIMEOUT) == 100)
                 You_feel("wide awake.");
@@ -1105,7 +1117,7 @@ givit(int type, struct permonst *ptr)
         break;
     case DISINT_RES:
         debugpline0("Trying to give disintegration resistance");
-        if ((HDisint_resistance & (TIMEOUT | FROMRACE | FROMEXPER)) < 100) {
+        if (intrinsic_res(DISINT_RES) < MAX_PARTIAL) {
             incr_resistance(&HDisint_resistance, increase);
             if ((HDisint_resistance & TIMEOUT) == 100)
                 You_feel(Hallucination ? "totally together, man." : "completely firm.");
@@ -1115,7 +1127,7 @@ givit(int type, struct permonst *ptr)
         break;
     case POISON_RES:
         debugpline0("Trying to give poison resistance");
-        if ((HPoison_resistance & (TIMEOUT | FROMRACE | FROMEXPER)) < 100) {
+        if (intrinsic_res(POISON_RES) < MAX_PARTIAL) {
             incr_resistance(&HPoison_resistance, increase);
             if ((HPoison_resistance & TIMEOUT) == 100)
                 You_feel("completely healthy.");
@@ -1147,7 +1159,7 @@ givit(int type, struct permonst *ptr)
         else
             You_feel(Hallucination ? "more in touch with the cosmos."
                                    : "more mentally acute.");
-        incr_itimeout(&HTelepat, ptr == &mons[PM_FLOATING_EYE] 
+        incr_itimeout(&HTelepat, ptr == &mons[PM_FLOATING_EYE]
                                      ? rn1(400, 400) : rn1(100, 100));
         /* If blind, make sure monsters show up. */
         if (Blind)
@@ -1155,7 +1167,7 @@ givit(int type, struct permonst *ptr)
         break;
     case ACID_RES:
         debugpline0("Giving timed acid resistance");
-        if (!Acid_resistance)
+        if (!fully_resistant(ACID_RES))
             You_feel("%s.", Hallucination ? "secure from flashbacks"
                             : "less concerned about being harmed by acid");
         incr_itimeout(&HAcid_resistance, d(3, 6));
@@ -1221,6 +1233,13 @@ cpostfx(int pm)
     switch (pm) {
     case PM_WRAITH: {
         int uhpmin = minuhpmax(1);
+        if (Role_if(PM_UNDEAD_SLAYER)) {
+            /* Unbecoming of Undead Slayers  */
+            You("have disgraced your profession.");
+            adjalign(-20);
+            change_luck(-2);
+            break;
+        }
         switch(rnd(10)) {
         case 1:
             You("feel that was a bad idea.");
@@ -2079,10 +2098,11 @@ eatcorpse(struct obj *otmp)
         else
             useupf(otmp, 1L);
         return 2;
-    } else if (acidic(&mons[mnum]) && !Acid_resistance) {
+    } else if (acidic(&mons[mnum]) && !fully_resistant(ACID_RES)) {
         tp++;
         You("have a very bad case of stomach acid.");   /* not body_part() */
-        losehp(rnd(15), !glob ? "acidic corpse" : "acidic glob",
+        losehp(resist_reduce(d(4, 5), ACID_RES),
+               !glob ? "acidic corpse" : "acidic glob",
                KILLED_BY_AN); /* acid damage */
     } else if (poisonous(&mons[mnum]) && rn2(5)) {
         tp++;
@@ -2635,12 +2655,15 @@ eataccessory(struct obj *otmp)
         break;
     case RIN_INCREASE_ACCURACY:
         accessory_has_effect(otmp);
-        u.uhitinc = (schar) bounded_increase((int) u.uhitinc, otmp->spe,
+        /* Because benefits are guaranteed, throttle the gains a bit */
+        u.uhitinc = (schar) bounded_increase((int) u.uhitinc,
+                    otmp->spe > 0 ? rnd(otmp->spe) : otmp->spe,
                                                 RIN_INCREASE_ACCURACY);
         break;
     case RIN_INCREASE_DAMAGE:
         accessory_has_effect(otmp);
-        u.udaminc = (schar) bounded_increase((int) u.udaminc, otmp->spe,
+        u.udaminc = (schar) bounded_increase((int) u.udaminc,
+                    otmp->spe > 0 ? rnd(otmp->spe) : otmp->spe,
                                                 RIN_INCREASE_DAMAGE);
         break;
     case RIN_PROTECTION:
@@ -2836,6 +2859,25 @@ fpostfx(struct obj *otmp)
         if (ismnum(u.ulycn) || is_were(gy.youmonst.data))
             you_unwere(TRUE);
         break;
+    case HOLY_WAFER:
+        if (u.ualign.type == A_LAWFUL) {
+            if (u.uhp < u.uhpmax) {
+                You_feel("warm inside.");
+                healup(rn1(20, 20), 0, 0, 0);
+            }
+        }
+        if (Sick)
+            make_sick(0L, (char *)0, TRUE, SICK_ALL);
+        if (ismnum(u.ulycn) || is_were(gy.youmonst.data))
+            you_unwere(TRUE);
+        if (u.ualign.type == A_CHAOTIC) {
+            You_feel("a burning inside!");
+            losehp(Maybe_Half_Phys(rn1(10, 10)), "potion of unholy water",
+                       KILLED_BY_AN);
+        }
+        if (HWithering)
+            make_withering(0L, TRUE);
+        break;
     case CARROT:
         if (!u.uswallow
             || !attacktype_fordmg(u.ustuck->data, AT_ENGL, AD_BLND))
@@ -2902,6 +2944,18 @@ fpostfx(struct obj *otmp)
             make_rabid(0L, (char *) 0, 0, (char *) 0);
         if (Vomiting && !otmp->cursed)
             make_vomiting(0L, TRUE);
+        break;
+    case MISTLETOE:
+        if (Hallucination && !otmp->cursed)
+            make_hallucinated(0L, TRUE, 0L);
+        break;
+    case PINCH_OF_CATNIP:
+        if (is_feline(gy.youmonst.data)) {
+            pline("Wow! That was excellent!");
+            make_confused(HConfusion + d(2, 4), FALSE);
+        } else {
+            pline("Blech! That was not very enjoyable.");
+        }
         break;
     case CLOVE_OF_GARLIC:
         /* Ethiopian folklore remedy for rabies. */
@@ -3030,7 +3084,7 @@ edibility_prompts(struct obj *otmp)
     } else if (cadaver && !vegetarian(&mons[mnum])
                && !u.uconduct.unvegetarian && Role_if(PM_MONK)) {
         Snprintf(buf, sizeof buf, "%s unhealthy.", foodsmell);
-    } else if (cadaver && acidic(&mons[mnum]) && !Acid_resistance) {
+    } else if (cadaver && acidic(&mons[mnum]) && !fully_resistant(ACID_RES)) {
         Snprintf(buf, sizeof buf, "%s rather acidic.", foodsmell);
     } else if (Upolyd && u.umonnum == PM_RUST_MONSTER && is_metallic(otmp)
                && otmp->oerodeproof) {
@@ -3526,7 +3580,7 @@ gethungry(void)
             || herbivorous(gy.youmonst.data)
             || lithivorous(gy.youmonst.data)
             || metallivorous(gy.youmonst.data)
-            || maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE)))
+            || maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR)))
         && !(Slow_digestion && rn2(2)))
         u.uhunger--; /* ordinary food consumption */
 
@@ -3943,10 +3997,10 @@ floorfood(
     boolean feeding = !strcmp(verb, "eat"),        /* corpsecheck==0 */
             offering = !strcmp(verb, "sacrifice"); /* corpsecheck==1 */
 
-    if (feeding && (is_vampire(gy.youmonst.data) || Race_if(PM_VAMPIRE))) {
+    if (feeding && (is_vampire(gy.youmonst.data) || Race_if(PM_DHAMPIR))) {
         You("can't eat.");
         if (flags.verbose)
-            pline("You can feed on lifeblood by attacking and biting other monsters.");
+            pline("You can feed by attacking and biting other monsters.");
         return (struct obj *) 0;
     }
 
@@ -4144,6 +4198,7 @@ vomit(void) /* A good idea from David Neves */
                 melt_ice(u.ux, u.uy,
                          "Your stomach acid melts straight through the ice!");
         }
+        dehydrate(rn1(150, 200));
     }
 }
 

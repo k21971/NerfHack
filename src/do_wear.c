@@ -11,6 +11,7 @@ static NEARDATA const char c_armor[] = "armor", c_suit[] = "suit",
                            c_shirt[] = "shirt", c_cloak[] = "cloak",
                            c_gloves[] = "gloves", c_boots[] = "boots",
                            c_helmet[] = "helmet", c_shield[] = "shield",
+                           c_bracers[] = "bracers",
                            c_weapon[] = "weapon", c_sword[] = "sword",
                            c_axe[] = "axe", c_that_[] = "that";
 
@@ -211,15 +212,16 @@ Boots_on(void)
     case DWARVISH_BOOTS:
     case HIGH_BOOTS:
     case KICKING_BOOTS:
+    case FREEDOM_BOOTS:
         break;
     case JUMPING_BOOTS: {
         boolean was_flying = !!Flying;
         /* while jumping, block flying; you need boots on the ground */
         BFlying |= W_ARMF;
-        
+
         makeknown(uarmf->otyp);
         pline("Your %s feel longer.", makeplural(body_part(LEG)));
-        
+
         if (was_flying) {
             You("%s.", (is_pool_or_lava(u.ux, u.uy)
                     || Is_waterlevel(&u.uz) || Is_airlevel(&u.uz))
@@ -262,7 +264,7 @@ Boots_on(void)
         boolean was_flying = !!Flying;
         /* while stomping, block flying; you need boots on the ground */
         BFlying |= W_ARMF;
-        
+
         if (uarmf && uarmf->oartifact == ART_MAYHEM) {
             You_feel("the spirits begin to stir...");
             EConflict |= W_ARMF;
@@ -277,9 +279,9 @@ Boots_on(void)
             } else
                 You("begin stomping around very loudly.");
             makeknown(uarmf->otyp);
-        } 
+        }
         BStealth |= I_SPECIAL;
-        
+
         break;
     }
     case ELVEN_BOOTS:
@@ -289,7 +291,7 @@ Boots_on(void)
         boolean was_flying = !!Flying;
         /* while fumbling, block flying */
         BFlying |= W_ARMF;
-        
+
         if (!oldprop && !(HFumbling & ~TIMEOUT)) {
             incr_itimeout(&HFumbling, rnd(20));
             if (was_flying) {
@@ -420,6 +422,7 @@ Boots_off(void)
     case DWARVISH_BOOTS:
     case HIGH_BOOTS:
     case KICKING_BOOTS:
+    case FREEDOM_BOOTS:
         break;
     default:
         impossible(unknown_type, c_boots, otyp);
@@ -491,7 +494,7 @@ Cloak_on(void)
 
     /* Vampires get a charisma bonus when wearing an opera cloak */
     if (uarmc && objdescr_is(uarmc, "opera cloak") &&
-          maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
+          maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR))) {
         You("%s very impressive in your %s.",
             Blind || (Invis && !See_invisible) ? "feel" : "look",
             OBJ_DESCR(objects[uarmc->otyp]));
@@ -568,10 +571,10 @@ Cloak_off(void)
     }
     if (was_arti_light)
         toggle_armor_light(otmp, FALSE);
-    
+
     /* vampires get a charisma bonus when wearing an opera cloak */
     if (was_opera &&
-        maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE))) {
+        maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR))) {
         ABON(A_CHA) -= 1;
         disp.botl = 1;
     }
@@ -762,7 +765,7 @@ Gloves_on(void)
         boolean was_flying = !!Flying;
         /* while fumbling, block flying */
         BFlying |= W_ARMG;
-        
+
         if (!oldprop && !(HFumbling & ~TIMEOUT)) {
             incr_itimeout(&HFumbling, rnd(20));
             if (was_flying) {
@@ -780,6 +783,7 @@ Gloves_on(void)
            pline("Hey! You can swim!");
            spoteffects(TRUE);
         }
+        EWatertight |= W_ARMG;
         break;
     case GAUNTLETS_OF_POWER:
         makeknown(uarmg->otyp);
@@ -867,6 +871,7 @@ Gloves_off(void)
            You("begin to thrash about!");
            spoteffects(TRUE);
         }
+        EWatertight  &= ~W_ARMG;
         break;
     case GAUNTLETS_OF_POWER:
         makeknown(uarmg->otyp);
@@ -934,9 +939,18 @@ Shield_on(void)
     case SHIELD_OF_REFLECTION:
     case TOWER_SHIELD:
     case ANTI_MAGIC_SHIELD:
+    /* Bracers are also included in the shield slot */
+    case LEATHER_BRACERS:
+    case BRACERS_OF_SLEEP_RESISTANCE:
+    case BRACERS_OF_COLD_RESISTANCE:
+    case BRACERS_OF_UNCHANGING:
+    case BRACERS_VS_STONE:
         break;
-    case SHIELD_OF_INTEGRITY:
-        BWithering |= W_ARM;
+    case BRACERS_OF_INTEGRITY:
+        BWithering |= W_ARMS;
+        break;
+    case BRACERS_VS_SHAPESHIFTERS:
+        rescham();
         break;
     default:
         impossible(unknown_type, c_shield, uarms->otyp);
@@ -981,9 +995,22 @@ Shield_off(void)
     case SHIELD_OF_REFLECTION:
     case TOWER_SHIELD:
     case ANTI_MAGIC_SHIELD:
+    /* Bracers are also included in the shield slot */
+    case LEATHER_BRACERS:
+    case BRACERS_OF_SLEEP_RESISTANCE:
+    case BRACERS_OF_COLD_RESISTANCE:
+    case BRACERS_OF_UNCHANGING:
+    case BRACERS_VS_STONE:
         break;
-    case SHIELD_OF_INTEGRITY:
-        BWithering &= ~W_ARM;
+    case BRACERS_OF_INTEGRITY:
+        BWithering &= ~W_ARMS;
+        break;
+    case BRACERS_VS_SHAPESHIFTERS:
+        /* if you're no longer protected, let the chameleons change
+           shape again; however, might still be protected if wearing
+           2nd ring of this type (or via #wizintrinsic) */
+        if (!Protection_from_shape_changers)
+            restartcham();
         break;
     default:
         impossible(unknown_type, c_shield, uarms->otyp);
@@ -1251,8 +1278,11 @@ Amulet_on(struct obj *amul)
     case AMULET_OF_ESP:
     case AMULET_OF_LIFE_SAVING:
     case AMULET_VERSUS_POISON:
-    case AMULET_OF_REFLECTION:
     case FAKE_AMULET_OF_YENDOR:
+        break;
+    case AMULET_OF_REFLECTION:
+        if (uamul->oartifact && uamul->oartifact == ART_ARGENT_CROSS)
+            BWithering |= W_AMUL;
         break;
     case AMULET_OF_MAGICAL_BREATHING: {
         boolean was_in_poison_gas;
@@ -1273,8 +1303,10 @@ Amulet_on(struct obj *amul)
         break;
     }
     case AMULET_OF_UNCHANGING:
-        if (Slimed)
-            make_slimed(0L, (char *) 0);
+        if (Slimed) {
+            pline("The slime stops progressing, but does not vanish.");
+            makeknown(AMULET_OF_UNCHANGING);
+        }
         break;
     case AMULET_OF_CHANGE: {
         boolean call_it = FALSE;
@@ -1354,9 +1386,15 @@ Amulet_on(struct obj *amul)
         }
         break;
     case AMULET_OF_GUARDING:
-        makeknown(AMULET_OF_GUARDING);
-        find_ac();
-        uamul->known = 1;
+        /* usually learn enchantment and discover type; */
+        setworn((struct obj *) 0, W_AMUL);
+        int old_mc = magic_negation(&gy.youmonst);
+        setworn(amul, W_AMUL);
+        boolean observable = (amul->spe != 0 
+                              || (old_mc != magic_negation(&gy.youmonst)));
+        learnring(amul, observable);
+        if (amul->spe)
+            find_ac(); /* updates botl */
         break;
     case AMULET_OF_YENDOR:
         break;
@@ -1364,6 +1402,15 @@ Amulet_on(struct obj *amul)
 
     if (!on_msg_done)
         on_msg(uamul);
+
+    /* The Argent Cross emits light when worn;*/
+    if (artifact_light(uamul) && !uamul->lamplit) {
+        begin_burn(uamul, FALSE);
+        if (!Blind)
+            pline("%s %s to shine %s!",
+                  Yname2(uamul), otense(uamul, "begin"),
+                  arti_light_description(uamul));
+    }
 }
 
 void
@@ -1371,6 +1418,7 @@ Amulet_off(void)
 {
     struct obj *amul = uamul; /* for off_msg() after setworn(NULL,W_AMUL) */
     boolean mkn = FALSE, early_off_msg = FALSE;
+    boolean was_arti_light = amul && amul->lamplit && artifact_light(amul);
 
     svc.context.takeoff.mask &= ~W_AMUL;
 
@@ -1385,10 +1433,16 @@ Amulet_off(void)
         break;
     case AMULET_OF_LIFE_SAVING:
     case AMULET_VERSUS_POISON:
-    case AMULET_OF_REFLECTION:
     case AMULET_OF_CHANGE:
-    case AMULET_OF_UNCHANGING:
     case FAKE_AMULET_OF_YENDOR:
+        break;
+    case AMULET_OF_REFLECTION:
+        BWithering &= ~W_AMUL;
+        break;
+    case AMULET_OF_UNCHANGING:
+        if (Slimed) {
+            pline("The slime resumes its progression.");
+        }
         break;
     case AMULET_OF_MAGICAL_BREATHING:
         /* amulet is currently still on; take it off before calling drown()
@@ -1465,6 +1519,12 @@ Amulet_off(void)
         off_msg(amul); /* (not 'uamul'; it's Null now) */
     if (mkn)
         makeknown(amul->otyp);
+     /* arti_light comes from The Argent Cross */
+    if (was_arti_light && !artifact_light(amul)) {
+        end_burn(amul, FALSE);
+        if (!Blind)
+            pline("%s shining.", Tobjnam(amul, "stop"));
+    }
     return;
 }
 
@@ -1493,7 +1553,7 @@ learnring(struct obj *ring, boolean observed)
     /* make enchantment of charged ring known (might be +0) and update
        perm invent window if we've seen this ring and know its type */
     if (ring->dknown && objects[ringtype].oc_name_known) {
-        if (objects[ringtype].oc_charged)
+        if (objects[ringtype].oc_charged || ringtype == AMULET_OF_GUARDING)
             ring->known = 1;
         update_inventory();
     }
@@ -1665,7 +1725,7 @@ Ring_off_or_gone(struct obj *obj, boolean gone)
 {
     long mask = (obj->owornmask & W_RING);
     boolean observable, was_withering = Withering;
-    
+
     svc.context.takeoff.mask &= ~mask;
     if (!(u.uprops[objects[obj->otyp].oc_oprop].extrinsic & mask))
         impossible("Strange... I didn't know you had that ring.");
@@ -2245,6 +2305,7 @@ armoroff(struct obj *otmp)
             ga.afternmv = Armor_off;
             break;
         case ARM_SHIELD:
+            /* also handles bracers */
             what = shield_simple_name(otmp);
             ga.afternmv = Shield_off;
             break;
@@ -2340,7 +2401,6 @@ canwearobj(struct obj *otmp, long *mask, boolean noisy)
 {
     int err = 0;
     const char *which;
-
     /* this is the same check as for 'W' (dowear), but different message,
        in case we get here via 'P' (doputon) */
     if (verysmall(gy.youmonst.data) || nohands(gy.youmonst.data)) {
@@ -2390,19 +2450,21 @@ canwearobj(struct obj *otmp, long *mask, boolean noisy)
             err++;
         } else
             *mask = W_ARMH;
-    } else if (is_shield(otmp)) {
+    } else if (is_shield(otmp) || is_bracer(otmp)) {
+        /* also handles bracers */
         if (uarms) {
             if (noisy)
-                already_wearing(an(c_shield));
+                already_wearing(is_bracer(uarms) ? c_bracers
+                                                : an(c_shield));
             err++;
-        } else if (uwep && bimanual(uwep)) {
+        } else if (uwep && !is_bracer(otmp) && bimanual(uwep)) {
             if (noisy)
                 You("cannot wear a shield while wielding a two-handed %s.",
                     is_sword(uwep) ? c_sword : (uwep->otyp == BATTLE_AXE)
                                                    ? c_axe
                                                    : c_weapon);
             err++;
-        } else if (u.twoweap) {
+        } else if (u.twoweap && !is_bracer(otmp)) {
             if (noisy)
                 You("cannot wear a shield while wielding two weapons.");
             err++;
@@ -2416,6 +2478,10 @@ canwearobj(struct obj *otmp, long *mask, boolean noisy)
         } else if (Upolyd && slithy(gy.youmonst.data)) {
             if (noisy)
                 You("have no feet..."); /* not body_part(FOOT) */
+            err++;
+        } else if (maybe_polyd(is_grung(gy.youmonst.data), Race_if(PM_GRUNG))) {
+            if (noisy)
+                Your("feet are not shaped to wear %s.", c_boots);
             err++;
         } else if (Upolyd && gy.youmonst.data->mlet == S_CENTAUR) {
             /* break_armor() pushes boots off for centaurs, so don't let
@@ -2819,8 +2885,6 @@ find_ac(void)
     if (uamul && uamul->otyp == AMULET_OF_GUARDING)
         uac -= uamul->spe; /* chargable; main benefit is to MC */
 
-
-
     /* armor class from other sources */
     if (HProtection & INTRINSIC)
         uac -= u.ublessed;
@@ -2845,12 +2909,17 @@ find_ac(void)
     else if (ACURR(A_DEX) >= 24)
         dex_adjust_ac -= 5;
 
+    /* Double this bonus for grung to make up for lack of boots */
+    if (maybe_polyd(is_grung(gy.youmonst.data), Race_if(PM_GRUNG))) {
+        dex_adjust_ac++;
+        dex_adjust_ac *= 2;
+    }
+
     /* Wearing certain types of body armor negates any
      * beneficial dexterity bonus. So does being
      * encumbered in any way.
      */
-    if ((uarm && is_heavy_metallic(uarm))
-        || (near_capacity() >= SLT_ENCUMBER)) {
+    if ((uarm && is_heavy_metallic(uarm)) || (near_capacity() >= SLT_ENCUMBER)) {
         if (dex_adjust_ac < 0)
             dex_adjust_ac = 0;
     }
@@ -3625,12 +3694,12 @@ destroy_arm(
                          cloak_simple_name(otmp));
     } else if (!resistedc
              && (otmp = maybe_destroy_armor(uarm, atmp, &resistedsuit)) != 0) {
-        
+
         if (uarm && (uarm == otmp) && otmp->otyp == CRYSTAL_PLATE_MAIL) {
             otmp->in_use = FALSE; /* nothing happens */
             return 0;
         }
-        
+
         const char *suit = suit_simple_name(otmp);
 
         /* for gold DSM, we don't want Armor_gone() to report that it

@@ -654,6 +654,8 @@ flip_level(
         if (flp & 2)
             mtmp->mx = FlipX(mtmp->mx);
 
+        Flip_coord(mtmp->mgoal);
+
         if (mtmp->ispriest) {
             Flip_coord(EPRI(mtmp)->shrpos);
         } else if (mtmp->isshk) {
@@ -1927,7 +1929,9 @@ create_trap(spltrap *t, struct mkroom *croom)
     unsigned mktrap_flags = MKTRAP_MAZEFLAG;
 
     if (t->type == VIBRATING_SQUARE) {
-        pick_vibrasquare_location();
+//        pick_vibrasquare_location();
+        svi.inv_pos.x = 39;
+        svi.inv_pos.y = 11;
         maketrap(svi.inv_pos.x, svi.inv_pos.y, VIBRATING_SQUARE);
         return;
     } else if (croom) {
@@ -1952,6 +1956,7 @@ create_trap(spltrap *t, struct mkroom *croom)
 
     tm.x = x;
     tm.y = y;
+
 
     mktrap(t->type, mktrap_flags, (struct mkroom *) 0, &tm);
 }
@@ -2063,12 +2068,12 @@ create_monster(monster *m, struct mkroom *croom)
         g_mvflags = (unsigned) svm.mvitals[monsndx(pm)].mvflags;
         if ((pm->geno & G_UNIQ) && (g_mvflags & G_EXTINCT))
             return;
-        if (g_mvflags & G_GONE) /* genocided or extinct */
+        if (g_mvflags & G_GONE) /* exiled or extinct */
             pm = (struct permonst *) 0; /* make random monster */
     } else {
         pm = mkclass(class, G_NOGEN);
         /* if we can't get a specific monster type (pm == 0) then the
-           class has been genocided, so settle for a random monster */
+           class has been exiled, so settle for a random monster */
     }
     if (In_mines(&u.uz) && pm && your_race(pm)
         && (Race_if(PM_DWARF) || Race_if(PM_GNOME)) && rn2(3))
@@ -2245,7 +2250,7 @@ create_monster(monster *m, struct mkroom *croom)
         /* Sanity check here - rabid overrides peaceful */
         if (mtmp->mpeaceful && mtmp->mrabid)
             mtmp->mpeaceful = 0;
-        
+
         if (m->asleep > BOOL_RANDOM)
             mtmp->msleeping = m->asleep;
         if (m->seentraps)
@@ -2662,10 +2667,12 @@ search_door(
  * Dig a corridor between two points, using terrain ftyp.
  * if nxcor is TRUE, he corridor may be blocked by a boulder,
  * or just end without reaching the destination.
+ * if not null, npoints has the number of map locations used
  */
 boolean
 dig_corridor(
     coord *org, coord *dest,
+    int *npoints,
     boolean nxcor,
     schar ftyp, schar btyp)
 {
@@ -2673,6 +2680,8 @@ dig_corridor(
     struct rm *crm;
     int tx, ty, xx, yy;
 
+    if (npoints)
+        *npoints = 0;
     xx = org->x;
     yy = org->y;
     tx = dest->x;
@@ -2708,6 +2717,8 @@ dig_corridor(
 
         crm = &levl[xx][yy];
         if (crm->typ == btyp) {
+            if (npoints)
+                (*npoints)++;
             crm->typ = ftyp;
             if (nxcor && !rn2(50))
                 (void) mksobj_at(BOULDER, xx, yy, TRUE, FALSE);
@@ -2827,7 +2838,7 @@ create_corridor(corridor *c)
             dest.x++;
             break;
         }
-        (void) dig_corridor(&org, &dest, FALSE, CORR, STONE);
+        (void) dig_corridor(&org, &dest, NULL, FALSE, CORR, STONE);
     }
 }
 
@@ -2883,6 +2894,7 @@ fill_special_room(struct mkroom *croom)
         case MORGUE:
         case BARRACKS:
         case DRAGONLAIR:
+        case TERRORHALL:
             fill_zoo(croom);
             break;
         }
@@ -2911,6 +2923,9 @@ fill_special_room(struct mkroom *croom)
         break;
     case DRAGONLAIR:
         svl.level.flags.has_lair = TRUE;
+        break;
+    case TERRORHALL:
+        svl.level.flags.has_terrorhall = TRUE;
         break;
     case BARRACKS:
         svl.level.flags.has_barracks = TRUE;
@@ -4089,6 +4104,7 @@ static const struct {
     { "anthole",            ANTHOLE },
     { "cocknest",           COCKNEST },
     { "leprehall",          LEPREHALL },
+    { "terrorhall",         TERRORHALL },
     { "dragon lair",        DRAGONLAIR },
     { "shop",               SHOPBASE },
     { "armor shop",         ARMORSHOP },
@@ -4976,18 +4992,18 @@ lspo_feature(lua_State *L)
         "toilet",
         "pool",
         "throne",
-        "tree", 
+        "tree",
         "puddle",
         "lava",
         NULL };
-    static const int features2i[] = { 
+    static const int features2i[] = {
         FOUNTAIN,
         FORGE,
         SINK,
         TOILET,
         POOL,
         THRONE,
-        TREE, 
+        TREE,
         PUDDLE,
         LAVAPOOL,
         STONE };
@@ -6305,7 +6321,7 @@ TODO: gc.coder->croom needs to be updated
                     if (y < 1)
                         y = 1;
                 } else {
-                    y = rn2(ROWNO - mf->wid);
+                    y = rn2(ROWNO - mf->hei);
                 }
             }
         }

@@ -1,4 +1,4 @@
--- NetHack themerms.lua	$NHDT-Date: 1652196294 2022/05/10 15:24:54 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.16 $
+-- NetHack themerms.lua	$NHDT-Date: 1743399789 2025/03/30 21:43:09 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.36 $
 --	Copyright (c) 2020 by Pasi Kallinen
 -- NetHack may be freely redistributed.  See license for details.
 --
@@ -104,22 +104,28 @@ themeroom_fills = {
                des.feature("fountain");
             end
          end
-         table.insert(postprocess, { handler = make_garden_walls, data = { sel = selection.room() } });
+         table.insert(postprocess, { handler = make_garden_walls,
+                                     data = { sel = selection.room() } });
       end
    },
 
    -- Buried treasure
    function(rm)
-      des.object({ id = "chest", buried = true, contents = function(otmp)
-                      local xobj = otmp:totable();
-                      -- keep track of the last buried treasure
-                      if (xobj.NO_OBJ == nil) then
-                         table.insert(postprocess, { handler = make_dig_engraving, data = { x = xobj.ox, y = xobj.oy }});
-                      end
-                      for i = 1, d(3,4) do
-                         des.object();
-                      end
-      end });
+      des.object({
+         id = "chest", buried = true,
+         contents = function(otmp)
+            local xobj = otmp:totable();
+            -- keep track of the last buried treasure
+            if (xobj.NO_OBJ == nil) then
+               table.insert(postprocess, { handler = make_dig_engraving,
+                                           data = { x = xobj.ox,
+                                                    y = xobj.oy } });
+            end
+            for i = 1, d(3, 4) do
+               des.object();
+            end
+         end
+      });
    end,
 
    -- Buried zombies
@@ -236,7 +242,9 @@ themeroom_fills = {
          if (pos.x > 0) then
             pos.x = pos.x + rm.region.x1 - 1;
             pos.y = pos.y + rm.region.y1;
-            table.insert(postprocess, { handler = make_a_trap, data = { type = "teleport", seen = true, coord = pos, teledest = 1 } });
+            table.insert(postprocess, { handler = make_a_trap,
+                                       data = { type = "teleport", seen = true,
+                                                coord = pos, teledest = 1 } });
          end
       end
    end,
@@ -322,7 +330,8 @@ themerooms = {
             des.object('tin')
          end
          local ingr = { 'meatball', 'apple', 'orange', 'pear', 'melon', 'banana', 'egg',
-                        'carrot', 'clove of garlic', 'cream pie', 'fruit', 'egg', 'fruit' }
+                        'carrot', 'clove of garlic', 'cream pie', 'fruit', 'egg', 'fruit',
+                         'pineapple' }
          -- Missing ingredients: 'slice of cake', 'pumpkin pie', 'apple pie', 'pineapple',
          for i = 1, d(4) + 4 do
             local ingrdt = ingr[d(#ingr)]
@@ -336,7 +345,8 @@ themerooms = {
    function()
       des.room({ type = "themed", w = 11,h = 9, filled = 1,
                  contents = function()
-                    des.room({ type = "themed", x = 4,y = 3, w = 3,h = 3, filled = 1,
+                    des.room({ type = "ordinary", x = 4, y = 3, w = 3, h = 3,
+                               filled = 1,
                                contents = function()
                                   des.door({ state="random", wall="all" });
                                end
@@ -360,7 +370,8 @@ themerooms = {
 
    -- Huge room, with another room inside (90%)
    function()
-      des.room({ type = "ordinary", w = nh.rn2(10)+11,h = nh.rn2(5)+8, filled = 1,
+      des.room({ type = "ordinary", w = nh.rn2(10) + 11, h = nh.rn2(5) + 8,
+                 filled = 1,
                  contents = function()
                     if (percent(90)) then
                     des.room({ type = "ordinary", filled = 1,
@@ -448,15 +459,17 @@ themerooms = {
       des.room({ type = "themed", w = 5 + nh.rn2(3)*2, h = 5 + nh.rn2(3)*2,
                  contents = function(rm)
                     des.room({ type = "themed",
-                   x = (rm.width - 1) / 2, y = (rm.height - 1) / 2,
-                   w = 1, h = 1, joined = false,
+                               x = (rm.width - 1) / 2, y = (rm.height - 1) / 2,
+                               w = 1, h = 1, joined = false,
                                contents = function()
                                   if (percent(50)) then
                                      local mons = { "M", "V", "L", "Z" };
                                      shuffle(mons);
-                                     des.monster({ class = mons[1], x=0,y=0, waiting = 1 });
+                                     des.monster({ class = mons[1], x=0, y=0,
+                                                   waiting = 1 });
                                   else
-                                     des.object({ id = "corpse", montype = "@", coord = {0,0} });
+                                     des.object({ id = "corpse", montype = "@",
+                                                  coord = {0,0} });
                                   end
                                   if (percent(20)) then
                                      des.door({ state="secret", wall="all" });
@@ -476,7 +489,7 @@ themerooms = {
                     local feature = { "C", "L", "I", "u", "T" };
                     shuffle(feature);
                     des.terrain((rm.width - 1) / 2, (rm.height - 1) / 2,
-                feature[1]);
+                                feature[1]);
                  end
       });
    end,
@@ -547,13 +560,15 @@ xxx-----]], contents = function(m) filler_region(1,1); end });
 |.........|
 |.........|
 -----------]], contents = function(m)
-if (percent(30)) then
-   local terr = { "-", "P" };
-   shuffle(terr);
-   des.replace_terrain({ region = {1,1, 9,9}, fromterrain = "L", toterrain = terr[1] });
-end
-filler_region(1,1);
-end });
+         if (percent(30)) then
+            local terr = { "-", "P" };
+            shuffle(terr);
+            des.replace_terrain({ region = {1,1, 9,9},
+                                  fromterrain = "L", toterrain = terr[1] });
+         end
+         filler_region(1,1);
+      end
+      });
    end,
 
    -- Circular, small
@@ -754,94 +769,110 @@ xx|.....|xx
 }|..|}
 }|..|}
 }----}
-}}}}}}]], contents = function(m) des.region({ region={3,3,3,3}, type="themed", irregular=true, filled=0, joined=false });
-     local nasty_undead = { "giant zombie", "ettin zombie", "vampire lord" };
-     local chest_spots = { { 2, 2 }, { 3, 2 }, { 2, 3 }, { 3, 3 } };
+}}}}}}]], contents = function(m) des.region({ region = {3, 3, 3, 3},
+                                             type = "themed", irregular = true,
+                                              filled = 0, joined = false });
+         local nasty_undead = { "giant zombie", "ettin zombie",
+                                "vampire lord" };
+         local chest_spots = { { 2, 2 }, { 3, 2 }, { 2, 3 }, { 3, 3 } };
 
-     shuffle(chest_spots)
-     -- Guarantee an escape item inside one of the chests, to prevent the hero
-     -- falling in from above and becoming permanently stuck
-     -- [cf. generate_way_out_method(sp_lev.c)].
-     -- If the escape item is made of glass or crystal, make sure that the
-     -- chest isn't locked so that kicking it to gain access to its contents
-     -- won't be necessary; otherwise retain lock state from random creation.
-     -- "pick-axe", "dwarvish mattock" could be included in the list of escape
-     -- items but don't normally generate in containers.
-     local escape_items = {
-        "scroll of teleportation", "ring of teleportation",
-        "wand of teleportation", "wand of digging"
-     };
-     local itm = obj.new(escape_items[math.random(#escape_items)]);
-     local itmcls = itm:class()
-     local box
-     if itmcls[ "material" ] == 19 then                         -- GLASS==19
-         -- item is made of glass so explicitly force chest to be unlocked
-     box = des.object({ id = "chest", coord = chest_spots[1],
-                            olocked = "no" });
-     else
-         -- item isn't made of glass; accept random locked/unlocked state
-     box = des.object({ id = "chest", coord = chest_spots[1] });
-     end;
-     box:addcontent(itm);
+         shuffle(chest_spots)
+         -- Guarantee an escape item inside one of the chests, to prevent the
+         -- hero falling in from above and becoming permanently stuck
+         -- [cf. generate_way_out_method(sp_lev.c)].
+         -- If the escape item is made of glass or crystal, make sure that
+         -- the chest isn't locked so that kicking it to gain access to its
+         -- contents won't be necessary; otherwise retain lock state from
+         -- random creation. "pick-axe", "dwarvish mattock" could be included
+         -- in list of escape items but don't normally generate in containers.
+         local escape_items = {
+            "scroll of teleportation", "ring of teleportation",
+            "wand of teleportation", "wand of digging"
+         };
+         local itm = obj.new( escape_items[math.random(#escape_items)] );
+         local itmcls = itm:class()
+         local box
+         if itmcls[ "material" ] == "glass" then
+            -- explicitly force chest to be unlocked
+            box = des.object({ id = "chest", coord = chest_spots[1],
+                               olocked = "no" });
+         else
+            -- accept random locked/unlocked state
+            box = des.object({ id = "chest", coord = chest_spots[1] });
+         end;
+         box:addcontent(itm);
 
-     for i = 2, #chest_spots do
-         des.object({ id = "chest", coord = chest_spots[i] });
-     end
+         for i = 2, #chest_spots do
+            des.object({ id = "chest", coord = chest_spots[i] });
+         end
 
-     shuffle(nasty_undead);
-     des.monster(nasty_undead[1], 2, 2);
-     des.exclusion({ type = "teleport", region = { 2,2, 3,3 } });
-end });
+         shuffle(nasty_undead);
+         des.monster(nasty_undead[1], 2, 2);
+         des.exclusion({ type = "teleport", region = { 2,2, 3,3 } });
+         end
+      }); -- des.map
    end,
 
    -- Twin businesses
    {
-      mindiff = 4; -- arbitrary
+      mindiff = 4; -- arbitrary; needs to be greater than 1 since no shops on 1
       contents = function()
          -- Due to the way room connections work in mklev.c, we must guarantee
          -- that the "aisle" between the shops touches all four walls of the
          -- larger room. Thus it has an extra width and height.
          des.room({ type="themed", w=9, h=5, contents = function()
-               -- There are eight possible placements of the two shops, four of
-               -- which have the vertical aisle in the center.
-               southeast = function() return percent(50) and "south" or "east" end
-               northeast = function() return percent(50) and "north" or "east" end
-               northwest = function() return percent(50) and "north" or "west" end
-               southwest = function() return percent(50) and "south" or "west" end
-               placements = {
-                  { lx = 1, ly = 1, rx = 4, ry = 1, lwall = "south", rwall = southeast() },
-                  { lx = 1, ly = 2, rx = 4, ry = 2, lwall = "north", rwall = northeast() },
-                  { lx = 1, ly = 1, rx = 5, ry = 1, lwall = southeast(), rwall = southwest() },
-                  { lx = 1, ly = 1, rx = 5, ry = 2, lwall = southeast(), rwall = northwest() },
-                  { lx = 1, ly = 2, rx = 5, ry = 1, lwall = northeast(), rwall = southwest() },
-                  { lx = 1, ly = 2, rx = 5, ry = 2, lwall = northeast(), rwall = northwest() },
-                  { lx = 2, ly = 1, rx = 5, ry = 1, lwall = southwest(), rwall = "south" },
-                  { lx = 2, ly = 2, rx = 5, ry = 2, lwall = northwest(), rwall = "north" }
-               }
-               ltype,rtype = "weapon shop","armor shop"
-               if percent(50) then
-                  ltype,rtype = rtype,ltype
+            -- There are eight possible placements of the two shops, four of
+            -- which have the vertical aisle in the center.
+            southeast = function() return percent(50) and "south" or "east" end
+            northeast = function() return percent(50) and "north" or "east" end
+            northwest = function() return percent(50) and "north" or "west" end
+            southwest = function() return percent(50) and "south" or "west" end
+            placements = {
+               { lx = 1, ly = 1, rx = 4, ry = 1,
+                 lwall = "south", rwall = southeast() },
+               { lx = 1, ly = 2, rx = 4, ry = 2,
+                 lwall = "north", rwall = northeast() },
+               { lx = 1, ly = 1, rx = 5, ry = 1,
+                 lwall = southeast(), rwall = southwest() },
+               { lx = 1, ly = 1, rx = 5, ry = 2,
+                 lwall = southeast(), rwall = northwest() },
+               { lx = 1, ly = 2, rx = 5, ry = 1,
+                 lwall = northeast(), rwall = southwest() },
+               { lx = 1, ly = 2, rx = 5, ry = 2,
+                 lwall = northeast(), rwall = northwest() },
+               { lx = 2, ly = 1, rx = 5, ry = 1,
+                 lwall = southwest(), rwall = "south" },
+               { lx = 2, ly = 2, rx = 5, ry = 2,
+                 lwall = northwest(), rwall = "north" }
+            }
+            ltype, rtype = "weapon shop", "armor shop"
+            if percent(50) then
+               ltype, rtype = rtype, ltype
+            end
+            shopdoorstate = function()
+               if percent(1) then
+                  return "locked"
+               elseif percent(50) then
+                  return "closed"
+               else
+                  return "open"
                end
-               shopdoorstate = function()
-                  if percent(1) then
-                     return "locked"
-                  elseif percent(50) then
-                     return "closed"
-                  else
-                     return "open"
-                  end
-               end
-               p = placements[d(#placements)]
-               des.room({ type=ltype, x=p["lx"], y=p["ly"], w=3, h=3, filled=1, joined=false,
-                           contents = function()
-                     des.door({ state=shopdoorstate(), wall=p["lwall"] })
-                  end
-               });
-               des.room({ type=rtype, x=p["rx"], y=p["ry"], w=3, h=3, filled=1, joined=false,
-                           contents = function()
-                     des.door({ state=shopdoorstate(), wall=p["rwall"] })
-                  end
-               });
+            end
+            p = placements[ d(#placements) ]
+            des.room({ type = ltype, x = p["lx"], y = p["ly"], w = 3, h = 3,
+                       filled = 1, joined = false,
+                       contents = function()
+                          des.door({ state = shopdoorstate(),
+                                     wall = p["lwall"] })
+                          end
+            });
+            des.room({ type = rtype, x = p["rx"], y = p["ry"], w = 3, h = 3,
+                       filled = 1, joined = false,
+                       contents = function()
+                          des.door({ state = shopdoorstate(),
+                                     wall = p["rwall"] })
+                       end
+            });
             end
          });
       end
@@ -1344,7 +1375,7 @@ end,
             des.door({ state="random", wall = "west" })
             des.door({ state="random", wall = "south" })
          end })
-         des.room({ type="ordinary", x=1, y=4, w=3, h=3, filled=1, 
+         des.room({ type="ordinary", x=1, y=4, w=3, h=3, filled=1,
                   contents=function()
             des.door({ state="random", wall = "north" })
             des.door({ state="random", wall = "east" })
@@ -1374,7 +1405,7 @@ end,
                           asleep=1 })
             -- and a rat for company
             -- no 'r' = rock moles to break them out!
-            rats = {"sewer rat", "giant rat", "rat"} 
+            rats = {"sewer rat", "giant rat", "rat"}
             des.monster(rats[d(#rats)])
          end
          des.region({ region={01,01,01,01}, type="themed", irregular=true,
@@ -1512,7 +1543,7 @@ end,
          room = room ~ center -- even further in...
          des.replace_terrain({ selection=room, fromterrain='.',
                                toterrain=' ', chance=40 })
-         des.replace_terrain({ selection=center, fromterrain='.', 
+         des.replace_terrain({ selection=center, fromterrain='.',
                                toterrain=' ', chance=20 })
          des.terrain(07, 03, '.')
          -- now clear out any orphaned disconnected spaces not accessible
@@ -1716,7 +1747,6 @@ xxxxxxx------xxxxxx]], contents = function()
 
 };
 
-
 function filler_region(x, y)
    local rmtyp = "ordinary";
    local func = nil;
@@ -1724,17 +1754,18 @@ function filler_region(x, y)
       rmtyp = "themed";
       func = themeroom_fill;
    end
-   des.region({ region={x,y,x,y}, type=rmtyp, irregular=true, filled=1, contents = func });
+   des.region({ region = {x,y,x,y}, type = rmtyp, irregular = true, filled = 1,
+                contents = func });
 end
 
 function is_eligible(room, mkrm)
    local t = type(room);
    local diff = nh.level_difficulty();
-   
+
    if (nh.level_difficulty() < 3) then
         return false
    end
-   
+
    if (t == "table") then
       if (room.mindiff ~= nil and diff < room.mindiff) then
          return false
@@ -1759,14 +1790,16 @@ function themerooms_generate()
       -- which may change on different levels because of level difficulty.
       if is_eligible(themerooms[i], nil) then
          local this_frequency;
-         if (type(themerooms[i]) == "table" and themerooms[i].frequency ~= nil) then
+         if (type(themerooms[i]) == "table" and themerooms[i].frequency ~= nil)
+         then
             this_frequency = themerooms[i].frequency;
          else
             this_frequency = 1;
          end
          total_frequency = total_frequency + this_frequency;
          -- avoid rn2(0) if a room has freq 0
-         if this_frequency > 0 and nh.rn2(total_frequency) < this_frequency then
+         if this_frequency > 0 and nh.rn2(total_frequency) < this_frequency
+         then
             pick = i;
          end
       end
@@ -1797,14 +1830,16 @@ function themeroom_fill(rm)
       -- which may change on different levels because of level difficulty.
       if is_eligible(themeroom_fills[i], rm) then
          local this_frequency;
-         if (type(themeroom_fills[i]) == "table" and themeroom_fills[i].frequency ~= nil) then
+         if (type(themeroom_fills[i]) == "table"
+             and themeroom_fills[i].frequency ~= nil) then
             this_frequency = themeroom_fills[i].frequency;
          else
             this_frequency = 1;
          end
          total_frequency = total_frequency + this_frequency;
          -- avoid rn2(0) if a room has freq 0
-         if this_frequency > 0 and nh.rn2(total_frequency) < this_frequency then
+         if this_frequency > 0 and nh.rn2(total_frequency) < this_frequency
+         then
             pick = i;
          end
       end
@@ -1829,10 +1864,12 @@ function make_dig_engraving(data)
       dig = " here";
    else
       if (tx < 0 or tx > 0) then
-         dig = string.format(" %i %s", math.abs(tx), (tx > 0) and "east" or "west");
+         dig = string.format(" %i %s", math.abs(tx),
+                             (tx > 0) and "east" or "west");
       end
       if (ty < 0 or ty > 0) then
-         dig = dig .. string.format(" %i %s", math.abs(ty), (ty > 0) and "south" or "north");
+         dig = dig .. string.format(" %i %s", math.abs(ty),
+                                    (ty > 0) and "south" or "north");
       end
    end
    des.engraving({ coord = pos, type = "burn", text = "Dig" .. dig });
@@ -1850,7 +1887,8 @@ function make_a_trap(data)
       local locs = selection.negate():filter_mapchar(".");
       repeat
          data.teledest = locs:rndcoord(1);
-      until (data.teledest.x ~= data.coord.x and data.teledest.y ~= data.coord.y);
+      until (data.teledest.x ~= data.coord.x
+             and data.teledest.y ~= data.coord.y);
    end
    des.trap(data);
 end

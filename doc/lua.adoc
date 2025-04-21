@@ -99,7 +99,7 @@ Only available if NetHack was compiled with DUMPLOG.
 | %T | current time, timestamp
 | %d | game start, YYYYMMDDhhmmss
 | %D | current time, YYYYMMDDhhmmss
-| %v | game version, eg. '2.1.0-0'
+| %v | game version, eg. '2.2.0-0'
 | %u | UID
 | %n | player name
 | %N | first character of player name
@@ -251,7 +251,7 @@ Example:
 
 === is_genocided
 
-Is specific monster type genocided?  Returns a boolean value.
+Is specific monster type exiled?  Returns a boolean value.
 
 Example:
 
@@ -1320,6 +1320,8 @@ Example:
 === room
 
 Create a selection of locations inside the (current) room.
+Does not include the edges of the room, such as its walls.
+Does not do any check on terrain type, so if there are non-ROOM locations inside the room, they remain part of the selection.
 
 Example:
 

@@ -247,6 +247,7 @@ dipforge(struct obj *obj)
                 You("burn yourself!");
                 losehp(resist_reduce(d(2, 16), FIRE_RES),
                 "touching forge lava", KILLED_BY);
+                dehydrate(resist_reduce(rn1(150, 150), FIRE_RES));
             } else {
                 You("swirl the lava around...");
             }
@@ -379,6 +380,7 @@ result:
             pline("Molten lava surges up and splashes all over you!");
             losehp(resist_reduce(d(3, 8), FIRE_RES),
                    "dipping into a forge", KILLED_BY);
+            dehydrate(resist_reduce(rn1(150, 150), FIRE_RES));
         }
         break;
     case 23:
@@ -390,9 +392,9 @@ result:
         if (!levl[u.ux][u.uy].looted && !obj->oerodeproof
                 && !is_supermaterial(obj)) {
             if (!Blind)
-                pline("%s flickers with purple light.", Doname2(obj));
+                pline("%s flickers with purple light.", Yname2(obj));
             else
-                pline("%s shudders slightly in your grip.", Doname2(obj));
+                pline("%s shudders slightly in your grip.", Yname2(obj));
             obj->oerodeproof = 1;
             obj->rknown = 1;
             levl[u.ux][u.uy].looted |= T_LOOTED;
@@ -420,6 +422,7 @@ result:
 lava:
     lava_damage(obj, u.ux, u.uy);
     update_inventory();
+    dehydrate(resist_reduce(rn1(150, 150), FIRE_RES));
 }
 
 /* forging recipes - first object is the end result
@@ -521,7 +524,7 @@ doforging(void)
         You("lack the strength to use the forge.");
         return 0;
     }
-    
+
     /* setup the base object */
     obj1 = getobj("use as a base", any_obj_ok, GETOBJ_PROMPT);
     if (!obj1) {
@@ -564,9 +567,8 @@ doforging(void)
                                                                            : "unwield");
         return 0;
     /* Artifacts can never be applied to a non-artifact base. */
-    } else if ((obj2->oartifact && !obj1->oartifact)
-               || (obj1->oartifact && !obj2->oartifact)) {
-        pline("Artifacts cannot be forged with lesser objects.");
+    } else if (obj2->oartifact || obj1->oartifact) {
+        pline("Artifacts cannot be used in forging!");
         return 0;
     /* dragon-scaled armor can never be fully metallic */
     } else if (Is_dragon_armor(obj1)) {
@@ -682,6 +684,7 @@ doforging(void)
             else
                 pline_The("lava in the forge bubbles ominously.");
         }
+        dehydrate(resist_reduce(rn1(20, 20), FIRE_RES));
         /* remove result from inventory and re-insert it, possibly stacking
           with compatible ones; override 'pickup_burden' while doing so */
         hold_potion(output, "You juggle and drop %s!",
@@ -757,18 +760,19 @@ drinkfountain(void)
         pseudo->blessed = 1;
         peffects(pseudo);
         obfree(pseudo, (struct obj *) 0);
-        
+
         /* gain ability, blessed if "natural" luck is high */
         pseudo = mksobj(POT_GAIN_ABILITY, FALSE, FALSE);
         pseudo->cursed = 0;
         pseudo->blessed = !littleluck;
         peffects(pseudo);
         obfree(pseudo, (struct obj *) 0);
-        
+
         display_nhwindow(WIN_MESSAGE, FALSE);
         pline("A wisp of vapor escapes the fountain...");
         exercise(A_WIS, TRUE);
         levl[u.ux][u.uy].blessedftn = 0;
+        rehydrate(rn1(250, 1000));
         return;
     }
 
@@ -776,6 +780,7 @@ drinkfountain(void)
         pline_The("cool draught refreshes you.");
         u.uhunger += rnd(10); /* don't choke on water */
         newuhs(FALSE);
+        rehydrate(rn1(100, 100));
         if (mgkftn)
             return;
     } else {
@@ -786,6 +791,7 @@ drinkfountain(void)
             enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
             exercise(A_WIS, TRUE);
             pline_The("feeling subsides.");
+            rehydrate(rn1(100, 100));
             break;
         case 20: /* Foul water */
             pline_The("water is foul!  You gag and vomit.");
@@ -845,11 +851,13 @@ drinkfountain(void)
             incr_itimeout(&HSee_invisible, rn1(1000, 1000));
             newsym(u.ux, u.uy);
             exercise(A_WIS, TRUE);
+            rehydrate(rn1(100, 100));
             break;
         case 26: /* See Monsters */
             if (monster_detect((struct obj *) 0, 0))
                 pline_The("%s tastes like nothing.", hliquid("water"));
             exercise(A_WIS, TRUE);
+            rehydrate(rn1(100, 100));
             break;
         case 27: /* Find a gem in the sparkling waters. */
             if (!FOUNTAIN_IS_LOOTED(u.ux, u.uy)) {
@@ -872,14 +880,17 @@ drinkfountain(void)
                     continue;
                 monflee(mtmp, 0, FALSE, FALSE);
             }
+            rehydrate(rn1(100, 100));
             break;
         }
         case 30: /* Gushing forth in this room */
             dogushforth(TRUE);
+            rehydrate(rn1(100, 500));
             break;
         default:
             pline("This tepid %s is tasteless.",
                   hliquid("water"));
+            rehydrate(rn1(100, 100));
             break;
         }
     }
@@ -1040,6 +1051,7 @@ dipfountain(struct obj *obj)
                 CLEAR_FOUNTAIN_LOOTED(u.ux, u.uy);
                 exercise(A_WIS, FALSE);
             }
+            rehydrate(rn1(100, 100));
         }
         break;
     case 29: /* You see coins */
@@ -1084,6 +1096,7 @@ wash_hands(void)
         if (uarmf) {
             uarmf->greased = 0;
             res = water_damage(uarmf, (const char *) 0, TRUE);
+            update_inventory();
         }
     } else {
         You("wash your %s%s in the %s.", uarmg ? "gloved " : "", hands,
@@ -1093,6 +1106,7 @@ wash_hands(void)
             if (uarmg)
                 uarmg->greased = 0;
             Your("%s are no longer slippery.", fingers_or_gloves(TRUE));
+            update_inventory();
         }
         if (uarmg)
             res = water_damage(uarmg, (const char *) 0, TRUE);
@@ -1101,6 +1115,7 @@ wash_hands(void)
         compare the result to ER_DESTROYED and ER_NOTHING, so it works */
     if ((was_glib || was_goopy) && res == ER_NOTHING)
         res = ER_GREASED;
+    rehydrate(rn1(75, 25));
     return res;
 }
 
@@ -1172,15 +1187,18 @@ drinksink(void)
     switch (rn2(20)) {
     case 0:
         You("take a sip of very cold %s.", hliquid("water"));
+        rehydrate(rn1(100, 100));
         break;
     case 1:
         You("take a sip of very warm %s.", hliquid("water"));
+        rehydrate(rn1(100, 100));
         break;
     case 2:
         You("take a sip of scalding hot %s.", hliquid("water"));
         if (fully_resistant(FIRE_RES)) {
             pline("It seems quite tasty.");
             monstseesu(M_SEEN_FIRE);
+            rehydrate(rn1(100, 100));
         } else {
             losehp(resist_reduce(rnd(8), FIRE_RES),
                    "sipping boiling water", KILLED_BY);
@@ -1203,9 +1221,9 @@ drinksink(void)
         for (;;) {
 	        /* use Luck here instead of u.uluck */
             if (!rn2(13) && ((Luck >= 0 && maybe_polyd(is_vampire(gy.youmonst.data),
-				Race_if(PM_VAMPIRE)))
+				Race_if(PM_DHAMPIR)))
 			    || (Luck <= 0 && !maybe_polyd(is_vampire(gy.youmonst.data),
-				Race_if(PM_VAMPIRE))))) {
+				Race_if(PM_DHAMPIR))))) {
                 otmp = mksobj(POT_VAMPIRE_BLOOD, FALSE, FALSE);
             } else {
                 otmp = mkobj(POTION_CLASS, FALSE);
@@ -1247,6 +1265,7 @@ drinksink(void)
         pline("Yuk, this %s tastes awful.", hliquid("water"));
         more_experienced(1, 0);
         newexplevel();
+        rehydrate(rn1(75, 25));
         break;
     case 9:
         pline("Gaggg... this tastes like sewage!  You vomit.");
@@ -1264,10 +1283,12 @@ drinksink(void)
     case 11:
         Soundeffect(se_clanking_pipe, 50);
         You_hear("clanking from the pipes...");
+        rehydrate(rn1(75, 25));
         break;
     case 12:
         Soundeffect(se_sewer_song, 100);
         You_hear("snatches of song from among the sewers...");
+        rehydrate(rn1(75, 25));
         break;
     case 13:
         pline("Ew, what a stench!");
@@ -1284,6 +1305,7 @@ drinksink(void)
         You("take a sip of %s %s.",
             rn2(3) ? (rn2(2) ? "cold" : "warm") : "hot",
             hliquid("water"));
+        rehydrate(rn1(100, 100));
     }
 }
 

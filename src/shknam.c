@@ -382,8 +382,8 @@ const struct shclass shtypes[] = {
       { { 30, -WAX_CANDLE },
         { 44, -TALLOW_CANDLE },
         { 5, -BRASS_LANTERN },
-        { 10, -OIL_LAMP },
-        { 2, -MAGIC_LAMP },
+        { 9, -OIL_LAMP },
+        { 3, -MAGIC_CANDLE },
         { 5, -POT_OIL },
         { 2, -WAN_LIGHT },
         { 1, -SCR_LIGHT },
@@ -606,6 +606,7 @@ neweshk(struct monst *mtmp)
     if (!ESHK(mtmp))
         ESHK(mtmp) = (struct eshk *) alloc(sizeof(struct eshk));
     (void) memset((genericptr_t) ESHK(mtmp), 0, sizeof(struct eshk));
+    ESHK(mtmp)->parentmid = mtmp->m_id;
     ESHK(mtmp)->bill_p = (struct bill_x *) 0;
 }
 
@@ -814,7 +815,8 @@ stock_room(int shp_indx, struct mkroom *sroom)
             for (sy = sroom->ly; sy <= sroom->hy; sy++)
                 if (stock_room_goodpos(sroom, rmno, sh, sx,sy))
                     stockcount++;
-        specialspot = rnd(stockcount);
+        if (stockcount)
+            specialspot = rnd(stockcount);
         stockcount = 0;
     }
 

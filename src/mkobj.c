@@ -247,13 +247,14 @@ mkobj_erosions(struct obj *otmp)
             otmp->greased = 1;
     }
     /* Potions can sometimes generate diluted. */
-    if (otmp->oclass == POTION_CLASS && otmp->otyp != POT_WATER
+    if (otmp->oclass == POTION_CLASS
+        && otmp->otyp != POT_WATER && otmp->otyp != POT_ACID
         && svm.moves > 1L && !rn2(27))
         otmp->odiluted = 1;
     /* Wands can sometimes generate pre-charged. */
     if (otmp->oclass == WAND_CLASS
         && svm.moves > 1L && !rn2(23))
-        otmp->recharged = 1;
+        otmp->recharged = rne(3);
 }
 
 /* make a random object of class 'let' at a specific location;
@@ -916,6 +917,7 @@ mksobj_init(struct obj **obj, boolean artif)
         otmp->quan = is_multigen(otmp) ? (long) rn1(6, 6) : 1L;
         if (!rn2(11)) {
             otmp->spe = rne(3);
+            otmp->spe = otmp->spe > 6 ? 6 : otmp->spe;
             otmp->blessed = rn2(2);
         } else if (!rn2(10)) {
             curse(otmp);
@@ -930,7 +932,7 @@ mksobj_init(struct obj **obj, boolean artif)
             otmp->spe = rne(2) * rnd(3) + 1;
             otmp->spe = otmp->spe < 13 ? otmp->spe : 13; /* Don't go over 13 */
         }
-        
+
         if (artif && !rn2(20 + (10 * nartifact_exist()))) {
             /* mk_artifact() with otmp and A_NONE will never return NULL */
             otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, TRUE);
@@ -1051,6 +1053,7 @@ mksobj_init(struct obj **obj, boolean artif)
             blessorcurse(otmp, 5);
             break;
         case MAGIC_LAMP:
+        case MAGIC_CANDLE:
             otmp->spe = 1;
             otmp->lamplit = 0;
             blessorcurse(otmp, 2);
@@ -1151,7 +1154,7 @@ mksobj_init(struct obj **obj, boolean artif)
 
         /* Cartomancers use up spellbooks similar to wands. */
         if (Role_if(PM_CARTOMANCER) && otmp->otyp != SPE_BLANK_PAPER)
-            otmp->spe = 4 + (otmp->blessed ? rn2(2) : 0);
+            otmp->spe = 4 + (otmp->blessed ? rn2(4) : rn2(2));
         break;
     case ARMOR_CLASS:
         if (rn2(10)
@@ -1238,7 +1241,7 @@ mksobj(int otyp, boolean init, boolean artif)
     /* Food is generally useless for a vampire, so let's
      * give them a little break. We'll let most regular
      * food rations turn into potions of blood instead. */
-    if (Race_if(PM_VAMPIRE) && rn2(10)) {
+    if (Race_if(PM_DHAMPIR) && rn2(10)) {
         switch (otyp) {
         case FOOD_RATION:
         case CRAM_RATION:
@@ -1337,14 +1340,14 @@ mksobj(int otyp, boolean init, boolean artif)
         /* mk_artifact() with otmp and A_NONE will never return NULL */
         otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, FALSE);
     }
-    
+
     /* Prevent permapets for cartos, convert figurines to cards. */
     if (Role_if(PM_CARTOMANCER) && otmp->otyp == FIGURINE) {
         otmp->otyp = SCR_CREATE_MONSTER;
         otmp->oclass = SCROLL_CLASS;
         // otmp->spe = 0; /* reset spe just in case */
     }
-    
+
     otmp->owt = weight(otmp);
     return otmp;
 }
@@ -2090,7 +2093,7 @@ weight(struct obj *obj)
 }
 
 static const int treefruits[] = {
-    APPLE, ORANGE, PEAR, BANANA, EUCALYPTUS_LEAF
+    APPLE, ORANGE, PEAR, BANANA, EUCALYPTUS_LEAF, MISTLETOE
 };
 
 /* called when a tree is kicked; never returns Null */
@@ -2393,6 +2396,7 @@ is_flammable(struct obj *otmp)
         || otyp == SCR_FIRE
         || otyp == SPE_FIREBALL
         || otyp == SPE_FIRE_BOLT
+        || otyp == SPE_FLAME_SPHERE
         || otyp == WAN_FIRE
         || otyp == RIN_FIRE_RESISTANCE
         || otyp == FIRE_HORN)
@@ -2826,7 +2830,7 @@ add_to_container(struct obj *container, struct obj *obj)
     obj->ocontainer = container;
     obj->nobj = container->cobj;
     container->cobj = obj;
-    
+
     /* There might be a more efficient way to identify this... */
     if (container->otyp == BAG_OF_HOLDING && carried(container)) {
        makeknown_msg(BAG_OF_HOLDING);

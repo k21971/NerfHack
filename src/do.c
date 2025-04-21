@@ -276,7 +276,7 @@ flooreffects(
          * noise.  Stuff dropped near fountains always misses */
         if ((Blind || (Levitation || Flying)) && !Deaf && u_at(x, y)) {
             if (!Underwater) {
-                if (weight(obj) > 9) {
+                if (weight(obj) > WT_SPLASH_THRESHOLD) {
                     pline("Splash!");
                 } else if (Levitation || Flying) {
                     pline("Plop!");
@@ -287,7 +287,7 @@ flooreffects(
         }
         if (is_puddle(x, y) && !rn2(3))
             dryup_puddle(x, y, "dries up");
-        
+
         res = water_damage(obj, NULL, FALSE) == ER_DESTROYED;
     } else if (u_at(x, y) && (t = t_at(x, y)) != 0
                && (uteetering_at_seen_pit(t) || uescaped_shaft(t))) {
@@ -1982,8 +1982,6 @@ goto_level(
     } else if (In_sokoban(&u.uz)) {
         if (newdungeon)
             record_achievement(ACH_SOKO);
-    } else if (at_dgn_entrance("The Wizard's Tower") && !u.uevent.udemigod) {
-        You_feel("the presence of a great wizard, his tower must be somewhere on this level!");
     } else {
         if (new && Is_rogue_level(&u.uz)) {
             You("enter what seems to be an older, more primitive world.");
@@ -2422,7 +2420,7 @@ moldy_corpse(anything *arg, long timeout UNUSED)
                             || MON_AT(body->ox, body->oy)
                             || sobj_at(BOULDER, body->ox, body->oy)));
 
-    /* maybe F are genocided? */
+    /* maybe F are exiled? */
     boolean no_eligible = (newpm == NULL);
 
     /* Don't grow mold on the corpse the player is eating. */
@@ -2683,7 +2681,7 @@ maybe_fall_onto_weapon(void)
         if (Fumbling || rnd(20) > ACURR(A_DEX)) {
             You("fumble and fall onto %s", yname(uwep));
             losehp(Maybe_Half_Phys(dmgval(uwep, &gy.youmonst)),
-                "falling onto your own weapon", KILLED_BY);
+                "falling onto a weapon", KILLED_BY);
         }
         return;
     } else if (u.twoweap && uswapwep && rn2(3)) {
@@ -2693,7 +2691,7 @@ maybe_fall_onto_weapon(void)
         if (Fumbling || rnd(20) > ACURR(A_DEX)) {
             You("fumble and fall onto %s", yname(uswapwep));
             losehp(Maybe_Half_Phys(dmgval(uswapwep, &gy.youmonst)),
-                "falling onto your own weapon", KILLED_BY);
+                "falling onto a weapon", KILLED_BY);
         }
     }
 }

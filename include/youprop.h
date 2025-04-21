@@ -21,9 +21,6 @@
 
 #define maybe_polyd(if_so, if_not) (Upolyd ? (if_so) : (if_not))
 
-#define Uevil (u.ualign.type == A_NONE \
-                          || Race_if(PM_VAMPIRE))
-
 /*** Resistances to troubles ***/
 /* With intrinsics and extrinsics */
 #define HFire_resistance u.uprops[FIRE_RES].intrinsic
@@ -411,8 +408,7 @@
 #define HWithering u.uprops[WITHERING].intrinsic
 #define EWithering u.uprops[WITHERING].extrinsic
 #define BWithering u.uprops[WITHERING].blocked
-#define Withering ((HWithering || EWithering) && !BWithering \
-        && !maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_VAMPIRE)))
+#define Withering ((HWithering || EWithering) && !BWithering)
 
 #define Rabid u.uprops[RABID].intrinsic
 
@@ -424,6 +420,12 @@
 
 #define EStomping u.uprops[STOMPING].extrinsic
 #define Stomping (EStomping && !Levitation)
+
+/* While safe items is active, your inventory is protected from damage */
+#define HWatertight u.uprops[WATERTIGHT].intrinsic
+#define EWatertight u.uprops[WATERTIGHT].extrinsic
+#define Watertight (HWatertight || EWatertight)
+
 /*
  * Some pseudo-properties.
  */

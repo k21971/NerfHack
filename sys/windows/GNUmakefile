@@ -227,7 +227,7 @@ endif
 #==============================================================================
 
 #  The version of the game this Makefile was designed for
-NETHACK_VERSION="2.1.0"
+NETHACK_VERSION="2.2.0"
 
 # A brief version for use in macros
 NHV1=$(subst .,,$(NETHACK_VERSION))
@@ -512,6 +512,7 @@ LUALIST = \
 	minetn-9 	\
 	minetn-10 	\
 	minetn-11 	\
+	minetn-12 	\
 	temple-1	\
 	temple-2	\
 	nhcore 		\
@@ -528,6 +529,7 @@ LUALIST = \
 	soko1-6 	\
 	soko1-7 	\
 	soko1-8 	\
+	soko1-9     \
 	soko2-1 	\
 	soko2-2 	\
 	soko2-3 	\
@@ -570,6 +572,10 @@ LUALIST = \
 	wizard1		\
 	wizard2 	\
 	wizard3 	\
+	wizard4 	\
+	wizard5 	\
+	wizard6 	\
+	wizard7 	\
 	yeenog-1	\
 	yeenog-2	\
 	yeenog-3	\
@@ -585,6 +591,7 @@ LUALIST = \
 	Rog-fila Rog-filb Rog-goal Rog-loca Rog-strt \
 	Sam-fila Sam-filb Sam-goal Sam-loca Sam-strt \
 	Tou-fila Tou-filb Tou-goal Tou-loca Tou-strt \
+	Und-fila Und-filb Und-goal Und-loca Und-strt \
 	Val-fila Val-filb Val-goal Val-loca Val-strt \
 	Wiz-fila Wiz-filb Wiz-goal Wiz-loca Wiz-strt \
 
@@ -863,9 +870,9 @@ CLEAN_FILE += $(UTARGETS) $(UOBJS)
 #==========================================
 ODLB = $(O)dlb
 DLBOBJS = $(addprefix $(ODLB)/, alloc.o dlb.o dlb_main.o panic.o)
-DAT_CLEAN = $(addprefix $(DAT)/, data oracles options porthelp rumors engrave epitaph bogusmon)
+DAT_CLEAN = $(addprefix $(DAT)/, data oracles options porthelp rumors engrave epitaph bogusmon ntrymsgs)
 DAT_NOCLEAN = $(addprefix $(DAT)/, help hh cmdhelp keyhelp history opthelp optmenu \
-	      wizhelp license engrave epitaph bogusmon tribute)
+	      wizhelp license engrave epitaph bogusmon ntrymsgs tribute)
 DLBLST = $(DAT)/dlb.lst
 DLB = $(GAMEDIR)/nhdat$(NHV)
 DTARGETS = $(U)dlb.exe $(DAT_CLEAN) $(DLBLST) $(DLB)
@@ -903,7 +910,7 @@ $(DAT)/engrave: $(DAT)/bogusmon
 
 $(DAT)/epitaph: $(DAT)/bogusmon
 
-$(DAT)/bogusmon: $(U)makedefs.exe $(DAT)/bogusmon.txt $(DAT)/engrave.txt $(DAT)/epitaph.txt
+$(DAT)/bogusmon: $(U)makedefs.exe $(DAT)/bogusmon.txt $(DAT)/ntrymsgs.txt $(DAT)/engrave.txt $(DAT)/epitaph.txt
 	$< -s
 
 $(DLBLST): $(LUAFILES) | $(DAT_CLEAN) $(DAT_NOCLEAN)
@@ -1269,7 +1276,7 @@ $(ONH)/%.o: $(SRC)/%.c $(NHLUAH) | $(ONH)
 TARGET_CPU = x64
 NHV=370
 PKGFILES = nerfhackrc.template Guidebook.txt license NerfHack.exe NetHack.txt \
-        NerfHackW.exe opthelp nhdat210 record symbols sysconf.template
+        NerfHackW.exe opthelp nhdat220 record symbols sysconf.template
 FILESTOZIP = $(addprefix $(GAMEDIR)/, $(PKGFILES))
 MAINZIP = $(PkgDir)/nethack-$(NHV)-win-$(TARGET_CPU)-msys2.zip
 

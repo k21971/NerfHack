@@ -59,6 +59,7 @@ enum ms_sounds {
     MS_PRIEST   = 44,   /* ask for contribution; do cleansing */
     MS_SPELL    = 45,   /* spellcaster not matching any of the above */
     MS_BOAST    = 46,   /* giants */
+    MS_GNOLL    = 47,   /* gnolls */
 };
 
 #define MR_FIRE         0x00000001L /* resists fire */
@@ -195,15 +196,17 @@ enum ms_sounds {
 #define MH_GNOME        0x00000040L
 #define MH_ORC          0x00000080L
 #define MH_VAMPIRE      0x00000100L
-#define MH_WERE         0x00000200L
-#define MH_GIANT        0x00000400L
-#define MH_UNDEAD       0x00000800L
-#define MH_DRAGON       0x00001000L
-#define MH_TROLL        0x00002000L
-#define MH_OGRE         0x00004000L
-#define MH_JABBERWOCK   0x00008000L
-#define MH_ANGEL        0x00010000L
-#define MH_DEMON        0x00020000L
+#define MH_GRUNG        0x00000200L
+/* End of playable races */
+#define MH_WERE         0x00000400L
+#define MH_GIANT        0x00000800L
+#define MH_UNDEAD       0x00001000L
+#define MH_DRAGON       0x00002000L
+#define MH_TROLL        0x00004000L
+#define MH_OGRE         0x00008000L
+#define MH_JABBERWOCK   0x00010000L
+#define MH_ANGEL        0x00020000L
+#define MH_DEMON        0x00040000L
 
 #define MH_ANY          0x80000000L
 
@@ -215,7 +218,7 @@ enum ms_sounds {
 #define G_NOGEN         0x0200 /* generated only specially */
 #define G_SGROUP        0x0080 /* appear in small groups normally */
 #define G_LGROUP        0x0040 /* appear in large groups normally */
-#define G_GENO          0x0020 /* can be genocided */
+#define G_GENO          0x0020 /* can be exiled */
 #define G_NOCORPSE      0x0010 /* no corpse left ever */
 #define G_FREQ          0x0007 /* creation frequency mask */
 /* note: G_IGNORE controls handling of mvitals[].mvflags bits but is
@@ -224,7 +227,7 @@ enum ms_sounds {
 
 /* for svm.mvitals[].mvflags (variant during game), along with G_NOCORPSE */
 #define G_KNOWN         0x04 /* have been encountered */
-#define G_GENOD         0x02 /* have been genocided */
+#define G_GENOD         0x02 /* have been exiled */
 #define G_EXTINCT       0x01 /* population control; create no more */
 #define G_GONE          (G_GENOD | G_EXTINCT)
 #define MV_KNOWS_EGG    0x08 /* player recognizes egg of this monster type */

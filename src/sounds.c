@@ -9,6 +9,7 @@ staticfn boolean beehive_mon_sound(struct monst *);
 staticfn boolean morgue_mon_sound(struct monst *);
 staticfn boolean zoo_mon_sound(struct monst *);
 staticfn boolean dlair_mon_sound(struct monst *);
+staticfn boolean terror_mon_sound(struct monst *);
 staticfn boolean temple_priest_sound(struct monst *);
 staticfn boolean mon_is_gecko(struct monst *);
 staticfn int dochat(void);
@@ -154,6 +155,30 @@ dlair_mon_sound(struct monst *mtmp)
     return FALSE;
 }
 
+staticfn boolean
+terror_mon_sound(struct monst *mtmp)
+{
+    if (mtmp->data->mlet == S_UMBER && mon_in_room(mtmp, TERRORHALL)) {
+        int hallu = Hallucination ? 1 : 0;
+
+        switch (rn2(3) + hallu) {
+        case 0:
+            You_feel("weirded out.");
+            break;
+        case 1:
+            You("sense something strange about this place.");
+            break;
+        case 2:
+            You("think you just saw something move.");
+            break;
+        case 3:
+            You("think you're seeing white rabbits!");
+            break;
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
 
 staticfn boolean
 temple_priest_sound(struct monst *mtmp)
@@ -354,6 +379,10 @@ dosounds(void)
     }
     if (svl.level.flags.has_lair && !rn2(200)) {
         if (get_iter_mons(dlair_mon_sound))
+            return;
+    }
+    if (svl.level.flags.has_terrorhall && !rn2(200)) {
+        if (get_iter_mons(terror_mon_sound))
             return;
     }
     if (svl.level.flags.has_shop && !rn2(200)) {
@@ -629,6 +658,7 @@ maybe_gasp(struct monst *mon)
     case MS_ORACLE:
     case MS_PRIEST: /* temple priest, roaming aligned priest (not mplayer) */
     case MS_BOAST: /* giants */
+    case MS_GNOLL:
     case MS_IMITATE: /* doppelganger, leocrotta, Aleax */
         dogasp = TRUE;
         break;
@@ -802,8 +832,8 @@ domonnoise(struct monst *mtmp)
            night */
         boolean isnight = night();
         boolean kindred = maybe_polyd(is_vampire(gy.youmonst.data),
-                                      Race_if(PM_VAMPIRE));
-	boolean nightchild = (Upolyd && (u.umonnum == PM_WOLF
+                                      Race_if(PM_DHAMPIR));
+	    boolean nightchild = (Upolyd && (u.umonnum == PM_WOLF
                                          || u.umonnum == PM_WINTER_WOLF
                                          || u.umonnum == PM_WINTER_WOLF_CUB));
         const char *racenoun = (flags.female && gu.urace.individual.f)
@@ -901,8 +931,7 @@ domonnoise(struct monst *mtmp)
             else if (mtmp->mtame && EDOG(mtmp)->hungrytime > svm.moves + 1000)
                 pline_msg = "yips.";
             else {
-                if (ptr != &mons[PM_DINGO]) /* dingos do not actually bark */
-                    pline_msg = "barks.";
+                pline_msg = "barks.";
             }
         } else {
             pline_msg = "growls.";
@@ -1249,13 +1278,20 @@ domonnoise(struct monst *mtmp)
             verbl_msg = arrest_msg[rn2(3)];
         }
         break;
+    case MS_GNOLL:
+        if (mtmp->mpeaceful) {
+            pline("%s cackles conspiratorially.", Monnam(mtmp));
+        } else {
+            pline("%s cackles at you.", Monnam(mtmp));
+        }
+        break;
     case MS_BRIBE:
         if (mtmp->mpeaceful && !mtmp->mtame) {
             (void) demon_talk(mtmp);
             break;
         }
-	    FALLTHROUGH;
-        /*FALLTHRU*/
+        FALLTHROUGH;
+        /* FALLTHRU */
     case MS_CUSS:
         if (!mtmp->mpeaceful)
             cuss(mtmp);
@@ -1508,19 +1544,21 @@ dochat(void)
         return ECMD_OK;
     }
     /* Valkyries can tame winter wolves via #chat */
-    if (((Role_if(PM_VALKYRIE)
-            && (mtmp->data == &mons[PM_WINTER_WOLF_CUB]
-                || mtmp->data == &mons[PM_WINTER_WOLF]))
+    if (((Role_if(PM_UNDEAD_SLAYER)
+            && (mtmp->data == &mons[PM_REVENANT_PUP]
+            || mtmp->data == &mons[PM_REVENANT_HOUND]))
         /* Vampires can tame familiars via chat */
-        || (Race_if(PM_VAMPIRE)
-            && mtmp->data == &mons[PM_FAMILIAR]))
-        && !mtmp->mtame) {
+        || (Race_if(PM_DHAMPIR)
+            && mtmp->data == &mons[PM_FAMILIAR]))) {
 
-        if (Role_if(PM_VALKYRIE))
-            You("attempt to tame the %s with calm sounds.", l_monnam(mtmp));
-        else if (Race_if(PM_VAMPIRE))
-            You("attempt to dominate the %s.", l_monnam(mtmp));
-        
+        /* Increase apport */
+        if (mtmp->mtame) {
+            You("give your %s some encouragement.", l_monnam(mtmp));
+            EDOG(mtmp)->apport += rn1(25, 25);
+            return 0;
+        }
+        You("attempt to dominate the %s.", l_monnam(mtmp));
+
         if (rnl(10) < 2) {
             (void) tamedog(mtmp, (struct obj *) 0, TRUE);
         } else if (!mtmp->mpeaceful) {
@@ -1566,7 +1604,7 @@ is_stormy_monster(struct monst *mtmp)
         return FALSE;
 
     /* not a "true" stormy monster */
-    if (mtmp->iswiz || is_vampshifter(mtmp))
+    if (mtmp->iswiz || mtmp->iscthulhu || is_vampshifter(mtmp))
         return FALSE;
 
     return (mtmp->data->mlet == S_VORTEX
@@ -1579,7 +1617,7 @@ pacify_with_words(struct monst *mtmp)
 {
     if (mtmp->mrabid) /* No chance... */
         return;
-    
+
     You("manage to calm %s.",
          genders[pronoun_gender(mtmp, PRONOUN_HALLU)].him);
     mtmp->mpeaceful = 1;

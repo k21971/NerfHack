@@ -61,7 +61,7 @@ explosionmask(
                 res = EXPL_HERO;
             break;
         case AD_ACID:
-            if (Acid_resistance)
+            if (fully_resistant(ACID_RES))
                 res = EXPL_HERO;
             break;
         case AD_DRLI:
@@ -485,7 +485,7 @@ explode(
                     continue;
                 xx = x + i - 1;
                 yy = y + j - 1;
-                if (u_at(xx, yy)) {
+                if (u_at(xx, yy) && !Underwater) {
                     uhurt = ((explmask[i][j] & EXPL_HERO) != 0) ? 1 : 2;
                     /* If the player is attacking via polyself into something
                      * with an explosion attack, leave them (and their gear)
@@ -508,7 +508,7 @@ explode(
                 mtmp = m_at(xx, yy);
                 if (!mtmp && u_at(xx, yy))
                     mtmp = u.usteed;
-                if (!mtmp)
+                if (!mtmp || mon_underwater(mtmp))
                     continue;
                 if (do_hallu) {
                     int tryct = 0;
@@ -638,6 +638,7 @@ explode(
         if (adtyp == AD_FIRE) {
             (void) burnarmor(&gy.youmonst);
             ignite_items(gi.invent);
+            dehydrate(resist_reduce(rn1(150, 150), FIRE_RES));
         }
         if (adtyp == AD_ACID) {
             if (rn2(u.twoweap ? 2 : 3))
@@ -663,7 +664,7 @@ explode(
              * Brittle - if the order of monattk.h AD types or the
              * prop.h prop_types ever changes, this needs updating.
              * */
-            if (adtyp >= AD_FIRE && adtyp <= AD_DRST)
+            if (adtyp >= AD_FIRE && adtyp <= AD_ACID)
                 damu = resist_reduce(damu, adtyp - 1);
 
             /* hero does not get same fire-resistant vs cold and
@@ -1164,6 +1165,8 @@ mon_explodes_nodmg(struct monst *magr, struct attack *mattk)
 
     for (y = cy - 1; y <= cy + 1; y++) {
         for (x = cx - 1; x <= cx + 1; x++) {
+            if (!isok(x, y))
+                continue;
             if (x == cx && y == cy) {
                 continue; /* doesn't affect itself */
             } else if (u_at(x, y)) {

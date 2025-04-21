@@ -11,7 +11,7 @@
 -- Converted to lua by hackemslashem
 des.level_init({ style="mazegrid", bg ="-" });
 
-des.level_flags("mazelevel", "hardfloor")
+des.level_flags("mazelevel")
 des.map({ halign = "right", valign = "center", map = [[
 -------------------------------------------------
 | ------------|------------------                
@@ -39,21 +39,17 @@ des.mazewalk(00,06,"west")
 
 -- Non diggable walls
 des.non_diggable(selection.area(00,00,46,12))
-des.non_passwall(selection.area(00,00,46,12));
 
 -- The fellow in residence
 des.monster({id="Demogorgon", x=06, y=06})
 
--- Some random weapons and armor.
+-- Some random items
+des.object("[")
+des.object("[")
+des.object(")")
+des.object(")")
 des.object("*")
 des.object("!")
-des.object("!")
-des.object("!")
-des.object("!")
-des.object("!")
-des.object("!")
-des.object("?")
-des.object("?")
 des.object("?")
 
 -- Random monsters.

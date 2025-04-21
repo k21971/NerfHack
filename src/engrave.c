@@ -425,7 +425,7 @@ static const char *bogus_elbereth[N_BOGUS_ELBERETH] = {
     "ElberethElbereth",
     "Betherel", /* Anagram */
     "Thelbree", /* Anagram */
-    "Errrrrrrrr", 
+    "Errrrrrrrr",
     "Elberithius", /* latinized */
 };
 
@@ -444,7 +444,7 @@ make_engr_at(
         del_engr(ep);
 
     if (!gi.in_mklev && e_type != HEADSTONE && strstri(s, "Elbereth")) {
-        if (Race_if(PM_VAMPIRE) || Race_if(PM_ORC)) {
+        if (Race_if(PM_DHAMPIR) || Race_if(PM_ORC)) {
             s = bogus_elbereth[rn2(N_BOGUS_ELBERETH)];
             pline("%s", refuse_write[rn2(N_REFUSE_WRITE)]);
             You("%swrite `%s` instead.",
@@ -824,6 +824,7 @@ doengrave_sfx_item_WAN(struct _doengrave_ctx *de)
         }
         Strcpy(de->post_engr_text, Blind ? "You feel the wand heat up."
                                          : "Flames fly from the wand.");
+        dehydrate(rn1(15, 15));
         break;
     case WAN_LIGHTNING:
         de->ptext = TRUE;
@@ -1118,7 +1119,7 @@ doengrave(void)
         de->ret = ECMD_TIME;
         goto doengr_exit;/* costs a turn even though it didn't get worn */
     }
-    
+
     if (u.ustuck && (de->otmp == &hands_obj
                     || de->otmp->oclass == WEAPON_CLASS
                     || de->otmp->oclass == TOOL_CLASS)) {

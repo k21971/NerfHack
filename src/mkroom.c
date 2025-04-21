@@ -20,12 +20,13 @@
 staticfn boolean isbig(struct mkroom *);
 staticfn struct mkroom *pick_room(boolean);
 staticfn void mkshop(void), mkzoo(int), mkswamp(void);
-staticfn int mk_zoo_thronemon(coordxy, coordxy);
+staticfn int mk_zoo_thronemon(coordxy, coordxy, int);
 staticfn void mktemple(void);
 staticfn coord *shrine_pos(int);
 staticfn struct permonst *morguemon(void);
 staticfn struct permonst *squadmon(void);
 staticfn struct permonst *realzoomon(void);
+staticfn struct permonst *horriblemon(void);
 staticfn void save_room(NHFILE *, struct mkroom *);
 staticfn void rest_room(NHFILE *, struct mkroom *);
 staticfn boolean invalid_shop_shape(struct mkroom *sroom);
@@ -71,7 +72,7 @@ do_mkroom(int roomtype)
             mkzoo(BEEHIVE);
             break;
         case MIGOHIVE:
-            mkzoo(MIGOHIVE); 
+            mkzoo(MIGOHIVE);
             break;
         case FUNGUSFARM:
             mkzoo(FUNGUSFARM);
@@ -99,6 +100,9 @@ do_mkroom(int roomtype)
             break;
         case DRAGONLAIR:
             mkzoo(DRAGONLAIR);
+            break;
+        case TERRORHALL:
+            mkzoo(TERRORHALL);
             break;
         default:
             impossible("Tried to make a room of type %d.", roomtype);
@@ -162,6 +166,10 @@ mkshop(void)
             }
             if (*ep == 'a' || *ep == 'A') {
                 mkzoo(ANTHOLE);
+                return;
+            }
+            if (*ep == 'h' || *ep == 'H') {
+                mkzoo(TERRORHALL);
                 return;
             }
             if (*ep == 'c' || *ep == 'C') {
@@ -313,14 +321,19 @@ mkzoo(int type)
 /* Create an appropriate "king" monster at the given location (assumed to be on
  * a throne). */
 staticfn int
-mk_zoo_thronemon(coordxy x, coordxy y)
+mk_zoo_thronemon(coordxy x, coordxy y, int roomtype)
 {
     int i = rnd(level_difficulty());
-    int pm = (i > 20) ? PM_VAMPIRE_LEADER
-        : (i > 9) ? PM_OGRE_TYRANT
-        : (i > 5) ? PM_ELVEN_MONARCH
-        : (i > 2) ? PM_DWARF_RULER
-        : PM_GNOME_RULER;
+    int pm;
+    if (roomtype == GIANTCOURT) {
+        pm = PM_TITAN;
+    } else {
+        pm = (i > 20) ? PM_VAMPIRE_ROYAL
+            : (i > 9) ? PM_OGRE_TYRANT
+            : (i > 5) ? PM_ELVEN_MONARCH
+            : (i > 2) ? PM_DWARF_RULER
+            : PM_GNOME_RULER;
+    }
     struct monst *mon = makemon(&mons[pm], x, y, NO_MM_FLAGS);
 
     if (mon) {
@@ -368,7 +381,7 @@ fill_zoo(struct mkroom *sroom)
             ty = mm.y;
         } while (occupied(tx, ty) && --i > 0);
  throne_placed:
-        ctype = mk_zoo_thronemon(tx, ty);
+        ctype = mk_zoo_thronemon(tx, ty, type);
         break;
     case ANTHOLE:
     case BEEHIVE:
@@ -419,7 +432,7 @@ fill_zoo(struct mkroom *sroom)
                     && IS_THRONE(levl[sx][sy].typ))
                 continue;
             /* create the appropriate room filler monster */
-            mon = makemon((type == COURT) ? (ctype == PM_VAMPIRE_LEADER
+            mon = makemon((type == COURT) ? (ctype == PM_VAMPIRE_ROYAL
                                           ? mkclass(S_VAMPIRE, 0) : courtmon()) :
                           (type == BARRACKS) ? squadmon() :
                           (type == MORGUE) ? morguemon() :
@@ -440,11 +453,13 @@ fill_zoo(struct mkroom *sroom)
                                                     : antholemon()) :
                           (type == REALZOO) ? realzoomon() :
                           (type == GIANTCOURT) ? mkclass(S_GIANT, 0) :
+                          (type == TERRORHALL) ? horriblemon() :
                           (type == DRAGONLAIR) ? mkclass(S_DRAGON, 0) :
                           (struct permonst *) 0, sx, sy, MM_ASLEEP | MM_NOGRP);
             if (mon) {
                 mon->msleeping = 1;
-                if ((type == COURT || type == GIANTCOURT || type == REALZOO)
+                if ((type == COURT || type == GIANTCOURT
+                     || type == REALZOO || type == TERRORHALL)
                     && mon->mpeaceful) {
                     mon->mpeaceful = 0;
                     set_malign(mon);
@@ -487,6 +502,9 @@ fill_zoo(struct mkroom *sroom)
                                      TRUE, FALSE);
                 if (!rn2(5))
                     make_grave(sx, sy, (char *) 0);
+                else if (!rn2(20)) {
+                    maketrap(sx, sy, PIT);
+                }
                 break;
             case BEEHIVE:
                 if (!rn2(3))
@@ -591,6 +609,9 @@ fill_zoo(struct mkroom *sroom)
     case DRAGONLAIR:
         svl.level.flags.has_lair = 1;
         break;
+    case TERRORHALL:
+        svl.level.flags.has_terrorhall = 1;
+        break;
     }
 }
 
@@ -599,6 +620,7 @@ fill_zoo(struct mkroom *sroom)
  */
 void
 mkundead(
+    struct monst *mtmp,
     coord *mm,
     boolean revive_corpses,
     int mm_flags)
@@ -607,9 +629,19 @@ mkundead(
     struct permonst *mdat;
     struct obj *otmp;
     coord cc;
-
+    int difcap = mtmp ? mtmp->data->difficulty : 0; /* spellcasters */
+                                                        
     while (cnt--) {
         mdat = morguemon();
+        /* Don't create more spellcasters of the monsters' level or
+         * higher--avoids chain summoners filling up the level.
+         */
+        if (mdat && difcap > 0 && mdat->difficulty >= difcap
+            && attacktype(mdat, AT_MAGC)) {
+            cnt++;
+            continue;
+        }
+        
         if (mdat && enexto(&cc, mm->x, mm->y, mdat)
             && (!revive_corpses
                 || !(otmp = sobj_at(CORPSE, cc.x, cc.y))
@@ -643,9 +675,12 @@ morguemon(void)
         else
             return mkclass(S_VAMPIRE, 0);
     }
+
+    /* added mummies, enabled all of S_wraith type monsters --Amy */
     return ((i < 20) ? &mons[PM_GHOST]
-                     : (i < 40) ? &mons[PM_WRAITH]
-                                : mkclass(S_ZOMBIE, 0));
+            : (i < 40) ? mkclass(S_WRAITH, 0) 
+            : (i < 70) ? mkclass(S_MUMMY, 0) 
+                       : mkclass(S_ZOMBIE, 0));
 }
 
 /* Return an appropriate ant monster type for an anthole.
@@ -676,7 +711,7 @@ antholemon(void)
             mtyp = PM_GIANT_ANT;
             break;
         }
-        /* try again if chosen type has been genocided or used up */
+        /* try again if chosen type has been exiled or used up */
     } while (++trycnt < 3 && (svm.mvitals[mtyp].mvflags & G_GONE));
 
     return ((svm.mvitals[mtyp].mvflags & G_GONE) ? (struct permonst *) 0
@@ -777,7 +812,7 @@ mkswamp(void) /* Michiel Huisjes & Fred de Wilde */
                                                sx, sy, NO_MM_FLAGS);
                             eelct++;
                         }
-                    } else if (!rn2(4)) { 
+                    } else if (!rn2(4)) {
                         levl[sx][sy].typ = PUDDLE;
                         /* swamps tend to be moldy */
                         (void) makemon(mkclass(S_FUNGUS, 0), sx, sy,
@@ -1064,6 +1099,33 @@ realzoomon(void)
         return (&mons[PM_APE]);
     else
         return (&mons[PM_MONKEY]);
+}
+
+/* return real zoo monster types. */
+staticfn struct permonst *
+horriblemon(void)
+{
+    int i = rn2(60) + rn2(3 * level_difficulty());
+    /* Umbers are the default filler */
+    if (rn2(4))
+        return (&mons[PM_UMBER_HULK]);
+
+    if (i > 135)
+        return (&mons[PM_STAR_VAMPIRE]);
+    else if (i > 125)
+        return (&mons[PM_FIRE_VAMPIRE]);
+    else if (i > 115)
+        return (&mons[PM_GORGON_HULK]);
+    else if (i > 85)
+        return (&mons[PM_SLUMBER_HULK]);
+    else if (i > 70)
+        return (&mons[PM_HUNGER_HULK]);
+    else if (i > 55)
+        return (&mons[PM_WATER_HULK]);
+    else if (i > 45)
+        return (&mons[PM_UMBRAL_HULK]);
+    else
+        return (&mons[PM_UMBER_HULK]);
 }
 
 static const struct {

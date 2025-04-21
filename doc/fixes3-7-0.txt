@@ -1,4 +1,4 @@
-NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.1484 $ $NHDT-Date: 1726862062 2024/09/20 19:54:22 $
+NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.1535 $ $NHDT-Date: 1740629713 2025/02/26 20:15:13 $
 
 General Fixes and Modified Features
 -----------------------------------
@@ -963,7 +963,7 @@ putting on water walking boots while underwater (maybe via magical breathing)
 	and rising to surface wasn't causing the boots to become discovered
 flying pets wouldn't target underwater food but if they happened to fly over
 	such food they could and would eat it
-praying on an altar with pet corpse on it can revive the pet
+praying on an altar with pet corpse or statue on it can revive the pet
 applying a cursed oil lamp can make your hands slippery
 valkyries start with a spear instead of a long sword
 grid bugs don't have hands
@@ -989,7 +989,7 @@ bigroom variant 3 may have some walls replaced with other terrain
 bigroom variant 4 may have two large squares of terrain in the middle
 bigroom variant 5 may have patches of ice or clouds
 some large monsters can knock back smaller monsters with a hit
-change Demonbane to a mace, make it the first sac gift for priests,
+change Demonbane to a silver mace, make it the first sac gift for priests,
 	and give it an invoke ability to banish demons
 wielding Giantslayer prevents knockback from larger monsters; likewise for
 	carried loadstone(s)
@@ -1499,6 +1499,14 @@ when you hear a monster incant a scroll, ensure that the 'I' invisible
 	monster indicator doesn't trump telepathy briefly
 proceed with showpaths option even if the sysconf file is missing
 angry shopkeeper was not charging for thrown items
+avoid "You fall down a deep shaft!" if deliberately flying down
+since introduction in 3.1.0, the definition for Mitre of Holiness has specified
+	that carrying it provides fire resistance, but that had never been
+	implemented; wearing it didn't confer fire resistance either--there is
+	no 'defends' capability for it since carrying should encompass that
+if a tree and a boulder or statue were at the same location, applying an axe
+	would break the boulder or statue rather than chop the tree
+avoid premapping outside Sokoban map to prevent showing stone glyphs
 
 
 Fixes to 3.7.0-x General Problems Exposed Via git Repository
@@ -2091,6 +2099,11 @@ when walking into/against a locked closed door, 'autounlock'==kick didn't
 having a 1% chance of creating rideable monsters with worn saddle gave knights
 	a 1% chance of creating an extra saddle for starting pony; it wasn't
 	tracked with other objects so produced a trivial memory leak
+when attacking a displacer beast, using the 'F' forcefight prefix prevented it
+	from swapping places with the hero
+successfully disarming a chest trap was clearing the chest's 'tknown' bit
+	instead of setting it; likewise when failing to disarm triggered and
+	used up the trap
 
 
 Fixes to 3.7.0-x Platform and/or Interface Problems Exposed Via git Repository
@@ -2431,6 +2444,8 @@ Unix: re-do command line parsing
 Unix: add ../include/nhlua.h to the alloc.o dependencies in Makefile.utl to
 	match Makefile.src
 Unix: implement SELF_RECOVER compile-time option, on by default on linux
+Unix: allow build to succeed with musl (instead of glibc), by specifying
+	musl=1 on the make command line
 user_sounds: move the message hook from inside individual window display ports
 	to the core where it allows MSGTYP_NOSHOW msgtyp's to still trigger
 	sounds to correct a reported github issue; also fixes a past reported
@@ -2766,6 +2781,8 @@ healers gain experience by healing pets
 blessed scroll of destroy armor asks which armor to destroy
 archeologists' fedora is lucky
 telepathic hero can discern which particular monster just read a scroll
+add "make fetch-docs" to download pre-formatted documentation
+monsters will use throw-and-return weapons such as an aklys
 
 
 Platform- and/or Interface-Specific New Features
@@ -2963,6 +2980,7 @@ split making pits on do_earthquake() into a separate function and
 	eliminate some gotos on do_earthquake() (pr #1287 by argrath)
 update the WASM cross-compile to work with the current
 	code (pr #1331 by guillaumebrunerie)
+add silver maces (pr #1405 by disperse)
 
 
 Code Cleanup and Reorganization

@@ -21,6 +21,7 @@ newemin(struct monst *mtmp)
     if (!EMIN(mtmp)) {
         EMIN(mtmp) = (struct emin *) alloc(sizeof(struct emin));
         (void) memset((genericptr_t) EMIN(mtmp), 0, sizeof(struct emin));
+        EMIN(mtmp)->parentmid = mtmp->m_id;
     }
 }
 
@@ -322,7 +323,7 @@ demon_talk(struct monst *mtmp)
     if (!demand || gm.multi < 0 || cash <= 0) { /* you have no gold or can't move */
         mtmp->mpeaceful = 0;
         set_malign(mtmp);
-        newsym(mtmp->mx, mtmp->my);
+        newsym_force(mtmp->mx, mtmp->my);
         return 0;
     } else {
 
@@ -343,7 +344,7 @@ demon_talk(struct monst *mtmp)
             pline("%s gets angry...", Amonnam(mtmp));
             mtmp->mpeaceful = 0;
             set_malign(mtmp);
-            newsym(mtmp->mx, mtmp->my);
+            newsym_force(mtmp->mx, mtmp->my);
             return 0;
         }
     }
@@ -479,8 +480,8 @@ lose_guardian_angel(
         }
         mongone(mon);
     }
-    /* create 2 to 4 hostile angels to replace the lost guardian */
-    for (i = rn1(3, 2); i > 0; --i) {
+    /* create 4 to 7 hostile angels to replace the lost guardian */
+    for (i = rn1(4, 4); i > 0; --i) {
         mm.x = u.ux;
         mm.y = u.uy;
         if (enexto(&mm, mm.x, mm.y, &mons[PM_ANGEL]))
@@ -500,7 +501,7 @@ gain_guardian_angel(void)
 
     Hear_again(); /* attempt to cure any deafness now (divine
                      message will be heard even if that fails) */
-    if (Conflict || Uevil) {
+    if (Conflict) {
        if (!Deaf)
             pline("A voice booms:");
         else
@@ -542,10 +543,6 @@ gain_guardian_angel(void)
              * the final level of the game. The angel will still appear, but
              * won't be tamed. */
             if (u.uconduct.pets) {
-                /* guardian angel -- the one case mtame doesn't
-                 * imply an edog structure, so we don't want to
-                 * call tamedog().
-                 */
                 mtmp->mtame = 10;
                 u.uconduct.pets++;
             }

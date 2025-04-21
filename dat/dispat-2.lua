@@ -9,7 +9,7 @@
 --
 des.level_init({ style="mazegrid", bg ="-" });
 
-des.level_flags("mazelevel", "hardfloor", "shortsighted")
+des.level_flags("mazelevel")
 
 des.level_init({ style="mines", fg=".", bg="L", smoothed=true, joined=true, walled=true })
 
@@ -54,7 +54,6 @@ des.drawbridge({ dir="north", state="closed", x=18,y=19})
 
 -- Non diggable walls
 des.non_diggable(selection.area(00,00,36,20))
-des.non_passwall(selection.area(00,00,36,20));
 
 -- the guy in charge
 des.monster({id="Dispater", x=18, y=10})
@@ -128,21 +127,9 @@ des.object("[")
 des.object("[")
 des.object(")")
 des.object(")")
-des.object("(")
-des.object("/")
-des.object("=")
-des.object("?")
-des.object("?")
+des.object("*")
 des.object("!")
-des.object("!")
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
-des.object("*")
+des.object("?")
 
 -- traps!
 des.trap("fire")

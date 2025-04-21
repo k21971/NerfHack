@@ -30,7 +30,7 @@ $	play_files = "PERM.,RECORD.,LOGFILE.,XLOGFILE.,PANICLOG."
 $	help_files = "HELP.,HH.,CMDHELP.,KEYHELP.,WIZHELP.,OPTHELP.," -
 		   + "HISTORY.,LICENSE."
 $	data_files = "DATA.,RUMORS.,ORACLES.,OPTIONS.,TRIBUTE.," -
-		   + "ENGRAVE.,EPITAPH.,BOGUSMON."
+		   + "ENGRAVE.,EPITAPH.,BOGUSMON.,NTRYMSGS."
 $	sysconf_file = "[.sys.vms]sysconf"
 $	guidebook  = "[.doc]Guidebook.txt"
 $	invoc_proc = "[.sys.vms]nethack.com"
@@ -41,6 +41,7 @@ $	spec_files = "air.lua,"	-
 		+ "baalz-%.lua,"	-
 		+ "bigrm-*.lua," 	-
 		+ "bridge.lua," 	-
+		+ "invoke.lua," 	-
 		+ "dragons.lua," 	-
 		+ "castle-%.lua," 	-
 		+ "demo-%.lua," 	-
@@ -70,6 +71,7 @@ $	spec_files = "air.lua,"	-
 		+ "valley-%.lua" 	-
 		+ "water.lua," 		-
 		+ "wizard%.lua," 	-
+		+ "wizard2-%.lua," 	-
 		+ "yeenog-%.lua"
 $	qstl_files = "%%%-goal.lua,%%%-fil%.lua,%%%-loca.lua,%%%-strt.lua"
 $	dngn_files = "dungeon.lua"
@@ -147,7 +149,7 @@ $	milestone "(oracles)"
 $ makedefs -h	!oracles.txt -> oracles
 $	milestone "(dungeon preprocess)"
 $ makedefs -s
-$	milestone "(engrave, epitaph, bogusmon)"
+$	milestone "(engrave, epitaph, bogusmon, ntrymsgs)"
 $ makedefs -v
 $	milestone "(options)"
 $! makedefs -e	!dungeon.def -> dungeon.pdf

@@ -13,7 +13,7 @@
 -- MAZE:"yeenoghu",random
 des.level_init({ style="mazegrid", bg ="-" });
 
-des.level_flags("mazelevel", "hardfloor")
+des.level_flags("mazelevel")
 
 --0       1         2         3         4         5         6         7     
 --23456789012345678901234567890123456789012345678901234567890123456789012345
@@ -45,7 +45,6 @@ des.teleport_region({region={00,11,75,17}, exclude = {00,00,00,00} })
 
 --Protect the walls
 des.non_diggable(selection.area(00,00,75,17))
-des.non_passwall(selection.area(29,00,75,10));
 
 -- Regions
 des.region(selection.area(00,00,67,17),"unlit")
@@ -82,9 +81,6 @@ des.object(")")
 des.object(")")
 des.object("*")
 des.object("!")
-des.object("!")
-des.object("?")
-des.object("?")
 des.object("?")
 
 -- Some traps.
@@ -132,12 +128,12 @@ des.monster("gnoll")
 des.monster("gnoll")
 des.monster("gnoll")
 des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
-des.monster("gnoll")
+des.monster("gnoll warrior")
+des.monster("gnoll warrior")
+des.monster("gnoll warrior")
+des.monster("gnoll warrior")
+des.monster("gnoll warrior")
+des.monster("gnoll warrior")
+des.monster("gnoll chieftain")
+des.monster("gnoll chieftain")
+des.monster("gnoll shaman")

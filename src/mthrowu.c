@@ -11,6 +11,7 @@ staticfn boolean ucatchgem(struct obj *, struct monst *);
 staticfn const char *breathwep_name(int);
 staticfn boolean drop_throw(struct obj *, boolean, coordxy, coordxy);
 staticfn boolean blocking_terrain(coordxy, coordxy);
+staticfn void return_from_mtoss(struct monst *, struct obj *, boolean);
 
 #define URETREATING(x, y) \
     (distmin(u.ux, u.uy, x, y) > distmin(u.ux0, u.uy0, x, y))
@@ -127,7 +128,7 @@ thitu(
         else
             You("are hit by %s%s", onm, exclam(dam));
 
-        if (is_acid && Acid_resistance) {
+        if (is_acid && fully_resistant(ACID_RES)) {
             pline("It doesn't seem to hurt you.");
             monstseesu(M_SEEN_ACID);
         } else if (obj && stone_missile(obj)
@@ -180,7 +181,7 @@ thitu(
                 if (!rn2(3))
                     (void) destroy_items(&gy.youmonst, AD_ACID, dam);
             }
-            losehp(dam, knm, kprefix); /* acid damage */
+            losehp(resist_reduce(dam, ACID_RES), knm, kprefix); /* acid damage */
             exercise(A_STR, FALSE);
         }
         return 1;
@@ -358,7 +359,7 @@ monshoot(struct monst *mtmp, struct obj *otmp, struct obj *mwep)
 }
 
 /* an object launched by someone/thing other than player attacks a monster;
-   return 1 if the object has stopped moving (hit or its range used up)
+   return 1 if the object has stopped moving (hit or its range used up);
    can anger the monster, if this happened due to hero (eg. exploding
    bag of holding throwing the items) */
 boolean
@@ -368,7 +369,7 @@ ohitmon(
     int range,          /* how much farther will object travel if it misses;
                          * use -1 to signify to keep going even after hit,
                          * unless it's gone (for rolling_boulder_traps) */
-    boolean verbose)/* give messages even when you can't see what happened */
+    boolean verbose) /* give messages even when you can't see what happened */
 {
     int damage, tmp;
     boolean vis, ismimic, objgone;
@@ -503,8 +504,8 @@ ohitmon(
                           (nonliving(mtmp->data) || is_vampshifter(mtmp)
                            || !canspotmon(mtmp)) ? "destroyed" : "killed");
                 /* don't blame hero for unknown rolling boulder trap */
-                if (!svc.context.mon_moving && (otmp->otyp != BOULDER
-                                            || range >= 0 || otmp->otrapped))
+                if (!svc.context.mon_moving
+                   && (otmp->otyp != BOULDER || range >= 0 || otmp->otrapped))
                     xkilled(mtmp, XKILL_NOMSG);
                 else
                     mondied(mtmp);
@@ -578,7 +579,7 @@ ucatchgem(
     (/* missile hits edge of screen */                                 \
      !isok(gb.bhitpos.x + dx, gb.bhitpos.y + dy)                       \
      /* missile hits the wall */                                       \
-     || IS_OBSTRUCTED(levl[gb.bhitpos.x + dx][gb.bhitpos.y + dy].typ)        \
+     || IS_OBSTRUCTED(levl[gb.bhitpos.x + dx][gb.bhitpos.y + dy].typ)  \
      /* missile hit closed door */                                     \
      || closed_door(gb.bhitpos.x + dx, gb.bhitpos.y + dy)              \
      /* missile might hit iron bars */                                 \
@@ -596,8 +597,8 @@ ucatchgem(
 void
 m_throw(
     struct monst *mon,      /* launching monster */
-    coordxy x, coordxy y,           /* launch point */
-    coordxy dx, coordxy dy,         /* direction */
+    coordxy x, coordxy y,   /* launch point */
+    coordxy dx, coordxy dy, /* direction */
     int range,              /* maximum distance */
     struct obj *obj)        /* missile (or stack providing it) */
 {
@@ -607,6 +608,10 @@ m_throw(
     boolean forcehit;
     char sym = obj->oclass;
     int hitu = 0, oldumort, blindinc = 0;
+    const struct throw_and_return_weapon *arw = autoreturn_weapon(obj);
+    boolean tethered_weapon =
+                (obj == MON_WEP(mon) && arw && arw->tethered != 0),
+            return_flightpath = FALSE;
 
     gb.bhitpos.x = x;
     gb.bhitpos.y = y;
@@ -619,7 +624,7 @@ m_throw(
          * with 0 daggers?  (This caused the infamous 2^32-1 orcish
          * dagger bug).
          *
-         * VENOM is not in minvent - it should already be OBJ_FREE.
+         * VENOM is not in minvent--it should already be OBJ_FREE.
          * The extract below does nothing.
          */
 
@@ -637,7 +642,7 @@ m_throw(
     /* global pointer for missile object in OBJ_FREE state */
     gt.thrownobj = singleobj;
 
-    singleobj->owornmask = 0; /* threw one of multiple weapons in hand? */
+    singleobj->owornmask = 0L; /* threw one of multiple weapons in hand? */
 
     /* D: Special launcher effects */
     if (mwep && is_ammo(singleobj)
@@ -677,8 +682,30 @@ m_throw(
      * early to avoid the dagger bug, anyone who modifies this code should
      * be careful not to use either one after it's been freed.
      */
-    if (sym)
-        tmp_at(DISP_FLASH, obj_to_glyph(singleobj, rn2_on_display_rng));
+    if (sym) {
+        if (!tethered_weapon) {
+            tmp_at(DISP_FLASH, obj_to_glyph(singleobj, rn2_on_display_rng));
+        } else {
+            tmp_at(DISP_TETHER, obj_to_glyph(singleobj, rn2_on_display_rng));
+            /*
+             * Considerations for a tethered object based on throwit()/bhit() :
+             * - wall of water/lava will stop items, and triggers return.
+             * - iron bars will stop items, and triggers return.
+             * - pass harmlessly through shades.
+             * X stops forward motion at hit monster/hero, triggers return.
+             * - closed door will stop item's forward motion, triggers return.
+             * - sinks stop forward motion, triggers fall, then return.
+             * - object can get tangled in a web, no return (tether snaps?).
+             * On return:
+             * X rn2(100) chance of returning to thrower's location.
+             * X if impaired and rn2(100) == 0,
+             *      -50/50 chance of landing on the ground.
+             *      -50/50 chance of hitting the thrower and causing
+             *       rnd(3) damage.
+             *
+             */
+        }
+    }
     while (range-- > 0) { /* Actually the loop is always exited by break */
         singleobj->ox = gb.bhitpos.x += dx;
         singleobj->oy = gb.bhitpos.y += dy;
@@ -808,7 +835,12 @@ m_throw(
             }
             stop_occupation();
             if (hitu) {
-                (void) drop_throw(singleobj, hitu, u.ux, u.uy);
+                if (!tethered_weapon) {
+                    (void) drop_throw(singleobj, hitu, u.ux, u.uy);
+                } else {
+                    /* ready for return journey */
+                    return_flightpath = TRUE;
+                }
                 break;
             }
         }
@@ -829,8 +861,13 @@ m_throw(
                          && (cansee(gb.bhitpos.x, gb.bhitpos.y)
                              || (gm.marcher && canseemon(gm.marcher))))
                     pline("%s misses.", The(mshot_xname(singleobj)));
-
-                (void) drop_throw(singleobj, 0, gb.bhitpos.x, gb.bhitpos.y);
+                if (!tethered_weapon) {
+                    (void) drop_throw(singleobj, 0,
+                                      gb.bhitpos.x, gb.bhitpos.y);
+                } else {
+                    /*ready for return journey */
+                    return_flightpath = TRUE;
+                }
             }
             break;
         }
@@ -839,7 +876,11 @@ m_throw(
     }
     tmp_at(gb.bhitpos.x, gb.bhitpos.y);
     nh_delay_output();
-    tmp_at(DISP_END, 0);
+    if (arw && return_flightpath)
+        return_from_mtoss(mon, singleobj, tethered_weapon);
+        /* mon could be DEADMONSTER now */
+    else
+        tmp_at(DISP_END, 0);
     gm.mesg_given = 0; /* reset */
 
     if (blindinc) {
@@ -854,6 +895,124 @@ m_throw(
 }
 
 #undef MT_FLIGHTCHECK
+
+staticfn void
+return_from_mtoss(
+    struct monst *magr,
+    struct obj *otmp,
+    boolean tethered_weapon)
+{
+    boolean impaired = (magr->mconf || magr->mstun || magr->mblinded),
+            notcaught = FALSE, hits_thrower = FALSE;
+    coordxy x = gb.bhitpos.x, y = gb.bhitpos.y;
+    int made_it_back = rn2(100), dmg = 0;
+
+    if (otmp && made_it_back) {
+        /* it made it back to thrower's location */
+        if (tethered_weapon) {
+            tmp_at(DISP_END, BACKTRACK);
+        } else {
+            int dx = sgn(x - magr->mx),
+                dy = sgn(y - magr->my);
+
+            if (x != magr->mx || y != magr->my) {
+                tmp_at(DISP_FLASH, obj_to_glyph(otmp, rn2_on_display_rng));
+                while (isok(x, y) && (x != magr->mx || y != magr->my)) {
+                    tmp_at(x, y);
+                    nh_delay_output();
+                    x -= dx;
+                    y -= dy;
+                }
+                tmp_at(DISP_END, 0);
+            }
+        }
+        x = magr->mx;
+        y = magr->my;
+        if (!impaired && rn2(100)) {
+            /* FIXME: this should be moved to struct g (gd these days) */
+            static long do_not_annoy = 0;
+
+            if (!do_not_annoy || (svm.moves - do_not_annoy) > 500L) {
+                pline("%s to %s %s!", Tobjnam(otmp, "return"),
+                      s_suffix(mon_nam(magr)), mbodypart(magr, HAND));
+                do_not_annoy = svm.moves;
+            }
+            if (otmp) {
+                add_to_minv(magr, otmp);
+                if (tethered_weapon) {
+                    magr->mw = otmp;
+                    otmp->owornmask |= W_WEP;
+                }
+            }
+            if (cansee(x, y))
+                newsym(x, y);
+        } else {
+            boolean mlevitating = FALSE;  /* msg future-proofing only */
+
+            dmg = rn2(2);
+            if (!dmg) {
+                if (canseemon(magr)) {
+                    pline("%s back to %s, landing %s %s %s.",
+                          Tobjnam(otmp, "return"), mon_nam(magr),
+                          mlevitating ? "beneath" : "at", mhis(magr),
+                          makeplural(mbodypart(magr, FOOT)));
+                } else if (!Deaf) {
+                    You_hear("%s land near %s.", Something, mon_nam(magr));
+                }
+            } else {
+                dmg += rnd(3);
+                if (canseemon(magr)) {
+                    pline("%s back toward %s, hitting %s %s!",
+                          Tobjnam(otmp, "fly"), mon_nam(magr),
+                          mhis(magr), body_part(ARM));
+                } else if (!Deaf) {
+                    You_hear("%s hit %s with a thud!", something,
+                             mon_nam(magr));
+                }
+                hits_thrower = TRUE;
+            }
+            notcaught = TRUE;
+        }
+    } else {
+        /* it didn't make it back to thrower's location */
+        if (tethered_weapon)
+            tmp_at(DISP_END, 0);
+        You_hear("a loud snap!");
+        notcaught = TRUE;
+    }
+    if (otmp) {
+        if (hits_thrower) {
+            if (otmp->oartifact)
+                (void) artifact_hit((struct monst *) 0, magr, otmp, &dmg, 0);
+            magr->mhp -= dmg;
+            if (DEADMONSTER(magr))
+                monkilled(magr, canspotmon(magr) ? "" : (char *) 0, AD_PHYS);
+        }
+        if (notcaught) {
+            (void) snuff_candle(otmp);
+            if (!ship_object(otmp, x, y, FALSE)) {
+                if (flooreffects(otmp, x, y, "drop")) {
+                    if (cansee(x, y))
+                        newsym(x, y);
+                    return;
+                }
+                place_object(otmp, x, y);
+                stackobj(otmp);
+            }
+            if (!Deaf && !Underwater) {
+                /* Some sound effects when item lands in water or lava */
+                if (is_pool(x, y) || (is_lava(x, y) && !is_flammable(otmp))) {
+                    Soundeffect(se_splash, 50);
+                    pline((weight(otmp) > 9) ? "Splash!" : "Plop!");
+                }
+            }
+            if (obj_sheds_light(otmp))
+                gv.vision_full_recalc = 1;
+        }
+    }
+    if (cansee(x, y))
+        newsym(x, y);
+}
 
 /* Monster throws item at another monster */
 int
@@ -1067,6 +1226,9 @@ thrwmu(struct monst *mtmp)
     coordxy x, y;
     const char *onm;
     boolean mon_likes_melee = (mtmp->m_id % 4);
+    int rang;
+    const struct throw_and_return_weapon *arw;
+    boolean always_toss = FALSE;
 
     /* Rearranged beginning so monsters can use polearms not in a line */
     if (mtmp->weapon_check == NEED_WEAPON || !MON_WEP(mtmp)) {
@@ -1083,10 +1245,10 @@ thrwmu(struct monst *mtmp)
     if (mon_likes_melee && melee_or_ranged(otmp))
         return FALSE;
     if (is_pole(otmp)) {
-        int dam, hitv, rang;
+        int dam, hitv;
 
         if (otmp != MON_WEP(mtmp))
-            return FALSE; /* polearm must be wielded */
+            return FALSE; /* polearm, aklys must be wielded */
 
         /*
          * MON_POLE_DIST encompasses knight's move range (5): two spots
@@ -1130,6 +1292,11 @@ thrwmu(struct monst *mtmp)
         }
         stop_occupation();
         return TRUE;
+    } else if ((arw = autoreturn_weapon(otmp)) != 0 && !mwelded(otmp)) {
+        rang = dist2(mtmp->mx, mtmp->my, mtmp->mux, mtmp->muy);
+        if (rang > arw->range || !couldsee(mtmp->mx, mtmp->my))
+            return TRUE; /* Out of range, or intervening wall */
+        always_toss = TRUE;
     }
 
     x = mtmp->mx;
@@ -1141,7 +1308,8 @@ thrwmu(struct monst *mtmp)
      */
     if (!lined_up(mtmp)
         || (URETREATING(x, y)
-            && rn2(BOLT_LIM - distmin(x, y, mtmp->mux, mtmp->muy))))
+            && (!always_toss
+                && rn2(BOLT_LIM - distmin(x, y, mtmp->mux, mtmp->muy)))))
         return FALSE;
 
     mwep = MON_WEP(mtmp); /* wielded weapon */
@@ -1375,7 +1543,7 @@ hit_bars(
                weight is normally 480 but can be increased by increments
                of 160 (scrolls of punishment read while already punished) */
             int spe = ((otmp->otyp == HEAVY_IRON_BALL) /* 3+ for iron ball */
-                       ? ((int) otmp->owt / IRON_BALL_W_INCR)
+                       ? ((int) otmp->owt / WT_IRON_BALL_INCR)
                        : otmp->spe);
             /* chance: used in saving throw for the bars; more likely to
                break those when 'chance' is _lower_; acurrstr(): 3..25 */
