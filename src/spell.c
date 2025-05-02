@@ -2638,7 +2638,7 @@ cartomancer_combo(void)
         You("are not skilled enough to combo cards yet.");
         return 0;
     }
-    if (u.combotime) {
+    if (u.techtime) {
         You("cannot use your combo ability yet.");
         return 0;
     }
@@ -2663,7 +2663,7 @@ cartomancer_combo(void)
             break;
     }
     pline("Your combo ends.");
-    u.combotime = rn1(500, 1000); /* tech timeout */
+    u.techtime = rn1(500, 1000); /* tech timeout */
     return 1;
 }
 

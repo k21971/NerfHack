@@ -823,10 +823,14 @@ nh_timeout(void)
         }
     }
 
-    if (u.combotime) {
-        u.combotime--;
-        if (!u.combotime)
-            Your("combo ability is ready to use! [Access via 'Z']");
+    if (u.techtime) {
+        u.techtime--;
+        if (!u.techtime) {
+            if (Role_if(PM_CARTOMANCER))
+                Your("combo ability is ready to use! [Access via 'Z']");
+            else if (Race_if(PM_DHAMPIR))
+                Your("special ability is ready to use! [Access via #monster]");
+        }
     }
 
     /* Give a small warning that spell-based reflection is running out. */
