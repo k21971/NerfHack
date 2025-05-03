@@ -1777,20 +1777,30 @@ peffect_blood(struct obj *otmp)
                 exercise(A_CON, TRUE);
             }
         }
-        if (Race_if(PM_DHAMPIR)) {
+        if (Upolyd && Race_if(PM_DHAMPIR)) {
             if (!Unchanging)
                 rehumanize();
             return;
         } else if (!Unchanging) {
             int successful_polymorph = FALSE;
-            if (otmp->blessed)
-                successful_polymorph = polymon(PM_VAMPIRE_LEADER);
-            else if (otmp->cursed)
-                successful_polymorph = polymon(PM_VAMPIRE_BAT);
-            else
-                successful_polymorph = polymon(PM_VAMPIRE);
-            if (successful_polymorph)
-                u.mtimedone = 0;	/* "Permament" change */
+
+            if (!rn2(3)) {
+            	if (otmp->blessed)
+                	successful_polymorph = polymon(PM_VAMPIRE_LEADER);
+            	else if (otmp->cursed)
+                	successful_polymorph = polymon(PM_VAMPIRE_BAT);
+            	else
+                	successful_polymorph = polymon(PM_VAMPIRE);
+            	if (successful_polymorph)
+                	u.mtimedone = rn1(1500, 1500);	/* Not permanent */
+            } else {
+                int dmg;
+                pline("Ugh.  That was utterly disgusting.");
+                dmg = d(otmp->cursed ? 2 : 1, otmp->blessed ? 4 : 8)
+                        / (otmp->odiluted ? 4 : 1);
+                losehp(dmg, "potion of vampire blood", KILLED_BY_AN);
+                exercise(A_CON, FALSE);
+            }
         }
     } else {
         violated_vegetarian();
