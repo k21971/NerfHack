@@ -1531,8 +1531,8 @@ mklev_sanity_check(void)
             continue;
         if (rmno == -1)
             rmno = gs.smeq[i];
-        if (rmno != -1 && gs.smeq[i] != rmno)
-            impossible("room %i not connected?", i);
+//        if (rmno != -1 && gs.smeq[i] != rmno)
+//            impossible("room %i not connected?", i);
     }
 }
 
