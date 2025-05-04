@@ -537,8 +537,9 @@ save_worm(NHFILE *nhfp)
             for (count = 0, curr = wtails[i]; curr; curr = curr->nseg)
                 count++;
             /* Save number of segments */
-            if (nhfp->structlevel)
+            if (nhfp->structlevel) {
                 bwrite(nhfp->fd, (genericptr_t) &count, sizeof count);
+            }
             /* Save segment locations of the monster. */
             if (count) {
                 for (curr = wtails[i]; curr; curr = curr->nseg) {
@@ -551,8 +552,10 @@ save_worm(NHFILE *nhfp)
                 }
             }
         }
-        if (nhfp->structlevel) {
-            bwrite(nhfp->fd, (genericptr_t) wgrowtime, sizeof wgrowtime);
+        for (i = 0; i < MAX_NUM_WORMS; ++i) {
+            if (nhfp->structlevel) {
+                bwrite(nhfp->fd, (genericptr_t) &wgrowtime[i], sizeof (long));
+            }
         }
     }
 
@@ -586,8 +589,9 @@ rest_worm(NHFILE *nhfp)
     struct wseg *curr, *temp;
 
     for (i = 1; i < MAX_NUM_WORMS; i++) {
-        if (nhfp->structlevel)
+        if (nhfp->structlevel) {
             mread(nhfp->fd, (genericptr_t) &count, sizeof count);
+        }
 
         /* Get the segments. */
         for (curr = (struct wseg *) 0, j = 0; j < count; j++) {
@@ -605,8 +609,10 @@ rest_worm(NHFILE *nhfp)
         }
         wheads[i] = curr;
     }
-    if (nhfp->structlevel) {
-        mread(nhfp->fd, (genericptr_t) wgrowtime, sizeof wgrowtime);
+    for (i = 0; i < MAX_NUM_WORMS; ++i) {
+        if (nhfp->structlevel) {
+            mread(nhfp->fd, (genericptr_t) &wgrowtime[i], sizeof (long));
+        }
     }
 }
 

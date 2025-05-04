@@ -923,9 +923,9 @@ makeniche(int trap_type)
             rm->typ = CORR;
             /* 1/7 of these niches are generated inaccessible - no actual
              * connection to their corresponding room */
-            if (rn2(7))
+            if (rn2(7)) {
                 dosdoor(xx, yy, aroom, rn2(5) ? SDOOR : DOOR);
-            else {
+            } else {
                 /* inaccessible niches occasionally have iron bars */
                 if (!rn2(5) && IS_WALL(levl[xx][yy].typ)) {
                     (void) set_levltyp(xx, yy, IRONBARS);
@@ -1478,8 +1478,8 @@ themerooms_post_level_generate(void)
     iflags.in_lua = gi.in_mk_themerooms = FALSE;
 
     wallification(1, 0, COLNO - 1, ROWNO - 1);
-    free(gc.coder);
-    gc.coder = NULL;
+    if (gc.coder)
+        free(gc.coder), gc.coder = NULL;
     lua_gc(themes, LUA_GCCOLLECT);
 }
 

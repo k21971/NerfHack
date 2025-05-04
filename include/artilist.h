@@ -44,6 +44,7 @@ static const char *const artifact_names[] = {
 #define     ELEC(a,b)   {0,AD_ELEC,a,b}         /* electrical shock */
 #define     ACID(a,b)   {0,AD_ACID,a,b}         /* acid */
 #define     STUN(a,b)   {0,AD_STUN,a,b}         /* magical attack */
+#define     POIS(a,b)   {0,AD_DRST,a,b}         /* poison */
 #define     DISE(a,b)   {0,AD_DISE,a,b}         /* disease attack */
 #define     SLEE(a,b)   {0,AD_SLEE,a,b}         /* Sleep attack  */
 #define     DISN(a,b)   {0,AD_DISN,a,b}         /* disintegration attack */
@@ -387,7 +388,7 @@ static NEARDATA struct artifact artilist[] = {
      */
     A("Grimtooth", ORCISH_DAGGER,
       (SPFX_RESTR | SPFX_ATTK | SPFX_WARN | SPFX_DFLAGH), 0, MH_ELF,
-      DISE(2, 6), NO_DFNS, NO_CARY, 0,
+      DISE(2, 6), NO_DFNS, NO_CARY, FLING_POISON,
       A_CHAOTIC, NON_PM, PM_ORC,
       DFLT_SPE, ARTVAL, 1500L, CLR_RED, GRIMTOOTH),
 
@@ -479,14 +480,14 @@ static NEARDATA struct artifact artilist[] = {
     /* Now can instakill flammable monsters and green slime */
     A("Fire Brand", SHORT_SWORD,
       (SPFX_RESTR | SPFX_ATTK | SPFX_DEFN), 0, 0,
-      FIRE(5, 0), DFNS(AD_FIRE), NO_CARY, 0,
+      FIRE(5, 0), DFNS(AD_FIRE), NO_CARY, FIRESTORM,
       A_NONE, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 3000L, NO_COLOR, FIRE_BRAND),
 
     /* Now can instakill water elementals */
     A("Frost Brand", SHORT_SWORD,
       (SPFX_RESTR | SPFX_ATTK | SPFX_DEFN), 0, 0,
-      COLD(5, 0), DFNS(AD_COLD), NO_CARY, 0,
+      COLD(5, 0), DFNS(AD_COLD), NO_CARY, SNOWSTORM,
       A_NONE, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 3000L, NO_COLOR, FROST_BRAND),
 

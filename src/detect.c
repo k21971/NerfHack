@@ -1,4 +1,4 @@
-/* NetHack 3.7	detect.c	$NHDT-Date: 1721684299 2024/07/22 21:38:19 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.180 $ */
+/* NetHack 3.7	detect.c	$NHDT-Date: 1745114235 2025/04/19 17:57:15 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.190 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2018. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -1601,7 +1601,7 @@ do_vicinity_map(
         docrt();
 }
 
-/* convert a secret door into a normal door */
+/* convert a secret door into a normal door; it might be trapped */
 void
 cvt_sdoor_to_door(struct rm *lev)
 {
@@ -1617,6 +1617,7 @@ cvt_sdoor_to_door(struct rm *lev)
     }
     lev->typ = DOOR;
     lev->doormask = newmask;
+    lev->arboreal_sdoor = 0; /* clears 'candig' */
 }
 
 /* update the map for something which has just been found by wand of secret
