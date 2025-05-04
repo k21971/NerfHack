@@ -201,7 +201,6 @@ themeroom_fills = {
       end,
    },
 
-
    {
       name = "Light source",
       eligible = function(rm) return rm.lit == false; end,
@@ -253,18 +252,20 @@ themeroom_fills = {
       end,
    },
 
-   name = "Piercer party room"
-   contents = function(rm)
-      local locs = selection.room():percentage(30);
-      local func = function(x, y)
-         if (percent(25)) then
-            des.object({ id = "corpse", montype = "@" });
-         else
-            des.monster({ class = "p" });
-         end
-      end;
-      locs:iterate(func);
-   end,
+   {
+      name = "Piercer party",
+      contents = function(rm)
+         local locs = selection.room():percentage(30);
+         local func = function(x, y)
+            if (percent(25)) then
+               des.object({ id = "corpse", montype = "@" });
+            else
+               des.monster({ class = "p" });
+            end
+         end;
+         locs:iterate(func);
+      end,
+   },
 
    {
       name = "Teleportation hub",
@@ -316,64 +317,66 @@ themerooms = {
       end
    },
 
-   -- Kitchen - idea by spicycebolla - implementation by aosdict
-   -- ported from SpliceHack
-   function()
-      des.room({ type = 'themed', w = d(4)+8, h = 2, filled = 0, contents = function()
-         -- furniture...
-         for i = 1, d(2) do
-            des.feature({ type='sink' })
-         end
-         if percent(50) then
-            des.feature({ type='forge' })
-         end
-         if percent(50) then
-            des.object('ice box')
-         end
-         -- cookware and other useful things...
-         for i = 1, d(3)-1 do
-            des.object('dented pot')
-         end
-         for i = 1, d(3) do
-            des.object('knife')
-         end
-         if percent(70) then
-            des.object('tin opener')
-         end
-         if percent(20) then
-            des.object('tinning kit')
-         end
-         if percent(20) then
-            des.object('towel')
-         end
-         if percent(20) then
-            des.object('apron')
-         end
-         -- sauces and stocks...
-         for i = 1, d(3)-1 do
-            des.object({ class='!', id='oil' })
-         end
-         for i = 1, d(3)-1 do
-            des.object({ class='!', id='fruit juice' })
-         end
-         if percent(50) then
-            des.object({ class='!', id='booze' })
-         end
-         -- raw ingredients...
-         for i = 1, d(4)-1 do
-            des.object('tin')
-         end
-         local ingr = { 'meatball', 'apple', 'orange', 'pear', 'melon', 'banana', 'egg',
-                        'carrot', 'clove of garlic', 'cream pie', 'fruit', 'egg', 'fruit',
-                         'pineapple' }
-         -- Missing ingredients: 'slice of cake', 'pumpkin pie', 'apple pie', 'pineapple',
-         for i = 1, d(4) + 4 do
-            local ingrdt = ingr[d(#ingr)]
-            des.object({ class='%', id=ingr[d(#ingr)] })
-
-         end
-      end })
-   end,
+   {
+       -- Kitchen - idea by spicycebolla - implementation by aosdict
+       -- ported from SpliceHack
+       name = "kitchen",
+       contents = function()
+          des.room({ type = 'themed', w = d(4)+8, h = 2, filled = 0, contents = function()
+             -- furniture...
+             for i = 1, d(2) do
+                des.feature({ type='sink' })
+             end
+             if percent(50) then
+                des.feature({ type='forge' })
+             end
+             if percent(50) then
+                des.object('ice box')
+             end
+             -- cookware and other useful things...
+             for i = 1, d(3)-1 do
+                des.object('dented pot')
+             end
+             for i = 1, d(3) do
+                des.object('knife')
+             end
+             if percent(70) then
+                des.object('tin opener')
+             end
+             if percent(20) then
+                des.object('tinning kit')
+             end
+             if percent(20) then
+                des.object('towel')
+             end
+             if percent(20) then
+                des.object('apron')
+             end
+             -- sauces and stocks...
+             for i = 1, d(3)-1 do
+                des.object({ class='!', id='oil' })
+             end
+             for i = 1, d(3)-1 do
+                des.object({ class='!', id='fruit juice' })
+             end
+             if percent(50) then
+                des.object({ class='!', id='booze' })
+             end
+             -- raw ingredients...
+             for i = 1, d(4)-1 do
+                des.object('tin')
+             end
+             local ingr = { 'meatball', 'apple', 'orange', 'pear', 'melon', 'banana', 'egg',
+                            'carrot', 'clove of garlic', 'cream pie', 'fruit', 'egg', 'fruit',
+                             'pineapple' }
+             -- Missing ingredients: 'slice of cake', 'pumpkin pie', 'apple pie', 'pineapple',
+             for i = 1, d(4) + 4 do
+                local ingrdt = ingr[d(#ingr)]
+                des.object({ class='%', id=ingr[d(#ingr)] })
+             end
+          end })
+       end,
+   },
 
    {
       name = "Fake Delphi",
@@ -954,11 +957,12 @@ xx|.....|xx
       end
    },
 
-   -- Four connected rooms
    -- Note: they're all independent, meaning each one generates monsters,
    -- objects, furniture etc separately.
-   function()
-      des.map({ map = [[
+   {
+       name = "Four connected rooms",
+       contents = function()
+          des.map({ map = [[
 -----x-----
 |...|x|...|
 |...+#+...|
@@ -970,15 +974,16 @@ xx#xxxxx#xx
 |...+#+...|
 |...|x|...|
 -----x-----]], contents = function(m)
-         des.region({ region={1,1,3,3}, type="ordinary", filled=1 })
-         des.region({ region={1,7,3,9}, type="ordinary", filled=1 })
-         des.region({ region={7,1,9,3}, type="ordinary", filled=1 })
-         des.region({ region={7,7,9,9}, type="ordinary", filled=1 })
-      end })
-   end,
-
-   -- Barbell-shaped room, horizontal
-   function()
+             des.region({ region={1,1,3,3}, type="ordinary", filled=1 })
+             des.region({ region={1,7,3,9}, type="ordinary", filled=1 })
+             des.region({ region={7,1,9,3}, type="ordinary", filled=1 })
+             des.region({ region={7,7,9,9}, type="ordinary", filled=1 })
+          end })
+       end,
+  },
+  {
+   name = "Barbell-shaped room, horizontal",
+   contents = function()
       des.map({ map = [[
 -----xxx-----
 |...-----...|
@@ -997,10 +1002,11 @@ xx#xxxxx#xx
          end
       end })
    end,
-
-   -- Barbell-shaped room, vertical
-   function()
-      des.map({ map = [[
+},
+{
+    name = "Barbell-shaped room, vertical",
+    contents = function()
+          des.map({ map = [[
 -----
 |...|
 |...|
@@ -1014,35 +1020,36 @@ x|.|x
 |...|
 |...|
 -----]], contents = function(m)
-         -- as above, doors are mutually exclusive with filler_region
-         if percent(50) then
-            filler_region(2,2)
-         else
-            des.region({ region={2,2,2,2}, type="themed", irregular=true,
-                        filled=1 })
-            des.door("random", 02, 04)
-            des.door("random", 02, 08)
-         end
-      end })
-   end,
-
-   -- Graffiti room
-   function()
-      des.room({ type = "themed", filled = 1,
-                 contents = function(rm)
-         for x = 0, rm.width - 1 do
-            for y = 0, rm.height - 1 do
-               if percent(30) then
-                  des.engraving({ coord={x,y}, type="mark", text="" })
-               end
-            end
-         end
-      end })
-   end,
-
-
-   -- Boomerang-shaped, rot 1
-   function()
+             -- as above, doors are mutually exclusive with filler_region
+             if percent(50) then
+                filler_region(2,2)
+             else
+                des.region({ region={2,2,2,2}, type="themed", irregular=true,
+                            filled=1 })
+                des.door("random", 02, 04)
+                des.door("random", 02, 08)
+             end
+          end })
+       end,
+   },
+   {
+      name = "Graffiti room",
+      contents = function()
+          des.room({ type = "themed", filled = 1,
+                     contents = function(rm)
+             for x = 0, rm.width - 1 do
+                for y = 0, rm.height - 1 do
+                   if percent(30) then
+                      des.engraving({ coord={x,y}, type="mark", text="" })
+                   end
+                end
+             end
+          end })
+       end,
+   },
+   {
+        name = "Boomerang-shaped, rot 1",
+        contents = function()
       des.map({ map = [[
 -----xxxxx
 |...---xxx
@@ -1057,11 +1064,12 @@ x----...--
 |.....--xx
 |...---xxx
 -----xxxxx]], contents = function(m) filler_region(2,2) end });
-   end,
-
-   -- Boomerang-shaped, rot 2
-   function()
-      des.map({ map = [[
+      end,
+   },
+   {
+       name = "Boomerang-shaped, rot 2",
+       contents = function()
+          des.map({ map = [[
 xxxxx-----
 xxx---...|
 xx--.....|
@@ -1075,11 +1083,12 @@ x--.....--
 xx--.....|
 xxx---...|
 xxxxx-----]], contents = function(rm) filler_region(7,1) end });
-end,
-
-   -- Rectangular walled corridor
+    end,
+   },
+   {
+   name = "Rectangular walled corridor",
    -- Note: a 5x5 version of this room could be confused for Mausoleum
-   function()
+   contents = function()
       des.room({ type = "themed", filled = 1,
                contents = function(rm)
          for x = 1, rm.width - 2 do
@@ -1089,10 +1098,9 @@ end,
          end
       end })
    end,
-
-
-   -- Storeroom vault
+   },
    {
+      name = "Storeroom vault",
       maxdiff = 14,
       contents = function()
          des.room({ type = "themed", filled = 0, w = 2, h = 2, joined = false,
@@ -1141,12 +1149,12 @@ end,
       end })
    end,
  --]=]
-
-   -- Crossed X of lava
+   {
+   name = "Crossed X of lava",
    -- FIXME: This breaks the rule that the space in front of a door should
    -- always be free of traps or dangerous terrain, but we can't address that
    -- here since no doors exist yet.
-   function()
+   contents = function()
       des.room({ type = "themed", filled = 1,
                w = 5 + nh.rn2(9), h = 5 + nh.rn2(3),
                contents = function(rm)
@@ -1154,14 +1162,15 @@ end,
          des.terrain(selection.line(0, rm.height - 1, rm.width - 1, 0), "L")
       end })
    end,
+   },
 
-   -- Mini maze
    -- Warning: x and y must be odd for mazewalk not to break out of the walls.
    -- The formulas for obtaining them assume ROWNO=21 and COLNO=80.
    -- Unfortunately, this does not work with a des.room() of varying size
    -- because the room borders are the outer wall and it tries to connect doors
    -- to that and fails, and there's no way to get it to unmake the room.
    {
+      name =  "Mini maze",
       mindiff = 6,
       contents = function()
          des.map({ halign = "center", valign = "center", map = [[
@@ -1183,8 +1192,8 @@ end,
       end
    },
 
-   -- Bunch of closets
    {
+      name = "Bunch of closets",
       mindiff = 5,
       contents = function()
          des.room({ type = "themed", filled = 1, joined = true,
@@ -1221,8 +1230,8 @@ end,
       end
    },
 
-   -- Beehives
    {
+      name = "Beehives",
       mindiff = 10, -- minimum beehive depth in rand_roomtype()
       contents = function()
          local nhives = d(3)
@@ -1238,8 +1247,8 @@ end,
       end
    },
 
-   -- Super Honeycomb
    {
+      name = "Super Honeycomb",
       mindiff = 13,
       contents = function()
          des.map({ map = [[
@@ -1301,8 +1310,8 @@ xxxx----xx----xxxx]], contents=function(m)
    end
 },
 
-   -- Swimming pool
    {
+      name = "Swimming pool",
       mindiff = 5,
       contents = function()
          des.room({ type="themed", filled=0, contents=function(rm)
@@ -1328,8 +1337,8 @@ xxxx----xx----xxxx]], contents=function(m)
       end
    },
 
-   -- Anti swimming pool
    {
+      name = "Anti swimming pool",
       mindiff = 14,
       contents = function()
          des.room({ type="themed", filled=0, contents = function(rm)
@@ -1342,14 +1351,16 @@ xxxx----xx----xxxx]], contents=function(m)
       end
    },
 
-   -- Thin long horizontal room
-   function()
-      local width = 14 + d(6)
-      des.room({ type="ordinary", filled=1, w=14+d(6), h=d(2) })
-   end,
-
-   -- Scummy moldy room
    {
+       name = "Thin long horizontal room",
+       contents = function()
+          local width = 14 + d(6)
+          des.room({ type="themed", filled=1, w=14+d(6), h=d(2) })
+       end,
+   },
+
+   {
+      name = "Scummy moldy room",
       mindiff = 6,
       contents = function()
          des.room({ type="themed", filled=0, contents=function(rm)
@@ -1365,8 +1376,8 @@ xxxx----xx----xxxx]], contents=function(m)
       end
    },
 
-   -- Ozymandias' Tomb
    {
+      name = "Ozymandias' Tomb",
       mindiff = 18,
       contents = function()
          des.room({ type="themed", filled=0, w=7, h=7, contents=function()
@@ -1400,9 +1411,9 @@ xxxx----xx----xxxx]], contents=function(m)
       end
    },
 
-   -- Gas spore den
    -- Tread carefully...
    {
+      name = "Gas spore den",
       mindiff = 5,
       contents = function()
          des.room({ type="themed", filled=0, contents=function(rm)
@@ -1417,9 +1428,10 @@ xxxx----xx----xxxx]], contents=function(m)
       end
    },
 
-   -- Four-way circle-and-cross room
-   function()
-      des.map({ map = [[
+   {
+       name = "Four-way circle-and-cross room",
+       contents = function()
+          des.map({ map = [[
 xxxx---xxxx
 xxxx|.|xxxx
 xxx--.--xxx
@@ -1431,19 +1443,21 @@ xx--...--xx
 xxx--.--xxx
 xxxx|.|xxxx
 xxxx---xxxx]], contents = function(m)
-      centerfeature = percent(15)
-      des.region({ region = {5,1,5,1}, irregular=1,
-                   type=centerfeature and "themed" or "ordinary" })
-      if centerfeature then
-         des.terrain(5, 5, percent(20) and 'T' or '{')
-      end
-   end })
-end,
+          centerfeature = percent(15)
+          des.region({ region = {5,1,5,1}, irregular=1,
+                       type=centerfeature and "themed" or "ordinary" })
+          if centerfeature then
+             des.terrain(5, 5, percent(20) and 'T' or '{')
+          end
+       end })
+    end,
+   },
 
-   -- Four 3x3 rooms, directly adjacent
+   {
+   name = "Four 3x3 rooms, directly adjacent",
    -- Like the other four-room cluster, each room generates its own monsters,
    -- items and features.
-   function()
+   contents = function()
       des.room({ type="ordinary", w=7, h=7, filled=1, contents=function()
          des.room({ type="ordinary", x=1, y=1, w=3, h=3, filled=1 })
          des.room({ type="ordinary", x=4, y=1, w=3, h=3, filled=1,
@@ -1462,9 +1476,10 @@ end,
          -- finding any open spaces for it.
       end })
    end,
+   },
 
-   -- Prison cell
    {
+      name = "Prison cell",
       mindiff = 8,
       contents = function()
          des.map({ map = [[
@@ -1494,6 +1509,7 @@ end,
 
    -- Mirrored obstacles, sort of like a Rorschasch figure
    {
+      name = "Mirrored obstacles",
       -- obstacles can impede stairways in unlucky cases; put this after Mines
       mindiff = 5,
       contents = function()
@@ -1515,8 +1531,9 @@ end,
       end
    },
 
-   -- Triple rhombus
-   function()
+   {
+   name = "Triple rhombus",
+   contents = function()
       des.map({ map = [[
 -------xxx-------
 |.....--x--.....|
@@ -1531,10 +1548,12 @@ xxxxx|.....|xxxxx
 xxxxx--...--xxxxx
 xxxxxx--.--xxxxxx
 xxxxxxx---xxxxxxx]], contents = function() filler_region(1,1) end })
-end,
+    end,
+    },
 
-   -- Spiral
-   function()
+{
+   name = "Spiral",
+   contents = function()
       des.map({ map = [[
 x-----------xxx
 --.........----
@@ -1574,9 +1593,10 @@ x------------xx]], contents = function()
       des.door("random", 08, 06)
    end })
 end,
+},
 
-   -- Abandoned shop
    {
+      name = "Abandoned shop",
       mindiff = 16,
       contents = function()
          des.room({ type = "shop", filled = 0, contents = function(rm)
@@ -1591,8 +1611,8 @@ end,
       end
    },
 
-   -- Irregular anthole
    {
+      name = "Irregular anthole",
       mindiff = nh.mon_difficulty('soldier ant') + 4,
       contents = function()
          des.map({ map = [[
@@ -1635,8 +1655,9 @@ end,
    end
 },
 
-   -- Tiny cage, big monster
-   function()
+   {
+   name = "Tiny cage, big monster",
+   contents = function()
       des.map({ map = [[
 -------
 |.....|
@@ -1662,11 +1683,13 @@ end,
       end
    end })
 end,
+},
 
 -- These require the mon_difficulty function
 
    -- Water temple (not a real temple)
    {
+      name = "Water temple",
       mindiff = nh.mon_difficulty('water nymph') + 1,
       contents = function()
          des.room({ type = 'themed', contents = function(rm)
@@ -1686,8 +1709,9 @@ end,
          end })
       end
    },
-   -- Lava pools
+
    {
+      name = "Lava pools",
       mindiff = 4,
       contents = function()
          des.room({ type = 'themed', contents = function(rm)
@@ -1698,8 +1722,11 @@ end,
          end })
       end
    },
+
+   {
+   name = "small pillars",
    -- Room with small pillars (also, possibly wood nymph room)
-   function()
+   contents = function()
       des.room({ type = "themed", w = 5 + nh.rn2(3)*2, h = 5 + nh.rn2(3)*2,
                  filled = 1, contents = function(rm)
          local grove = percent(20)
@@ -1731,9 +1758,10 @@ end,
          end
       end })
    end,
+   },
 
-   -- Dragon hall
    {
+      name = "Dragon hall",
       mindiff = nh.mon_difficulty('black dragon') + 3,
       contents = function()
          des.map({ map = [[
@@ -1820,7 +1848,6 @@ xxxxxxx------xxxxxx]], contents = function()
          end })
       end
    },
-
 };
 
 -- store these at global scope, they will be reinitialized in
@@ -1930,8 +1957,9 @@ function themerooms_generate()
       end
    end
    if pick == nil then
-      nh.impossible('no eligible themed rooms?')
-      return
+--       nh.impossible('no eligible themed rooms?')
+      pick = 1
+--       return
    end
    themerooms[pick].contents();
 end
