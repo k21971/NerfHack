@@ -388,7 +388,7 @@ static NEARDATA struct artifact artilist[] = {
      */
     A("Grimtooth", ORCISH_DAGGER,
       (SPFX_RESTR | SPFX_ATTK | SPFX_WARN | SPFX_DFLAGH), 0, MH_ELF,
-      DISE(2, 6), NO_DFNS, NO_CARY, FLING_POISON,
+      DISE(2, 6), NO_DFNS, NO_CARY, 0,
       A_CHAOTIC, NON_PM, PM_ORC,
       DFLT_SPE, ARTVAL, 1500L, CLR_RED, GRIMTOOTH),
 
@@ -421,10 +421,11 @@ static NEARDATA struct artifact artilist[] = {
       A_CHAOTIC, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 1500L, NO_COLOR, POSEIDON_S_TRIDENT),
 
-    /* From SLASH'EM */
+    /* From SLASH'EM. In Vanilla 3.7.0, Grimtooth has the Fling Poison invoke ability,
+       but this felt much more fitting for Serpent's Tongue so I moved it there. */
     A("Serpent's Tongue", DAGGER,
       SPFX_RESTR, 0, 0,
-      PHYS(2, 0), NO_DFNS, NO_CARY, 0,
+      PHYS(2, 0), NO_DFNS, NO_CARY, FLING_POISON,
       A_CHAOTIC, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 400L, NO_COLOR, SERPENT_S_TONGUE),
 
