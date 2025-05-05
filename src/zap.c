@@ -656,7 +656,7 @@ bhitm(struct monst *mtmp, struct obj *otmp)
             if (monsndx(mtmp->data) == PM_STONE_GOLEM
                 && newcham(mtmp, &mons[PM_FLESH_GOLEM], NO_NC_FLAGS)) {
                 if (canseemon(mtmp))
-                    pline("%s turns to flesh!", name);
+                    mesg = "turns to flesh!";
             } else if (monsndx(mtmp->data) == PM_FLESH_GOLEM) {
                 mesg = "seems fleshier...";
             } else {
