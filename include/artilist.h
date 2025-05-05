@@ -539,6 +539,14 @@ static NEARDATA struct artifact artilist[] = {
       A_NONE, NON_PM, NON_PM,
       BANE_SPE, ARTVAL, 1500L, CLR_RED, WEREBANE),
 
+  /* The treasure of the Wyrm Caves, this stone lets the player
+     branchport to a single location. It can be "keyed" to a
+     level by applying it. */
+    A("Glyph Shard", OBSIDIAN,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_NOWISH), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, CREATE_PORTAL,
+      A_NONE, NON_PM, NON_PM,
+      DFLT_SPE, ARTVAL, 2500L, NO_COLOR, GLYPH_SHARD),
 
     /*
      *      The artifacts for the quest dungeon, all self-willed.
