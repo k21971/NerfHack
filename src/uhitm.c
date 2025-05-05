@@ -1192,7 +1192,7 @@ hitum(struct monst *mon, struct attack *uattk)
     if (maybe_polyd(is_vampire(gy.youmonst.data), Race_if(PM_DHAMPIR))
         && !svc.context.forcefight) {
         /* Hero only gets a bite *or* a weapon attack, not both */
-        if (u.ulevel < 6) {
+        if (u.ulevel < 10) {
             /* If hungry, always bite first (if we can feed);
              * otherwise it's 50/50 whether we bite or use weapon */
             if ((u.uhunger < 300 || !rn2(2))) {
