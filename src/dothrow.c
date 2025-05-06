@@ -2390,7 +2390,7 @@ thitmonst(
             /* projectiles other than magic stones sometimes disappear
                when thrown; projectiles aren't among the types of weapon
                that hmon() might have destroyed so obj is intact */
-            if (should_mulch_missile(obj)) {
+            if (should_mulch_missile(obj) && wasthrown) {
                 if (*u.ushops || obj->unpaid)
                     check_shop_obj(obj, gb.bhitpos.x, gb.bhitpos.y, TRUE);
                 obfree(obj, (struct obj *) 0);
