@@ -1522,7 +1522,7 @@ start_corpse_timeout(struct obj *body)
                 break;
             }
         }
-        /* corpse of an actual zombie */
+    /* corpse of an actual zombie */
     } else if (body->zombie_corpse && !body->norevive
                && !In_sokoban(&u.uz)) {
         /* Priests have a chance to put down zombies for good. */

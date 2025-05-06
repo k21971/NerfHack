@@ -283,8 +283,9 @@ onscary(coordxy x, coordxy y, struct monst *mtmp)
     /* creatures who are directly resistant to magical scaring:
      * humans aren't monsters
      * uniques have ascended their base monster instincts
-     * Rodney, lawful minions, Angels, the Riders, shopkeepers, zombies,
-     * inside their own shop, priests inside their own temple */
+     * Rodney, lawful minions, Angels, the Riders, zombies/revenants,
+     * shopkeepers, inside their own shop, priests inside their own
+     * temple */
     if (mtmp->iswiz || mtmp->iscthulhu || is_lminion(mtmp)
         || mtmp->data == &mons[PM_ANGEL]
         || is_rider(mtmp->data)
