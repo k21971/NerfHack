@@ -2200,7 +2200,7 @@ forge
 craft
 cookbook
 fusions
-    The #craft command: Getting Started
+    Forging: Getting Started
 
     1) Find a forge.
     2) Find a hammer, any will do.
@@ -2209,7 +2209,7 @@ fusions
        inventory) to see any forging recipes related to
        your selected item.
     4) Put both of those objects into the forge whilst
-       wielding your hammer (apply the hammer at the forge).
+       wielding your hammer (simply apply the hammer at the forge).
     5) Start forging.  If successful, you'll forge a brand
        new object.
 

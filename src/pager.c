@@ -1827,7 +1827,7 @@ add_obj_info(winid datawin, struct obj *obj, short otyp, char *usr_text)
                 || otyp == recipe->result_typ) {
                 if (!has_recipes) {
                     OBJPUTSTR("");
-                    OBJPUTSTR("Forging recipes (#craft):");
+                    OBJPUTSTR("Forging recipes:");
                     has_recipes = TRUE;
                 }
                 Sprintf(buf, "  %d %s + %d %s = %s",
