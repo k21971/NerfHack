@@ -2556,7 +2556,6 @@ hmon_hitmon(
                && !thrown) {
         pline("%s!", Hallucination ? monk_halucrit[rn2(N_HALUCRIT)]
                             : monk_crit[rn2(N_CRIT)]);
-        pline("dmg=%d",hmd.dmg);
         hmd.dmg *= 2;
     }
 
@@ -2571,7 +2570,6 @@ hmon_hitmon(
                so we test for 1; 0 shouldn't be able to happen here... */
             && hmd.dmg > 0 && u.uconduct.weaphit <= 1)
             first_weapon_hit(obj);
-        showdamage(hmd.dmg, FALSE);
         mon->mhp -= hmd.dmg;
     }
     /* adjustments might have made tmp become less than what
@@ -2661,7 +2659,7 @@ hmon_hitmon(
         print_mon_wounded(mon, saved_mhp);
         wakeup(mon, TRUE);
     }
-
+    showdamage(hmd.dmg, FALSE);
     return hmd.destroyed ? FALSE : TRUE;
 }
 

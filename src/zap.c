@@ -700,7 +700,6 @@ bhitm(struct monst *mtmp, struct obj *otmp)
             shieldeff_mon(mtmp);
         } else if (!resist(mtmp, otmp->oclass, dmg, NOTELL)
                    && !DEADMONSTER(mtmp)) {
-            showdamage(dmg, FALSE);
             mtmp->mhp -= dmg;
             mtmp->mhpmax -= dmg;
             /* die if already level 0, regardless of hit points */
@@ -711,6 +710,7 @@ bhitm(struct monst *mtmp, struct obj *otmp)
                 if (canseemon(mtmp))
                     pline("%s suddenly seems weaker!", Monnam(mtmp));
             }
+            showdamage(dmg, FALSE);
         }
         break;
     case WAN_NOTHING:
@@ -7502,8 +7502,6 @@ resist(struct monst *mtmp, char oclass, int damage, int tell)
 
     if (damage) {
         int saved_mhp = mtmp->mhp;
-        if (!svc.context.mon_moving)
-            showdamage(damage, FALSE);
         mtmp->mhp -= damage;
         if (DEADMONSTER(mtmp)) {
             if (gm.m_using)
@@ -7513,6 +7511,8 @@ resist(struct monst *mtmp, char oclass, int damage, int tell)
         } else {
             print_mon_wounded(mtmp, saved_mhp);
         }
+        if (!svc.context.mon_moving)
+            showdamage(damage, FALSE);
     }
     return resisted;
 }
