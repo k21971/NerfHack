@@ -323,10 +323,12 @@ mzapwand(
             }
         }
     }
-    
+
     if (!zapcard && otmp->spe <= 0) {
-        if (canseemon(mtmp))
-             pline("%s wand turns to dust.", s_suffix(Monnam(mtmp)));
+        if (canseemon(mtmp)) {
+            pline("%s starts to wave %s... but it turns to dust.",
+                          Monnam(mtmp), doname(otmp));
+        }
         m_useup(mtmp, otmp);
         return wrested;
     }
