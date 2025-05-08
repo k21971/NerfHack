@@ -19,6 +19,7 @@ staticfn void set_mon_min_mhpmax(struct monst *, int);
 staticfn void lifesaved_monster(struct monst *);
 staticfn boolean vamprises(struct monst *);
 staticfn void logdeadmon(struct monst *, int);
+staticfn void anger_quest_guardians(struct monst *);
 staticfn boolean ok_to_obliterate(struct monst *);
 staticfn void qst_guardians_respond(void);
 staticfn void peacefuls_respond(struct monst *);
@@ -667,6 +668,7 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_HUMAN_ZOMBIE:
     case PM_GIANT_ZOMBIE:
     case PM_ETTIN_ZOMBIE:
+    case PM_REVENANT:
         corpstatflags |= CORPSTAT_ZOMBIE;
         FALLTHROUGH;
         /*FALLTHRU*/
@@ -1107,7 +1109,6 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_SKELETON:
     case PM_GHOUL_MAGE:
     case PM_GHOUL_QUEEN:
-    case PM_REVENANT:
     case PM_GUG:
     case PM_STRAW_GOLEM:
     case PM_FLESH_GOLEM:
@@ -3068,7 +3069,7 @@ mm_aggression(
         return ALLOW_M | ALLOW_TM;
 
     /* Genetic engineers gonna engineer */
-    if (magr->data == &mons[PM_GENETIC_ENGINEER] 
+    if (magr->data == &mons[PM_GENETIC_ENGINEER]
         && mdef->data != &mons[PM_GENETIC_ENGINEER])
         return ALLOW_M | ALLOW_TM;
 
@@ -3758,6 +3759,14 @@ logdeadmon(struct monst *mtmp, int mndx)
     }
 }
 
+/* anger all the quest guards on the level */
+staticfn void
+anger_quest_guardians(struct monst *mtmp)
+{
+    if (mtmp->data == &mons[gu.urole.guardnum])
+        setmangry(mtmp, TRUE);
+}
+
 /* monster 'mtmp' has died; maybe life-save, otherwise unshapeshift and
    update vanquished stats and update map */
 void
@@ -4371,9 +4380,9 @@ xkilled(
         int otyp;
 
         /* illogical but traditional "treasure drop"
-           over time, these decrease 
+           over time, these decrease
          */
-        if (!rn2(6 + (svm.moves / 5000)) 
+        if (!rn2(6 + (svm.moves / 5000))
             && !(svm.mvitals[mndx].mvflags & G_NOCORPSE)
             /* no extra item from swallower or steed */
             && (x != u.ux || y != u.uy)
@@ -4478,6 +4487,8 @@ xkilled(
         } else {
             pline("Meh...");
         }
+        if (!svc.context.mon_moving)
+            iter_mons(anger_quest_guardians);
     } else if (mdat->msound == MS_NEMESIS) { /* Real good! */
         if (!svq.quest_status.killed_leader)
             adjalign((int) (ALIGNLIM / 4));

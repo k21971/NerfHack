@@ -9,7 +9,7 @@
 #
 #       Visual Studio Compilers Tested:
 #            - Microsoft Visual Studio 2019 Community Edition v 16.11.42
-#            - Microsoft Visual Studio 2022 Community Edition v 17.13.3
+#            - Microsoft Visual Studio 2022 Community Edition v 17.13.6
 #
 #==============================================================================
 #   This is used for building two distinct executables of NetHack:
@@ -144,7 +144,7 @@ GIT_AVAILABLE=Y
 #==============================================================================
 #
 #  The version of the game this Makefile was designed for
-NETHACK_VERSION="2.2.0"
+NETHACK_VERSION="2.2.1"
 
 # A brief version for use in macros
 NHV=$(NETHACK_VERSION:.=)
@@ -1167,7 +1167,7 @@ rc=Rc.exe
 #
 # Recently tested versions:
 TESTEDVS2019 = 14.29.30157.0
-TESTEDVS2022 = 14.43.34809.0
+TESTEDVS2022 = 14.43.34810.0
 
 VS2019CUR = $(TESTEDVS2019:.=)
 VS2022CUR = $(TESTEDVS2022:.=)
@@ -2540,10 +2540,10 @@ MAINZIP = $(PkgDir)nethack-$(NHV)-win-$(TARGET_CPU).zip
 DBGSYMZIP = $(PkgDir)nethack-$(NHV)-win-$(TARGET_CPU)-debugsymbols.zip
 =======
 PKGFILES = nerfhackrc.template Guidebook.txt license NerfHack.exe NetHack.txt \
-	 NerfHackW.exe opthelp nhdat220 record symbols sysconf.template
+	 NerfHackW.exe opthelp nhdat221 record symbols sysconf.template
 FILESTOZIP = $(BinDir)\nerfhackrc.template $(BinDir)\Guidebook.txt $(BinDir)\license \
 	$(BinDir)\NerfHack.exe $(BinDir)\NetHack.txt $(BinDir)\NerfHackW.exe \
-	$(BinDir)\opthelp $(BinDir)\nhdat220 $(BinDir)\record \
+	$(BinDir)\opthelp $(BinDir)\nhdat221 $(BinDir)\record \
 	$(BinDir)\symbols $(BinDir)\sysconf.template
 DBGSYMS = NerfHack.PDB NerfHackW.PDB
 PDBTOZIP = $(BinDir)\NerfHack.PDB $(BinDir)\NerfHackW.PDB

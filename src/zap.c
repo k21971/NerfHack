@@ -467,7 +467,7 @@ bhitm(struct monst *mtmp, struct obj *otmp)
     case WAN_LOCKING:
     case SPE_WIZARD_LOCK:
         if (disguised_mimic && box_or_door(mtmp))
-            that_is_a_mimic(mtmp, TRUE); /*seemimic()*/
+            that_is_a_mimic(mtmp, MIM_REVEAL); /*seemimic()*/
         wake = closeholdingtrap(mtmp, &learn_it);
         break;
     case WAN_PROBING:
@@ -479,7 +479,7 @@ bhitm(struct monst *mtmp, struct obj *otmp)
     case WAN_OPENING:
     case SPE_KNOCK:
         if (disguised_mimic && box_or_door(mtmp))
-            that_is_a_mimic(mtmp, TRUE); /*seemimic()*/
+            that_is_a_mimic(mtmp, MIM_REVEAL); /*seemimic()*/
         wake = FALSE; /* don't want immediate counterattack */
         if (mtmp == u.ustuck) {
             if (otyp == SPE_KNOCK) {
@@ -648,18 +648,31 @@ bhitm(struct monst *mtmp, struct obj *otmp)
         ret = 1;
        break;
     case SPE_STONE_TO_FLESH:
-        /* FIXME: mimics disguished as stone furniture or stone object
-           should be taken out of concealment. */
-        if (monsndx(mtmp->data) == PM_STONE_GOLEM) {
-            char *name = Monnam(mtmp);
+        if (mtmp->data->mlet == S_GOLEM) {
+            const char *mesg;
+            char *name = Monnam(mtmp); /* before possible polymorph */
 
             /* turn into flesh golem */
-            if (newcham(mtmp, &mons[PM_FLESH_GOLEM], NO_NC_FLAGS)) {
-                if (canseemon(mtmp))
-                    pline("%s turns to flesh!", name);
+            if (monsndx(mtmp->data) == PM_STONE_GOLEM
+                && newcham(mtmp, &mons[PM_FLESH_GOLEM], NO_NC_FLAGS)) {
+                mesg = "turns to flesh!";
+            } else if (monsndx(mtmp->data) == PM_FLESH_GOLEM) {
+                mesg = "seems fleshier...";
             } else {
-                if (canseemon(mtmp))
-                    pline("%s looks rather fleshy for a moment.", name);
+                mesg = "looks rather fleshy for a moment.";
+            }
+            if (canseemon(mtmp))
+                pline("%s %s", name, mesg);
+        } else if (mtmp->data->mlet == S_MIMIC
+                       && ((M_AP_TYPE(mtmp) == M_AP_FURNITURE
+                            && stone_furniture_type(mtmp->mappearance))
+                           || (M_AP_TYPE(mtmp) == M_AP_OBJECT
+                               && stone_object_type(mtmp->mappearance)))) {
+            /* note: if that_is_a_mimic() doesn't get called to reveal the
+               mimic, wakeup() below will call seemimic() */
+            if (cansee(mtmp->mx, mtmp->my)) {
+                set_msg_xy(mtmp->mx, mtmp->my);
+                that_is_a_mimic(mtmp, MIM_REVEAL | MIM_OMIT_WAIT);
             }
         } else if (mtmp->mstone > 0) {
             mtmp->mstone = 0;
@@ -671,8 +684,9 @@ bhitm(struct monst *mtmp, struct obj *otmp)
             } else {
                 pline("%s seems limber!", Monnam(mtmp));
             }
-        } else
+        } else {
             wake = FALSE;
+        }
         break;
     case SPE_DRAIN_LIFE:
         if (disguised_mimic)
@@ -686,7 +700,6 @@ bhitm(struct monst *mtmp, struct obj *otmp)
             shieldeff_mon(mtmp);
         } else if (!resist(mtmp, otmp->oclass, dmg, NOTELL)
                    && !DEADMONSTER(mtmp)) {
-            showdamage(dmg, FALSE);
             mtmp->mhp -= dmg;
             mtmp->mhpmax -= dmg;
             /* die if already level 0, regardless of hit points */
@@ -697,6 +710,7 @@ bhitm(struct monst *mtmp, struct obj *otmp)
                 if (canseemon(mtmp))
                     pline("%s suddenly seems weaker!", Monnam(mtmp));
             }
+            showdamage(dmg, FALSE);
         }
         break;
     case WAN_NOTHING:
@@ -707,22 +721,19 @@ bhitm(struct monst *mtmp, struct obj *otmp)
         impossible("What an interesting effect (%d)", otyp);
         break;
     }
-    if (wake) {
-        if (!DEADMONSTER(mtmp)) {
-            wakeup(mtmp, helpful_gesture ? FALSE : TRUE);
-            m_respond(mtmp);
-            if (mtmp->isshk && !*u.ushops)
-                hot_pursuit(mtmp);
-        } else if (M_AP_TYPE(mtmp))
-            seemimic(mtmp); /* might unblock if mimicking a boulder/door */
+    if (wake && !DEADMONSTER(mtmp)) {
+        /* seemimic() is done by wakeup() and might unblock vision */
+        wakeup(mtmp, helpful_gesture ? FALSE : TRUE);
+        m_respond(mtmp);
+        if (mtmp->isshk && !*u.ushops)
+            hot_pursuit(mtmp);
     }
     /* note: gb.bhitpos won't be set if swallowed, but that's okay since
      * reveal_invis will be false.  We can't use mtmp->mx, my since it
      * might be an invisible worm hit on the tail.
      */
-    if (reveal_invis) {
-        if (!DEADMONSTER(mtmp) && cansee(gb.bhitpos.x, gb.bhitpos.y)
-            && !canspotmon(mtmp))
+    if (reveal_invis && !DEADMONSTER(mtmp)) {
+        if (cansee(gb.bhitpos.x, gb.bhitpos.y) && !canspotmon(mtmp))
             map_invisible(gb.bhitpos.x, gb.bhitpos.y);
     }
     /* if effect was observable then discover the wand type provided
@@ -5554,8 +5565,8 @@ zhitu(
             dam -= (dam + 1) / 4;
         if (Stun_resistance)
             shieldeff(sx, sy); /* resistance handled in make_stunned() */
-        make_stunned((HStun & TIMEOUT) 
-                         + (long) dam / ((Reflecting || had_reflection) 
+        make_stunned((HStun & TIMEOUT)
+                         + (long) dam / ((Reflecting || had_reflection)
                                              ? 4 : 2), TRUE);
         break;
     }
@@ -6959,11 +6970,11 @@ u_adtyp_resistance_obj(int dmgtyp)
     if (uarmc && uarmc->otyp == DWARVISH_CLOAK
         && (dmgtyp == AD_COLD || dmgtyp == AD_FIRE))
         return 90;
-    
+
     /* Extrinsic shock resistance provides 90% protection for fragile items */
     if (EShock_resistance && dmgtyp == AD_PHYS)
         return 90;
-    
+
     return 0;
 }
 
@@ -7491,8 +7502,6 @@ resist(struct monst *mtmp, char oclass, int damage, int tell)
 
     if (damage) {
         int saved_mhp = mtmp->mhp;
-        if (!svc.context.mon_moving)
-            showdamage(damage, FALSE);
         mtmp->mhp -= damage;
         if (DEADMONSTER(mtmp)) {
             if (gm.m_using)
@@ -7502,6 +7511,8 @@ resist(struct monst *mtmp, char oclass, int damage, int tell)
         } else {
             print_mon_wounded(mtmp, saved_mhp);
         }
+        if (!svc.context.mon_moving)
+            showdamage(damage, FALSE);
     }
     return resisted;
 }

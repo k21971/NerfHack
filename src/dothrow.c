@@ -1500,7 +1500,8 @@ throwit_return(boolean clear_thrownobj)
 }
 
 staticfn void
-swallowit(struct obj *obj){
+swallowit(struct obj *obj)
+{
     if (obj != uball) {
         (void) mpickobj(u.ustuck, obj); /* clears 'gt.thrownobj' */
         throwit_return(FALSE);
@@ -1510,7 +1511,8 @@ swallowit(struct obj *obj){
 
 /* throw an object, NB: obj may be consumed in the process */
 void
-throwit(struct obj *obj,
+throwit(
+    struct obj *obj,
     long wep_mask,       /* used to re-equip returning boomerang */
     boolean twoweap,     /* used to restore twoweapon mode if
                           * wielded weapon returns */
@@ -2388,7 +2390,7 @@ thitmonst(
             /* projectiles other than magic stones sometimes disappear
                when thrown; projectiles aren't among the types of weapon
                that hmon() might have destroyed so obj is intact */
-            if (should_mulch_missile(obj)) {
+            if (should_mulch_missile(obj) && wasthrown) {
                 if (*u.ushops || obj->unpaid)
                     check_shop_obj(obj, gb.bhitpos.x, gb.bhitpos.y, TRUE);
                 obfree(obj, (struct obj *) 0);

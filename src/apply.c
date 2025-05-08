@@ -593,6 +593,8 @@ use_magic_whistle(struct obj *obj)
         You("produce a %shigh-%s.", Underwater ? "very " : "",
             Deaf ? "frequency vibration" : "pitched humming noise");
         wake_nearby(TRUE);
+        if (!rn2(2))
+            tele_to_rnd_pet();
     } else {
         /* it's magic!  it works underwater too (at a higher pitch) */
         You(Deaf ? alt_whistle_str : whistle_str,
@@ -4580,6 +4582,8 @@ void exploding_wand_efx(struct obj *obj)
                     if (*in_rooms(x, y, SHOPBASE))
                         shop_damage = TRUE;
                 }
+                if (levl[x][y].typ == ICE)
+                    spot_stop_timers(x, y, MELT_ICE_AWAY);
                 /*
                  * Let liquid flow into the newly created pits.
                  * Adjust corresponding code in music.c for
@@ -4733,6 +4737,10 @@ apply_ok(struct obj *obj)
 
         return GETOBJ_SUGGEST;
     }
+
+    if (obj->otyp == OBSIDIAN
+        && obj->oartifact == ART_GLYPH_SHARD)
+        return GETOBJ_SUGGEST;
 
     /* item can't be applied; if picked anyway,
        _EXCLUDE would yield "That is a silly thing to apply.",
@@ -4982,6 +4990,29 @@ doapply(void)
     case WHETSTONE:
     case ROCK:
         res = use_stone(obj);
+        break;
+    case OBSIDIAN:
+        if (obj->oartifact == ART_GLYPH_SHARD) {
+            if (u.shard_key.dnum < 0 && u.shard_key.dlevel < 0) {
+                Your("Glyph Shard will be keyed to this level permanently, this action cannot be undone.");
+                if (y_n("Are you absolutely sure you want to key to this level?") != 'y') {
+                    res = 0;
+                    break;
+                }
+            } else {
+                Your("Glyph Shard has already been keyed to a level.");
+                res = 0;
+                break;
+            }
+
+            if (!Deaf)
+                pline("The Shard emits a satisfying click.");
+            else
+                pline("The Shard briefly vibrates and harmonizes with the location.");
+            u.shard_key.dnum = u.uz.dnum;
+            u.shard_key.dlevel = u.uz.dlevel;
+            res = 1;
+        }
         break;
     case BANANA:
         if (Hallucination) {

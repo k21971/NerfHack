@@ -146,7 +146,7 @@ extrinsic_res(int which)
     /* externals and level/race based intrinsics always provide 100%
      * as do monster resistances */
     if (u.uprops[which].extrinsic)
-        /* ... Except acid resistance which is capped at 50% unless 
+        /* ... Except acid resistance which is capped at 50% unless
          * you are a form/role which is naturally acid resistant */
         return which == ACID_RES ? 50 : 100;;
     return 0;
@@ -1777,20 +1777,30 @@ peffect_blood(struct obj *otmp)
                 exercise(A_CON, TRUE);
             }
         }
-        if (Race_if(PM_DHAMPIR)) {
+        if (Upolyd && Race_if(PM_DHAMPIR)) {
             if (!Unchanging)
                 rehumanize();
             return;
         } else if (!Unchanging) {
             int successful_polymorph = FALSE;
-            if (otmp->blessed)
-                successful_polymorph = polymon(PM_VAMPIRE_LEADER);
-            else if (otmp->cursed)
-                successful_polymorph = polymon(PM_VAMPIRE_BAT);
-            else
-                successful_polymorph = polymon(PM_VAMPIRE);
-            if (successful_polymorph)
-                u.mtimedone = 0;	/* "Permament" change */
+
+            if (!rn2(3)) {
+            	if (otmp->blessed)
+                	successful_polymorph = polymon(PM_VAMPIRE_LEADER);
+            	else if (otmp->cursed)
+                	successful_polymorph = polymon(PM_VAMPIRE_BAT);
+            	else
+                	successful_polymorph = polymon(PM_VAMPIRE);
+            	if (successful_polymorph)
+                	u.mtimedone = rn1(1500, 1500);	/* Not permanent */
+            } else {
+                int dmg;
+                pline("Ugh.  That was utterly disgusting.");
+                dmg = d(otmp->cursed ? 2 : 1, otmp->blessed ? 4 : 8)
+                        / (otmp->odiluted ? 4 : 1);
+                losehp(dmg, "potion of vampire blood", KILLED_BY_AN);
+                exercise(A_CON, FALSE);
+            }
         }
     } else {
         violated_vegetarian();
@@ -2295,7 +2305,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                 pline("This burns%s!",
                       obj->blessed ? " a little"
                                    : obj->cursed ? " a lot" : "");
-                
+
                 dmg = resist_reduce(dmg, ACID_RES);
                 losehp(Maybe_Half_Phys(dmg), "potion of acid", KILLED_BY_AN);
             }
@@ -2468,7 +2478,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                     if (canseemon(mon))
                         pline("%s looks healthier.", Monnam(mon));
                     healmon(mon, d(2, 6), 0);
-                    if (is_were(mon->data) && (is_human(mon->data) 
+                    if (is_were(mon->data) && (is_human(mon->data)
                                                || is_demon(mon->data))
                         && !Protection_from_shape_changers)
                         new_were(mon); /* transform into beast */
@@ -3573,7 +3583,8 @@ potion_dip(struct obj *obj, struct obj *potion)
             makeknown(POT_SICKNESS);
             poof(potion);
             return ECMD_TIME;
-        } else if (obj->opoisoned && (potion->otyp == POT_HEALING
+        } else if (obj->opoisoned && !permapoisoned(obj)
+                   && (potion->otyp == POT_HEALING
                                       || potion->otyp == POT_EXTRA_HEALING
                                       || potion->otyp == POT_FULL_HEALING
                                       || potion->otyp == POT_MILK)) {

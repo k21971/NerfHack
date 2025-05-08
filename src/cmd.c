@@ -145,6 +145,7 @@ staticfn const char *spkey_name(int);
 staticfn int (*timed_occ_fn)(void);
 staticfn char *doc_extcmd_flagstr(winid, const struct ext_func_tab *);
 staticfn int dummyfunction(void);
+staticfn int tech_dazzle(void);
 
 static const char *readchar_queue = "";
 
@@ -938,8 +939,15 @@ domonability(void)
             pline("Unfortunately sound does not carry well through rock.");
         else
             aggravate();
+    } else if (Race_if(PM_DHAMPIR) && !Upolyd) {
+        if (u.techtime)
+			You("cannot use your dazzle ability yet.");
+        else if (tech_dazzle()) {
+            u.techtime = rn1(50, 25);
+            return ECMD_TIME;
+        }
     } else if ((is_vampire(uptr) || is_vampshifter(&gy.youmonst))
-               && !Race_if(PM_DHAMPIR)) {
+        	&& !Race_if(PM_DHAMPIR)) {
         return dopoly();
     } else if (u.usteed && can_breathe(u.usteed->data)) {
         (void) pet_ranged_attk(u.usteed, TRUE);
@@ -2290,6 +2298,75 @@ handler_rebind_keys(void)
     }
 }
 
+void
+handler_change_autocompletions(void)
+{
+    winid win;
+    anything any;
+    int i, n;
+    menu_item *picks = (menu_item *) 0;
+    int clr = NO_COLOR;
+    struct ext_func_tab *ec;
+    char buf[BUFSZ];
+
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    any = cg.zeroany;
+
+    for (i = 0; i < extcmdlist_length; i++) {
+        ec = &extcmdlist[i];
+
+        if ((ec->flags & (INTERNALCMD|CMD_NOT_AVAILABLE)) != 0)
+            continue;
+        if (strlen(ec->ef_txt) < 2)
+            continue;
+
+        any.a_int = (i + 1);
+        Sprintf(buf, "%c %s: %s",
+                (ec->flags & AUTOCOMP_ADJ) ? '*' : ' ',
+                ec->ef_txt, ec->ef_desc);
+        add_menu(win, &nul_glyphinfo, &any, '\0', 0, ATR_NONE, clr, buf,
+                 (ec->flags & AUTOCOMPLETE)
+                 ? MENU_ITEMFLAGS_SELECTED :
+                 MENU_ITEMFLAGS_NONE);
+    }
+
+    end_menu(win, "Which commands autocomplete?");
+    n = select_menu(win, PICK_ANY, &picks);
+    if (n >= 0) {
+        int j;
+
+        for (i = 0; i < extcmdlist_length; i++) {
+            boolean setit = FALSE;
+
+            ec = &extcmdlist[i];
+
+            if ((ec->flags & (INTERNALCMD|CMD_NOT_AVAILABLE)) != 0)
+                continue;
+            if (strlen(ec->ef_txt) < 2)
+                continue;
+
+            Sprintf(buf, "%s", ec->ef_txt);
+
+            for (j = 0; j < n; ++j) {
+                if (ec == &extcmdlist[(picks[j].item.a_int - 1)]) {
+                    parseautocomplete(buf, TRUE);
+                    setit = TRUE;
+                    break;
+                }
+            }
+
+            if (!setit) {
+                parseautocomplete(buf, FALSE);
+            }
+        }
+        if (n > 0)
+            free((genericptr_t) picks);
+    }
+
+    destroy_nhwindow(win);
+}
+
 /* find extended command entries matching findstr.
    if findstr is NULL, returns all available entries.
    returns: number of matching extended commands,
@@ -3028,6 +3105,20 @@ all_options_autocomplete(strbuf_t *sbuf)
         }
 }
 
+/* return the number of changed autocompletions */
+int
+count_autocompletions(void)
+{
+    struct ext_func_tab *efp;
+    int n = 0;
+
+    for (efp = extcmdlist; efp->ef_txt; efp++)
+        if ((efp->flags & AUTOCOMP_ADJ) != 0)
+            n++;
+
+    return n;
+}
+
 /* save&clear the mouse button actions, or restore the saved ones */
 void
 lock_mouse_buttons(boolean savebtns)
@@ -3221,11 +3312,19 @@ accept_menu_prefix(const struct ext_func_tab *ec)
     return (ec && ((ec->flags & CMD_M_PREFIX) != 0));
 }
 
+/* choose a random character, biased towards movement commands, primarily
+   for debug-fuzzer testing */
 char
 randomkey(void)
 {
     static unsigned i = 0;
+    static char last_c = '\0';
     char c;
+
+    /* give ^A and ^P a high probability of being repeated */
+    if ((last_c == C('a') || last_c == C('p'))
+        && program_state.input_state == commandInp && rn2(5))
+        return last_c;
 
     switch (rn2(16)) {
     default:
@@ -3274,6 +3373,8 @@ randomkey(void)
         break;
     }
 
+    if (program_state.input_state == commandInp)
+        last_c = c;
     return c;
 }
 
@@ -5330,19 +5431,28 @@ yn_function(
     }
 #endif
     /* should not happen but cq.key has been observed to not obey 'resp';
-       do this after dumplog has recorded the potentially bad value */
+       it is most likely caused by saving a keystroke that was just used
+       to answer a context-sensitive prompt, then using the do-again
+       command with context that has changed */
     if (resp && res && !strchr(resp, res)) {
         /* this probably needs refinement since caller is expecting something
            within 'resp' and ESC won't be (it could be present, but as a flag
            for unshown possibilities rather than as acceptable input) */
         int altres = def ? def : '\033';
 
-#if 0 /* TODO: Fix this - for now I'm disabling this impossible
-       * because it clobs up the fuzzer */
-        impossible("yn_function() returned '%s'; using '%s' instead",
-                   visctrl(res), visctrl(altres));
-#endif
+        if (!gi.in_doagain || wizard) {
+/*TEMP*/    xint8 fuzzing = iflags.debug_fuzzer;
+            char dbg_buf[BUFSZ];
 
+            Snprintf(dbg_buf, sizeof dbg_buf, "%s [%s] (%s)",
+                     query, resp ? resp : "", def ? visctrl(def) : "");
+            paniclog("yn debug", dbg_buf);
+/*TEMP*/    /* don't let this known problem kill the fuzzer */
+/*TEMP*/    iflags.debug_fuzzer = fuzzer_impossible_continue;
+            impossible("yn_function() returned '%s'; using '%s' instead",
+                       visctrl(res), visctrl(altres));
+/*TEMP*/    iflags.debug_fuzzer = fuzzing;
+        }
         res = altres;
     }
     /* in case we're called via getdir() which sets input_state */
@@ -5465,6 +5575,49 @@ staticfn int
 dummyfunction(void)
 {
     return ECMD_CANCEL;
+}
+
+staticfn int
+tech_dazzle(void)
+{
+    struct monst *mtmp = (struct monst *) 0;
+    int i;
+
+    /* Short range stun attack */
+    if (Blind) {
+         You("can't see anything!");
+         return 0;
+    }
+    if (!getdir((char *)0))
+         return 0;
+    if (!u.dx && !u.dy) {
+         /* Hopefully a mistake ;B */
+         You("can't see yourself!");
+         return 0;
+    }
+    for (i = 0; (i  <= ((u.ulevel / 8) + 1)
+                 && isok(u.ux + (i * u.dx), u.uy + (i * u.dy))); i++) {
+         mtmp = m_at(u.ux + (i * u.dx), u.uy + (i * u.dy));
+         if (mtmp && canseemon(mtmp))
+            break;
+    }
+    if (!mtmp || !canseemon(mtmp)) {
+         You("fail to make eye contact with anything!");
+         return 0;
+    }
+    You("stare at %s.", mon_nam(mtmp));
+    if (!haseyes(mtmp->data))
+         pline("..but %s has no eyes!", mon_nam(mtmp));
+    else if (!mtmp->mcansee)
+         pline("..but %s cannot see you!", mon_nam(mtmp));
+    if ((rn2(6) + rn2(6) + (u.ulevel - mtmp->m_lev)) > 10) {
+         You("dazzle %s!", mon_nam(mtmp));
+         mtmp->mcanmove = 0;
+         mtmp->mfrozen = rnd(10);
+    } else {
+         pline("%s breaks the stare!", Monnam(mtmp));
+    }
+    return 1;
 }
 
 /*cmd.c*/

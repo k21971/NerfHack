@@ -55,6 +55,7 @@ extern void port_help(void);
 staticfn char *setopt_cmd(char *) NONNULL NONNULLARG1;
 staticfn boolean add_quoted_engraving(coordxy, coordxy, char *, boolean)
                                                                   NONNULLARG3;
+staticfn int dazzle_chance(struct permonst *);
 
 enum checkfileflags {
     chkfilNone     = 0,
@@ -1238,6 +1239,18 @@ add_mon_info(winid datawin, struct permonst * pm)
     if (hates_silver(pm))
         MONPUTSTR("Hates silver.");
 
+    /* Dazzle info */
+    if (Race_if(PM_DHAMPIR)) {
+        if (has_blood(pm)) {
+            MONPUTSTR("May be drunk by vampiric monsters.");
+        }
+        if (!haseyes(pm))
+            MONPUTSTR("Immune to vampiric dazzling.");
+        else {
+            Sprintf(buf2, "Chance of dazzling: %d%% (estimated from base level)", dazzle_chance(pm));
+            MONPUTSTR(buf2);
+        }
+    }
     MONPUTSTR("Attacks: ");
     /* Attacks */
     buf[0] = buf2[0] = '\0';
@@ -1814,7 +1827,7 @@ add_obj_info(winid datawin, struct obj *obj, short otyp, char *usr_text)
                 || otyp == recipe->result_typ) {
                 if (!has_recipes) {
                     OBJPUTSTR("");
-                    OBJPUTSTR("Forging recipes (#craft):");
+                    OBJPUTSTR("Forging recipes:");
                     has_recipes = TRUE;
                 }
                 Sprintf(buf, "  %d %s + %d %s = %s",
@@ -4357,7 +4370,20 @@ corpse_conveys(char *buf, struct permonst * pm)
     APPENDC(intrinsic_possible(INTRINSIC_GAIN_STR, pm), "strength");
     APPENDC(intrinsic_possible(INTRINSIC_GAIN_EN, pm), "magic energy");
     #endif
-
 }
 
+staticfn int
+dazzle_chance(struct permonst *pm)
+{
+    int d1, d2, combos = 0;
+    int daznum = u.ulevel - pm->mlevel;
+
+    for (d1 = 0; d1 < 6; d1++) {
+        for (d2 = 0; d2 < 6; d2++) {
+            if ((d1 + d2 + daznum) > 10)
+                combos++;
+        }
+    }
+    return (100 * combos) / 36;
+}
 /*pager.c*/

@@ -44,6 +44,7 @@ static const char *const artifact_names[] = {
 #define     ELEC(a,b)   {0,AD_ELEC,a,b}         /* electrical shock */
 #define     ACID(a,b)   {0,AD_ACID,a,b}         /* acid */
 #define     STUN(a,b)   {0,AD_STUN,a,b}         /* magical attack */
+#define     POIS(a,b)   {0,AD_DRST,a,b}         /* poison */
 #define     DISE(a,b)   {0,AD_DISE,a,b}         /* disease attack */
 #define     SLEE(a,b)   {0,AD_SLEE,a,b}         /* Sleep attack  */
 #define     DISN(a,b)   {0,AD_DISN,a,b}         /* disintegration attack */
@@ -420,10 +421,11 @@ static NEARDATA struct artifact artilist[] = {
       A_CHAOTIC, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 1500L, NO_COLOR, POSEIDON_S_TRIDENT),
 
-    /* From SLASH'EM */
+    /* From SLASH'EM. In Vanilla 3.7.0, Grimtooth has the Fling Poison invoke ability,
+       but this felt much more fitting for Serpent's Tongue so I moved it there. */
     A("Serpent's Tongue", DAGGER,
       SPFX_RESTR, 0, 0,
-      PHYS(2, 0), NO_DFNS, NO_CARY, 0,
+      PHYS(2, 0), NO_DFNS, NO_CARY, FLING_POISON,
       A_CHAOTIC, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 400L, NO_COLOR, SERPENT_S_TONGUE),
 
@@ -479,14 +481,14 @@ static NEARDATA struct artifact artilist[] = {
     /* Now can instakill flammable monsters and green slime */
     A("Fire Brand", SHORT_SWORD,
       (SPFX_RESTR | SPFX_ATTK | SPFX_DEFN), 0, 0,
-      FIRE(5, 0), DFNS(AD_FIRE), NO_CARY, 0,
+      FIRE(5, 0), DFNS(AD_FIRE), NO_CARY, FIRESTORM,
       A_NONE, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 3000L, NO_COLOR, FIRE_BRAND),
 
     /* Now can instakill water elementals */
     A("Frost Brand", SHORT_SWORD,
       (SPFX_RESTR | SPFX_ATTK | SPFX_DEFN), 0, 0,
-      COLD(5, 0), DFNS(AD_COLD), NO_CARY, 0,
+      COLD(5, 0), DFNS(AD_COLD), NO_CARY, SNOWSTORM,
       A_NONE, NON_PM, NON_PM,
       DFLT_SPE, ARTVAL, 3000L, NO_COLOR, FROST_BRAND),
 
@@ -537,6 +539,14 @@ static NEARDATA struct artifact artilist[] = {
       A_NONE, NON_PM, NON_PM,
       BANE_SPE, ARTVAL, 1500L, CLR_RED, WEREBANE),
 
+  /* The treasure of the Wyrm Caves, this stone lets the player
+     branchport to a single location. It can be "keyed" to a
+     level by applying it. */
+    A("Glyph Shard", OBSIDIAN,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_NOWISH), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, CREATE_PORTAL,
+      A_NONE, NON_PM, NON_PM,
+      DFLT_SPE, ARTVAL, 2500L, NO_COLOR, GLYPH_SHARD),
 
     /*
      *      The artifacts for the quest dungeon, all self-willed.

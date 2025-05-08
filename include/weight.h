@@ -22,7 +22,7 @@ enum weight_constants {
     WT_TOOMUCH_DIAGONAL  =  600,  /* weight_cap threshold for diag squeeze */
     WT_ELF               =  800,  /* weight of elf body */
     WT_SQUEEZABLE_INV    =  850,  /* inv_weight() maximum for squeezing */
-    MAX_CARR_CAP         = 1000,  /* max carrying capacity, so that
+    MAX_CARR_CAP         = 1250,  /* max carrying capacity, so that
                                    * boulders can be heavier */
     WT_HUMAN             = 1450,  /* weight of human body */
     WT_BABY_DRAGON       = 1500,  /* weight of baby dragon body */

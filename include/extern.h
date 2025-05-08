@@ -67,6 +67,10 @@
  *
  */
 
+#ifndef ARTIFACT_H
+#include "artifact.h"
+#endif
+
 /* ### alloc.c ### */
 
 #if 0
@@ -195,6 +199,7 @@ extern boolean non_wishable_artifact(struct obj *);
 extern int arti_align(int);
 extern struct obj *get_faux_artifact_obj(const char *);
 extern struct art_info_t artifact_info(int);
+extern boolean permapoisoned(struct obj *);
 
 /* ### attrib.c ### */
 
@@ -416,8 +421,10 @@ extern char extcmd_initiator(void);
 extern int doextcmd(void);
 extern struct ext_func_tab *extcmds_getentry(int);
 extern int count_bind_keys(void);
+extern int count_autocompletions(void);
 extern void get_changed_key_binds(strbuf_t *);
 extern void handler_rebind_keys(void);
+extern void handler_change_autocompletions(void);
 extern int extcmds_match(const char *, int, int **);
 extern const char *key2extcmddesc(uchar);
 extern boolean bind_specialkey(uchar, const char *);
@@ -1694,6 +1701,8 @@ extern void costly_alteration(struct obj *, int) NONNULLARG1;
 extern void clear_dknown(struct obj *);
 extern void unknow_object(struct obj *);
 extern struct obj *mksobj(int, boolean, boolean) NONNULL;
+extern boolean stone_object_type(unsigned);
+extern boolean stone_furniture_type(unsigned);
 extern int bcsign(struct obj *) NONNULLARG1;
 extern int weight(struct obj *) NONNULLARG1;
 extern struct obj *mkgold(long, coordxy, coordxy);
@@ -2794,7 +2803,6 @@ extern void get_plname_from_file(NHFILE *, char *, boolean) NONNULLARG12;
 #ifdef SELECTSAVED
 extern int restore_menu(winid);
 #endif
-extern void minit(void);
 extern boolean lookup_id_mapping(unsigned, unsigned *) NONNULLARG2;
 extern int validate(NHFILE *, const char *, boolean) NONNULLARG1;
 /* extern void reset_restpref(void); */
@@ -2945,11 +2953,7 @@ extern void bufoff(int);
 extern void bflush(int);
 extern void bwrite(int, const genericptr_t, unsigned) NONNULLARG2;
 extern void mread(int, genericptr_t, unsigned) NONNULLARG2;
-extern void minit(void);
 extern void bclose(int);
-#if defined(ZEROCOMP)
-extern void zerocomp_bclose(int);
-#endif
 
 /* ### shk.c ### */
 
@@ -3265,6 +3269,7 @@ extern int collect_coords(coord *, coordxy, coordxy, int, unsigned,
                           boolean (*)(coordxy, coordxy)) NONNULLARG1;
 extern boolean safe_teleds(int);
 extern boolean teleport_pet(struct monst *, boolean) NONNULLARG1;
+extern void tele_to_rnd_pet(void);
 extern void tele(void);
 extern void scrolltele(struct obj *) NO_NNARGS;
 extern int dotelecmd(void);
@@ -3556,7 +3561,7 @@ extern boolean mhitm_knockback(struct monst *, struct monst *,struct attack *,
 extern int passive(struct monst *, struct obj *, boolean, boolean, uchar,
                    boolean) NONNULLARG1;
 extern void passive_obj(struct monst *, struct obj *, struct attack *) NONNULLARG1;
-extern void that_is_a_mimic(struct monst *, boolean) NONNULLARG1;
+extern void that_is_a_mimic(struct monst *, unsigned) NONNULLARG1;
 extern void stumble_onto_mimic(struct monst *) NONNULLARG1;
 extern int flash_hits_mon(struct monst *, struct obj *) NONNULLARG12;
 extern void light_hits_gremlin(struct monst *, int) NONNULLARG1;
@@ -3668,6 +3673,9 @@ extern unsigned long get_current_feature_ver(void);
 extern const char *copyright_banner_line(int) NONNULL;
 extern void early_version_info(boolean);
 extern void dump_version_info(void);
+extern void store_critical_bytes(NHFILE *) NONNULLARG1;
+extern int compare_critical_bytes(NHFILE *);
+extern int get_critical_size_count(void);
 
 /* ### video.c ### */
 

@@ -227,7 +227,7 @@ endif
 #==============================================================================
 
 #  The version of the game this Makefile was designed for
-NETHACK_VERSION="2.2.0"
+NETHACK_VERSION="2.2.1"
 
 # A brief version for use in macros
 NHV1=$(subst .,,$(NETHACK_VERSION))
@@ -649,7 +649,7 @@ CLEAN_FILE += $(MTARGETS) $(MOBJS)
 # Recover
 #==========================================
 OR = $(OBJ)
-ROBJS = $(OR)/recover.o
+ROBJS = $(OR)/recover.o $(OR)/rversion.o
 RTARGETS = $(GAMEDIR)/recover.txt $(GAMEDIR)/recover.exe
 
 recover: $(RTARGETS)
@@ -662,6 +662,8 @@ $(GAMEDIR)/recover.exe: $(ROBJS) $(HLHACKLIB) | $(GAMEDIR)
 
 $(OR)/recover.o: $(U)recover.c | $(OR)
 	$(cc) $(CFLAGSU) $< -o$@
+$(OR)/rversion.o: $(SRC)/version.c | $(OR)
+	$(cc) $(CFLAGSU) -DMINIMAL_FOR_RECOVER $< -o$@
 
 # $(OR):
 #	@mkdir -p $@
@@ -1276,7 +1278,7 @@ $(ONH)/%.o: $(SRC)/%.c $(NHLUAH) | $(ONH)
 TARGET_CPU = x64
 NHV=370
 PKGFILES = nerfhackrc.template Guidebook.txt license NerfHack.exe NetHack.txt \
-        NerfHackW.exe opthelp nhdat220 record symbols sysconf.template
+        NerfHackW.exe opthelp nhdat221 record symbols sysconf.template
 FILESTOZIP = $(addprefix $(GAMEDIR)/, $(PKGFILES))
 MAINZIP = $(PkgDir)/nethack-$(NHV)-win-$(TARGET_CPU)-msys2.zip
 

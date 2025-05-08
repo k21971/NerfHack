@@ -476,7 +476,7 @@ struct you {
     int ugangr;              /* if the gods are angry at you */
     int ugifts;              /* number of artifacts bestowed */
     int ublessed, ublesscnt; /* blessing/duration from #pray */
-    int combotime;           /* Timeout for last cartomancer combo */
+    int techtime;            /* Timeout for last special ability */
     int lastprayed;
     uchar lastprayresult, reconciled;
 #define PRAY_NONE   0
@@ -514,6 +514,7 @@ struct you {
     short mcham;             /* vampire mndx if shapeshifted to bat/cloud */
     short umovement;         /* instead of youmonst.movement */
     schar uachieved[N_ACH];  /* list of achievements in the order attained */
+    d_level shard_key;       /* where the Glyph Shard is currently keyed to */
 }; /* end of `struct you' */
 
 
