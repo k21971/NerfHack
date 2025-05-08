@@ -17,9 +17,9 @@ COMPRESSBIN="/bin/gzip"
 # fixed data to copy (leave blank to skip)
 NH_GIT="/home/build/NerfHack"
 # HACKDIR from include/config.h; aka nethack subdir inside chroot
-NHSUBDIR="nerfhack-2.2.0"
+NHSUBDIR="nerfhack-2.2.1"
 # VAR_PLAYGROUND from include/unixconf.h
-NH_VAR_PLAYGROUND="/nerfhack-2.2.0/var/"
+NH_VAR_PLAYGROUND="/nerfhack-2.2.1/var/"
 # END OF CONFIG
 ##############################################################################
 
@@ -44,8 +44,8 @@ set -e
 umask 022
 
 echo "Creating inprogress and extrainfo directories"
-mkdir -p "$NAO_CHROOT/dgldir/inprogress-nerf220"
-chown "$USRGRP" "$NAO_CHROOT/dgldir/inprogress-nerf220"
+mkdir -p "$NAO_CHROOT/dgldir/inprogress-nerf221"
+chown "$USRGRP" "$NAO_CHROOT/dgldir/inprogress-nerf221"
 mkdir -p "$NAO_CHROOT/dgldir/extrainfo-nerfhack"
 chown "$USRGRP" "$NAO_CHROOT/dgldir/extrainfo-nerfhack"
 
