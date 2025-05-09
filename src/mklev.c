@@ -1413,17 +1413,8 @@ fill_ordinary_room(
 
     /* Maybe make some graffiti.
      * Chance decreases the lower you get in the dungeon.
-     *
-     * On dungeon level 1, put a special graffiti in the starting room.
      * Either a hint or a true rumor. */
-    if (depth(&u.uz) < 2 && has_upstairs(croom) && !rn2(depth(&u.uz))) {
-        if (find_okay_roompos(croom, &pos)) {
-            char buf[BUFSZ];
-            const char *str;
-            str = get_rnd_text(ENTRYMSGFILE, buf, rn2, MD_PAD_RUMORS);
-            make_engr_at(pos.x, pos.y, str, 0L, BURN);
-        }
-    } else if (!rn2(27 + 3 * abs(depth(&u.uz)))) {
+    if (!rn2(27 + 3 * abs(depth(&u.uz)))) {
         char buf[BUFSZ];
         const char *mesg = random_engraving(buf);
 
