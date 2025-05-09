@@ -5,7 +5,7 @@ Welcome, traveler, to NerfHack!
 ![nerfhack.bmp](nerfhack.bmp)
 
 ---
-**NerfHack** is the successor to **Hack'EM**, which was a modernized variant of **SLASH'EM** based on **EvilHack**. Unlike Hack'EM, **NerfHack** starts fresh from **NetHack 3.7.0** and is designed to be a significantly more challenging variant than Vanilla NetHack. While it incorporates many features and mechanics from Hack'EM, it is *not* a full port, introducing numerous new changes in both content and design. By drawing inspiration from various NetHack variants and carefully fine-tuning different aspects of gameplay, key pain points have been identified and addressed to refine the difficulty curve — resulting in a more treacherous and rewarding dungeon.
+**NerfHack** is the successor to **Hack'EM**, which was a modernized variant of **SLASH'EM** based on **EvilHack**. Unlike Hack'EM, **NerfHack** starts fresh from **NetHack 3.7.0** and is designed to be a significantly more challenging variant than Vanilla NetHack. While it incorporates many features and mechanics from Hack'EM, it is *not* a full port, introducing numerous new changes in both content and design. By drawing inspiration from various NetHack variants and carefully fine-tuning different aspects of gameplay, key pain points have been identified and addressed to refine the difficulty curve - resulting in a more treacherous and rewarding dungeon.
 
 
 ## Main goals and ideas for NerfHack:
@@ -24,7 +24,7 @@ Some of the changes in NerfHack are controversial and challenge decades-old assu
 
 **Is knowledge still power if its applications are restricted?**
 
-    Many of NetHack's challenges can be bypassed through deep game knowledge — like using price identification, alchemy abuse, or resource farming of some sort. If those tools are weakened, does the game reward a different kind of knowledge, or does it simply punish players more?
+    Many of NetHack's challenges can be bypassed through deep game knowledge - like using price identification, alchemy abuse, or resource farming of some sort. If those tools are weakened, does the game reward a different kind of knowledge, or does it simply punish players more?
 
 **What does "difficulty" mean in a game with near-infinite possibilities?**
 
@@ -48,7 +48,7 @@ Some of the changes in NerfHack are controversial and challenge decades-old assu
 
 **Is frustration an essential part of mastery?**
 
-    By making the game significantly harder, NerfHack raises the question of whether enduring more losses leads to greater satisfaction — or just burnout.
+    By making the game significantly harder, NerfHack raises the question of whether enduring more losses leads to greater satisfaction - or just burnout.
 
 Ultimately, NerfHack challenges the notion of what makes NetHack "fair," "fun," and "winnable," forcing players to reconsider their relationship with difficulty, strategy, and perseverance.
 
@@ -170,7 +170,7 @@ Roles and races should feel distinct, each with unique strengths, weaknesses, an
 ---
 
 ### **Introduce New and Innovative Features**
-*NerfHack* isn't just about nerfing exploits — it's about introducing new mechanics, items, and abilities to keep the game fresh and fun.
+*NerfHack* isn't just about nerfing exploits - it's about introducing new mechanics, items, and abilities to keep the game fresh and fun.
 
 **Examples:**
 - **Two new roles:** – The Cartomancer and the Undead Slayer join the roster
