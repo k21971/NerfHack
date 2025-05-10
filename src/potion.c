@@ -612,18 +612,17 @@ make_glib(int xtime)
  * and reset it for a while or until it's wiped off by a towel.
  */
 void
-make_fumbling(int xtime)
+make_fumbling(long xtime)
 {
-    set_itimeout(&HFumbling, xtime + rnd(3));
+    set_itimeout(&HFumbling, xtime);
 
     if (xtime) {
         HFumbling |= (I_SPECIAL);
-        HFumbling &= ~TIMEOUT;
     }
     if (!xtime) {
         HFumbling &= ~I_SPECIAL;
         if (!EFumbling && !(HFumbling & ~TIMEOUT))
-            HFumbling = 0;
+            HFumbling = 0L;
     }
 }
 

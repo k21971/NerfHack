@@ -2905,20 +2905,20 @@ tell you of what has transpired:
 
 Long ago, I wielded %o, a relic of immense power that could banish 
 even the most ancient of evils. For centuries, it remained in safekeeping, passed down 
-through the order of Undead Slayers. But now, the unthinkable has happened — %n, 
+through the order of Undead Slayers. But now, the unthinkable has happened - %n,
 the progenitor of all unholy abominations, has stolen the relic and retreated 
 into the depths of his lair. Without it, the forces of darkness are growing bolder, 
 and the dead refuse to stay in their graves.
 
 You have been chosen to reclaim %o, for only a true Undead Slayer can withstand the 
-horrors guarding it. Time is running out—if %n succeeds in corrupting the 
+horrors guarding it. Time is running out - if %n succeeds in corrupting the
 artifact, it may be lost forever."]],
       },
       badalign = {
          synopsis = "[You have deviated from the path.  Return when you have purified yourself.]",
          output = "text",
          text = [["This is dire, %p. You have strayed from the path of the Slayer!
-You know that our order demands unwavering dedication — hesitation
+You know that our order demands unwavering dedication - hesitation
 and doubt only serve the enemy. The %shood must stand for relentless
 vigilance against the undead."
                    
@@ -2955,7 +2955,7 @@ in battle, and return only when you have risen to the rank of %R."]],
          "\"In your darkest hour, call upon %d. Even in the abyss, the light can still reach you.\"",
          "\"The undead are weakest in the light of day, but their master knows no such limits.\"",
          "\"Do not falter, %p. Doubt feeds the darkness, and %n grows stronger with every hesitation.\"",
-         "\"Wear %o—it was forged for this very purpose. It will aid you against the horrors you face.\"",
+         "\"Wear %o - it was forged for this very purpose. It will aid you against the horrors you face.\"",
       },
       firsttime = {
          synopsis = "[You are at %H; the doors are closed.  %lC needs your help!]",
@@ -2963,7 +2963,7 @@ in battle, and return only when you have risen to the rank of %R."]],
          text = [["The air is thick with the stench of decay, and an unnatural silence hangs 
 over the ruined monastery. Once a stronghold of the Undead Slayers, now it is nothing 
 more than a graveyard for those who stood against the darkness. The desecrated walls bear 
-marks of a terrible battle — holy symbols defaced, relics shattered, and the blood of 
+marks of a terrible battle - holy symbols defaced, relics shattered, and the blood of
 your brethren long since dried. Somewhere below, %n lurks, growing stronger 
 with each passing moment. If %o is not reclaimed soon, the dead will rise
 unchecked, and the world will drown in darkness. There is no turning back now."]],
@@ -2976,7 +2976,7 @@ The Abyssal Vaults. The walls are slick with something far older than blood,
 and the very ground seems to shift beneath your feet, as if the earth itself 
 recoils from the presence of %n. Shadows stretch unnaturally, 
 twisting and writhing, whispering words you dare not understand. Here, the 
-dead do not merely rise — they linger, waiting, hungering. %o is near, but
+dead do not merely rise - they linger, waiting, hungering. %o is near, but
 so is its defiler."]],
       },
       goal_next = {
@@ -3023,7 +3023,7 @@ life, but I hope to at %ds feet."]],
          text = [["With a final, unearthly wail, %n begins to unravel,
 its form dissolving into darkness too ancient to comprehend. The very air 
 trembles as the shadows recoil, their master’s grip shattered at last.
-For a moment, silence hangs over the Abyssal Vaults—then, from the 
+For a moment, silence hangs over the Abyssal Vaults - then, from the
 swirling void, %o falls to the ground, purified 
 once more. The darkness has been driven back… but not destroyed.
 Evil is eternal, waiting for the day the foolish or the damned 
@@ -3069,7 +3069,7 @@ You remember the descriptions of %i, given to you by
          synopsis = "[%lC has sent you, but you are no %gC.  I shall destroy you.]",
          output = "text",
          text = [["Foolish hunter, you come seeking %o, but it is 
-no longer yours to wield. The light has no dominion here — only death and despair. 
+no longer yours to wield. The light has no dominion here - only death and despair.
 Soon, you will join my army of the damned!"]],
       },
       nemesis_next = {

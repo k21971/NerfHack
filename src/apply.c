@@ -206,7 +206,7 @@ use_towel(struct obj *obj)
     } else if (GreasedFeet || GreasedBoots) {
         pline("You've got the goop off your %s.",
               uarmf ? xname(uarmf) : makeplural(body_part(FOOT)));
-        make_fumbling(0);
+        make_fumbling(0L);
         if (uarmf)
             uarmf->greased = 0;
         if (!rn2(5) && !obj->greased) {
@@ -2918,7 +2918,7 @@ use_grease(struct obj *obj)
                       fingers_or_gloves(TRUE));
             }
             if (otmp == uarmf && uarmf->greased)
-                make_fumbling((HFumbling & TIMEOUT) + rnd(3));
+                make_fumbling((HFumbling & TIMEOUT) + 3L);
         } else {
             make_glib(oldglib + rn1(11, 5)); /* + 5..15 */
             You("coat your %s with grease.", fingers_or_gloves(TRUE));

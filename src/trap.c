@@ -1909,7 +1909,7 @@ trapeffect_grease_trap(
                     You("almost slip on a puddle of grease!");
                 }
 	    }
-            make_fumbling((HFumbling & TIMEOUT) + rnd(3)); /* + 1..3 */
+            make_fumbling((HFumbling & TIMEOUT) + 3L);
             seetrap(trap);
             trap->once = 1;
             return Trap_Effect_Finished;
@@ -1920,7 +1920,7 @@ trapeffect_grease_trap(
                you get hit with an extra nasty splosh of grease that
                mucks up your flying and blinds you... */
             pline("A torrent of grease inundates you!");
-            make_fumbling((HFumbling & TIMEOUT) + rnd(3)); /* + 1..3 */
+            make_fumbling((HFumbling & TIMEOUT) + 3L);
             seetrap(trap);
             trap->once = 1;
             goto greased_face;
@@ -2002,7 +2002,7 @@ trapeffect_grease_trap(
                 grease_hits(uarmf);
                 grease_hits(uarmf); /* Two chances for good measure */
             }
-            make_fumbling((HFumbling & TIMEOUT) + rnd(3));
+            make_fumbling((HFumbling & TIMEOUT) + 3L);
             break;
         default:
             pline("%s you!", A_gush_of_grease_hits);

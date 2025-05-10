@@ -286,47 +286,49 @@ mzapwand(
             wrested = FALSE;
 
     if (otmp->spe < 0 && !zapcard) {
-        impossible("Mon zapping wand with %d charges?", otmp->spe);
-        return FALSE;
+        ; /* No wresting cancelled wands, it turns to dust below. */
+    } else {
+        /* Monsters can also wrest wands */
+        if (!zapcard && otmp->spe == 0) {
+            /* Same chance as players */
+            if (!rn2(6 + (otmp->cursed ? 2 : (otmp->blessed ? - 2 : 0)))) {
+                if (canseemon(mtmp))
+                    pline("%s wrests a last charge from %s!",
+                          Monnam(mtmp), doname(otmp));
+                wrested = TRUE;
+            } else {
+                 if (canseemon(mtmp))
+                    pline("%s attempts to zap %s!",
+                          Monnam(mtmp), doname(otmp));
+            }
+        }
+
+        if (zapcard || otmp->spe > 0 || wrested) {
+            if (!canseemon(mtmp)) {
+                int range = couldsee(mtmp->mx, mtmp->my) /* 9 or 5 */
+                               ? (BOLT_LIM + 1) : (BOLT_LIM - 3);
+
+                Soundeffect(se_zap, 100);
+                You_hear("a %s zap.", (mdistu(mtmp) <= range * range)
+                                         ? "nearby" : "distant");
+            } else if (self) {
+                pline("%s with %s!",
+                      monverbself(mtmp, Monnam(mtmp), "zap", (char *) 0),
+                      zapcard ? "a zap card" : doname(otmp));
+            } else {
+                pline_mon(mtmp, "%s %s %s!", Monnam(mtmp),
+                zapcard ? "plays" : "zaps",
+                zapcard ? "a zap card" : an(xname(otmp)));
+                stop_occupation();
+            }
+        }
     }
 
-    /* Monsters can also wrest wands */
-    if (!zapcard && otmp->spe == 0) {
-        /* Same chance as players */
-        if (!rn2(6 + (otmp->cursed ? 2 : (otmp->blessed ? - 2 : 0)))) {
-            if (canseemon(mtmp))
-                pline("%s wrests a last charge from %s!",
-                      Monnam(mtmp), doname(otmp));
-            wrested = TRUE;
-        } else {
-             if (canseemon(mtmp))
-                pline("%s attempts to zap %s!",
-                      Monnam(mtmp), doname(otmp));
+    if (!zapcard && otmp->spe <= 0) {
+        if (canseemon(mtmp)) {
+            pline("%s starts to wave %s... but it turns to dust.",
+                          Monnam(mtmp), doname(otmp));
         }
-    }
-    
-    if (zapcard || otmp->spe > 0 || wrested) {
-        if (!canseemon(mtmp)) {
-            int range = couldsee(mtmp->mx, mtmp->my) /* 9 or 5 */
-                           ? (BOLT_LIM + 1) : (BOLT_LIM - 3);
-    
-            Soundeffect(se_zap, 100);
-            You_hear("a %s zap.", (mdistu(mtmp) <= range * range)
-                                     ? "nearby" : "distant");
-        } else if (self) {
-            pline("%s with %s!",
-                  monverbself(mtmp, Monnam(mtmp), "zap", (char *) 0),
-                  zapcard ? "a zap card" : doname(otmp));
-        } else {
-            pline_mon(mtmp, "%s %s %s!", Monnam(mtmp),
-            zapcard ? "plays" : "zaps",
-            zapcard ? "a zap card" : an(xname(otmp)));
-            stop_occupation();
-        }
-    }
-    if (!zapcard && otmp->spe == 0) {
-        if (canseemon(mtmp))
-             pline("%s wand turns to dust.", s_suffix(Monnam(mtmp)));
         m_useup(mtmp, otmp);
         return wrested;
     }

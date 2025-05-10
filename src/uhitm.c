@@ -390,7 +390,7 @@ check_caitiff(struct monst *mtmp)
             if (rn2(3))
                 return;
             switch (rnd(5)) {
-            case 1: pline("The weak flounder before you — an easy kill.");
+            case 1: pline("The weak flounder before you - an easy kill.");
                 break;
             case 2: You("strike with brutal precision as %s struggles helplessly.",
                     mon_nam(mtmp));
@@ -8396,8 +8396,8 @@ hates_item(struct monst *mtmp, int otyp)
      * mattock. Facing a sudden horde of undead guardians?
      * Swing that thing like you're auditioning for a fantasy
      * action flick! Plus, the mattock's impeccable dwarven
-     * metallurgy ensures it outlasts lesser tools — and the
-     * archaeologists who wield them — making it the only artifact
+     * metallurgy ensures it outlasts lesser tools - and the
+     * archaeologists who wield them - making it the only artifact
      * that might one day be discovered by future archaeologists.
      */
     if (is_you && Role_if(PM_ARCHEOLOGIST) && otyp == DWARVISH_MATTOCK)

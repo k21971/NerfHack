@@ -1263,9 +1263,18 @@ status_enlightenment(int mode, int final)
             Sprintf(eos(buf), " (%ld)", (HGlib & TIMEOUT));
         you_have(buf, "");
     }
+    if (HFumbling & I_SPECIAL) {
+        /* Extra info for debugging */
+        Sprintf(buf, "greasy feet");
+        if (wizard)
+            Sprintf(eos(buf), " (%ld)", (HFumbling & TIMEOUT));
+        you_have(buf, "");
+    }
     if (Fumbling) {
+
         if (magic || cause_known(FUMBLING))
             enl_msg(You_, "fumble", "fumbled", "", from_what(FUMBLING));
+
     }
     if (Sleepy) {
         if (magic || cause_known(SLEEPY)) {

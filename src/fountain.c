@@ -1092,7 +1092,7 @@ wash_hands(void)
     if (was_goopy) {
         pline("You wash the goop off your %s.",
             uarmf ? xname(uarmf) : makeplural(body_part(FOOT)));
-        make_fumbling(0);
+        make_fumbling(0L);
         if (uarmf) {
             uarmf->greased = 0;
             res = water_damage(uarmf, (const char *) 0, TRUE);
