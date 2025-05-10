@@ -2587,7 +2587,7 @@ extern void toggle_blindness(void);
 extern boolean make_hallucinated(long, boolean, long);
 extern void make_deaf(long, boolean);
 extern void make_glib(int);
-extern void make_fumbling(int);
+extern void make_fumbling(long);
 extern void self_invis_message(void);
 extern int dodrink(void);
 extern int dopotion(struct obj *) NONNULLARG1;

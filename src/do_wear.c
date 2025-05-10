@@ -328,7 +328,7 @@ Boots_on(void)
         update_inventory();
     }
     if (uarmf && uarmf->greased && uarmf->otyp != FUMBLE_BOOTS)
-        make_fumbling((HFumbling & TIMEOUT) + rnd(3));
+        make_fumbling((HFumbling & TIMEOUT) + 3L);
 
     return 0;
 }
@@ -390,7 +390,7 @@ Boots_off(void)
         break;
     case FUMBLE_BOOTS:
         if (!oldprop && !(HFumbling & ~TIMEOUT))
-            HFumbling = EFumbling = 0;
+            HFumbling = EFumbling = 0L;
         /* Unblock flying */
         BFlying &= ~W_ARMF;
         if (Flying)
@@ -860,7 +860,7 @@ Gloves_off(void)
         break;
     case GAUNTLETS_OF_FUMBLING:
         if (!oldprop && !(HFumbling & ~TIMEOUT))
-            HFumbling = EFumbling = 0;
+            HFumbling = EFumbling = 0L;
         /* Unblock flying */
         BFlying &= ~W_ARMG;
         if (Flying)
