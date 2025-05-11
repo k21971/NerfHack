@@ -2468,7 +2468,6 @@ seffect_flood(struct obj **sobjp, struct monst *mtmp)
         }
 
         if (madepools || !stilldry) {
-            gk.known = TRUE;
             if (Hallucination)
                 pline("A totally gnarly wave comes in!");
             else
@@ -2476,6 +2475,7 @@ seffect_flood(struct obj **sobjp, struct monst *mtmp)
         } else {
             pline("The air around you suddenly feels very humid.");
         }
+        gk.known = TRUE;
         rehydrate(rn1(1500, 4500));
         /* Cleanup when used in muse.c */
         if (!isyou)
