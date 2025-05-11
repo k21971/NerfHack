@@ -546,6 +546,12 @@ find_roll_to_hit(
     if (u.ulevel > 20)
         tmp += rn2((u.ulevel - 20) / 2 + 1);
 
+    /* Racial weapon bonuses */
+    if (uwep && race_bonus(uwep) > 0)
+        tmp++;
+    if (u.twoweap && uswapwep && race_bonus(uswapwep) > 0)
+        tmp++;
+
     /* Some races really don't like wearing other racial armor, if they
      * do they get a severe to-hit penalty */
     tmp -= d(count_hated_items(), 5);
