@@ -590,7 +590,7 @@ static const struct def_skill Skill_U[] = {
     { P_SHORT_SWORD, P_BASIC },
     { P_MACE, P_SKILLED },
     { P_MORNING_STAR, P_EXPERT },
-    { P_FLAIL, P_SKILLED },
+    { P_FLAIL, P_EXPERT },
     { P_HAMMER, P_SKILLED },
     { P_POLEARMS, P_SKILLED },
     { P_SPEAR, P_BASIC },
@@ -604,6 +604,7 @@ static const struct def_skill Skill_U[] = {
     /* This counts as martial arts for undead slayers */
     { P_BARE_HANDED_COMBAT, P_SKILLED }, /* Buffy the Vampire Slayer */
     { P_SHIELD, P_SKILLED },
+    { P_RIDING, P_SKILLED },
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_V[] = {
