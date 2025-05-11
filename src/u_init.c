@@ -951,7 +951,6 @@ u_init_role(void)
             Valkyrie[V_MAJOR].trotyp = WAR_HAMMER;
             Valkyrie[V_MAJOR].trspe = 0;
             Valkyrie[V_ARMOR].trotyp = LEATHER_CLOAK;
-            Valkyrie[V_ARMOR].trspe = 0;
         }
         ini_inv(Valkyrie);
         if (!rn2(6))
