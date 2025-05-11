@@ -273,6 +273,7 @@ static struct inv_sub {
     { PM_ELF, HELMET, ELVEN_LEATHER_HELM },
     /* { PM_ELF, SMALL_SHIELD, ELVEN_SHIELD }, */
     { PM_ELF, CLOAK_OF_DISPLACEMENT, ELVEN_CLOAK },
+    { PM_ELF, LEATHER_CLOAK, ELVEN_CLOAK },
     { PM_ELF, CRAM_RATION, LEMBAS_WAFER },
     { PM_ORC, DAGGER, ORCISH_DAGGER },
     { PM_ORC, SPEAR, ORCISH_SPEAR },
@@ -290,6 +291,7 @@ static struct inv_sub {
     { PM_DWARF, HELMET, DWARVISH_IRON_HELM },
     /* { PM_DWARF, SMALL_SHIELD, DWARVISH_ROUNDSHIELD }, */
     /* { PM_DWARF, PICK_AXE, DWARVISH_MATTOCK }, */
+    { PM_DWARF, LEATHER_CLOAK, DWARVISH_CLOAK },
     { PM_DWARF, LEMBAS_WAFER, CRAM_RATION },
     { PM_GNOME, BOW, CROSSBOW },
     { PM_GNOME, ARROW, CROSSBOW_BOLT },
@@ -949,8 +951,8 @@ u_init_role(void)
     case PM_VALKYRIE:
         if (rn2(100) >= 50) { /* see above comment */
             Valkyrie[V_MAJOR].trotyp = WAR_HAMMER;
-            Valkyrie[V_MAJOR].trspe = 0;
             Valkyrie[V_ARMOR].trotyp = LEATHER_CLOAK;
+            Valkyrie[V_ARMOR].trspe = 2;
         }
         ini_inv(Valkyrie);
         if (!rn2(6))
