@@ -976,6 +976,8 @@ m_dowear_type(
                 continue;
             if (obj->otyp == RIN_LEVITATION && mon_prop(mon, FLYING))
                 continue;
+            if (obj->otyp == RIN_INVISIBILITY && mon->mtame)
+                continue;
             break;
         }
         if (obj->owornmask)
