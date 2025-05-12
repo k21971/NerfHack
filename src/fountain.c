@@ -965,7 +965,11 @@ dipfountain(struct obj *obj)
         if (in_town(u.ux, u.uy))
             (void) angry_guards(FALSE);
         return;
-    } else if (is_hands || obj == uarmg) {
+    } else if (is_hands || obj == uarmg
+               /* Include this option so that players still
+                  get help for specifically dipping their boots
+                  when they have greasy feet/boots */
+               || (obj == uarmf && (HFumbling & I_SPECIAL))) {
         er = wash_hands();
     } else {
         er = water_damage(obj, NULL, TRUE);
@@ -1092,12 +1096,12 @@ wash_hands(void)
     if (was_goopy) {
         pline("You wash the goop off your %s.",
             uarmf ? xname(uarmf) : makeplural(body_part(FOOT)));
-        make_fumbling(0L);
         if (uarmf) {
             uarmf->greased = 0;
             res = water_damage(uarmf, (const char *) 0, TRUE);
             update_inventory();
         }
+        make_fumbling(0L);
     } else {
         You("wash your %s%s in the %s.", uarmg ? "gloved " : "", hands,
             hliquid("water"));

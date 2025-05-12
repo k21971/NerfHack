@@ -206,9 +206,9 @@ use_towel(struct obj *obj)
     } else if (GreasedFeet || GreasedBoots) {
         pline("You've got the goop off your %s.",
               uarmf ? xname(uarmf) : makeplural(body_part(FOOT)));
-        make_fumbling(0L);
         if (uarmf)
             uarmf->greased = 0;
+        make_fumbling(0L);
         if (!rn2(5) && !obj->greased) {
             Your("towel gets covered in grease!");
             obj->greased = 1;

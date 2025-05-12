@@ -1183,6 +1183,10 @@ nh_timeout(void)
                     if (HFumbling & I_SPECIAL && !rn2(20)) {
                         pline_The("goop wears off of your %s.",
                                     makeplural(body_part(FOOT)));
+                        if (uarmf) {
+                            uarmf->greased = 0;
+                            update_inventory();
+                        }
                         make_fumbling(0L);
                     }
 
