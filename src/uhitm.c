@@ -1769,6 +1769,7 @@ hmon_hitmon_misc_obj(
                 canseemon(mon) ? exclam(hmd->dmg) : ".");
             hmd->dmg = shield_dmg(obj, mon);
         }
+        hmd->hittxt = TRUE;
         break;
     case BOULDER:         /* 1d20 */
     case HEAVY_IRON_BALL: /* 1d25 */
