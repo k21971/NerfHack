@@ -2334,7 +2334,11 @@ hmon_hitmon_msg_hit(
             hit(mshot_xname(obj), mon, exclam(hmd->dmg));
         else if (!flags.verbose)
             You("hit it.");
-        else if (obj != uarms && !is_shield(obj)) { /* hand_to_hand */
+        /* Don't print a message for shield bashing here - it's
+           handled elsewhere. We could probably handle it here
+           though, maybe a TODO for the future.
+         */
+        else if ((!uarms || obj != uarms) && !is_shield(obj)) { /* hand_to_hand */
             const char *verb = !obj ? barehitmsg(&gy.youmonst)
                                     : (hmd->use_weapon_skill
                                        || is_wet_towel(obj))
