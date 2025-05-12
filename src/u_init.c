@@ -892,6 +892,7 @@ u_init_role(void)
         switch (kit) {
         case 0:	/* Crossbow and bolts */
             UndeadSlayer[U_MINOR].trotyp = CROSSBOW;
+            UndeadSlayer[U_MINOR].trspe = 3;
             UndeadSlayer[U_RANGE].trotyp = CROSSBOW_BOLT;
             UndeadSlayer[U_RANGE].trquan = rn1(25, 40);
             UndeadSlayer[U_MISC].trotyp = LOW_BOOTS;
