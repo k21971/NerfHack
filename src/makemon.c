@@ -1853,7 +1853,7 @@ makemon(
     if (allow_minvent && gm.migrating_objs)
         deliver_obj_to_mon(mtmp, 1, DF_NONE); /* in case of waiting items */
 
-    if (!gi.in_mklev) {
+    if (!gi.in_mklev && svm.moves > 1) {
         newsym(mtmp->mx, mtmp->my); /* make sure the mon shows up */
         if (!(mmflags & MM_NOMSG)) {
             char mbuf[BUFSZ], *what = 0;
