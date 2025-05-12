@@ -3461,7 +3461,7 @@
         MR_POISON | MR_FIRE | MR_COLD | MR_ELEC | MR_ACID, 0,
         M1_HUMANOID | M1_OMNIVORE | M1_POIS,
         M2_HOSTILE, M3_INFRAVISIBLE,
-        NO_RACE, 10, CLR_YELLOW, ORB_WEAVER),
+        NO_RACE, 16, CLR_YELLOW, ORB_WEAVER),
     /* 3.7: from slash'em, to expand Q class; hit polymorphs target */
     MON(NAM("genetic engineer"), S_QUANTMECH,
         LVL(12, 12, 3, 10, 0), (G_GENO | 1),
@@ -3470,7 +3470,7 @@
         SIZ(WT_HUMAN, 20, MS_HUMANOID, MZ_HUMAN), MR_POISON, 0,
         M1_HUMANOID | M1_OMNIVORE | M1_POIS | M1_TPORT, M2_HOSTILE | M2_NASTY,
         M3_INFRAVISIBLE,
-        NO_RACE, 14, CLR_GREEN, GENETIC_ENGINEER),
+        NO_RACE, 16, CLR_GREEN, GENETIC_ENGINEER),
     /* From SpliceHack with changes
      * - Alchemists spawn with 2 potions of acid. When they run out, they
      *   are able to produce more at random intervals.
