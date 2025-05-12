@@ -149,7 +149,7 @@ PROJECTILE("silver arrow", NoDes,
 PROJECTILE("ya", "bamboo arrow",
            0, 15, 1, 4, 7, 7, 1,        METAL, -P_BOW, HI_METAL, YA),
 PROJECTILE("crossbow bolt", NoDes,
-           1, 55, 1, 2, 4, 6, 0,        IRON, -P_CROSSBOW, HI_METAL,
+           1, 55, 2, 2, 7, 8, 2,        IRON, -P_CROSSBOW, HI_METAL,
                                                         CROSSBOW_BOLT),
 
 /* missiles that don't use a launcher */
