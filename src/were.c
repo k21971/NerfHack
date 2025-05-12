@@ -131,6 +131,50 @@ were_beastie(int pm)
     return NON_PM;
 }
 
+int were_disguises[] = {
+    PM_ARCHEOLOGIST, PM_BARBARIAN, PM_CAVE_DWELLER,
+    PM_HEALER, PM_KNIGHT, PM_MONK, PM_CLERIC,
+    PM_RANGER, PM_ROGUE, PM_SAMURAI, PM_TOURIST,
+    PM_VALKYRIE, PM_CARTOMANCER, PM_WIZARD,
+    PM_PRISONER, PM_GUARD, PM_SHOPKEEPER,
+    /* Evil disguised */
+    PM_NURSE, PM_SHOPKEEPER, PM_GUARD
+};
+
+/* YANI from riker: A werecreature transforming out of line of sight should
+    not be identified as such. This function disguises werecreatures if they
+    transform while out of sight. */
+void
+disguise_were(struct monst *mon)
+{
+    if (Protection_from_shape_changers)
+        return;
+    switch (mon->mnum) {
+        case PM_WEREWOLF: mon->mappearance = PM_WOLF; break;
+        case PM_WEREJACKAL: mon->mappearance = PM_JACKAL; break;
+        case PM_WERETIGER: mon->mappearance = PM_TIGER; break;
+        case PM_WEREDEMON: mon->mappearance = PM_HELL_HOUND; break;
+        case PM_WERESPIDER: mon->mappearance = PM_GIANT_SPIDER; break;
+        case PM_WERESNAKE: mon->mappearance = PM_SNAKE; break;
+        case PM_WERERAT:
+            mon->mappearance = rn2(2) ? PM_GIANT_RAT : PM_RAT;
+            break;
+        case PM_HUMAN_WEREJACKAL:
+        case PM_HUMAN_WERERAT:
+        case PM_HUMAN_WEREWOLF:
+        case PM_HUMAN_WERESNAKE:
+        case PM_HUMAN_WERESPIDER:
+        case PM_HUMAN_WERETIGER:
+            mon->mappearance = were_disguises[mon->m_id % SIZE(were_disguises)];;
+            break;
+        case PM_DEMON_WEREDEMON:
+            mon->mappearance = PM_AMOROUS_DEMON;
+
+    }
+    mon->m_ap_type = M_AP_MONSTER;
+    newsym(mon->mx, mon->my);
+}
+
 void
 new_were(struct monst *mon)
 {
@@ -158,6 +202,11 @@ new_were(struct monst *mon)
               pmname(&mons[pm], Mgender(mon)) + 4);
 
     set_mon_data(mon, &mons[pm]);
+    if (!canseemon(mon)) {
+        disguise_were(mon);
+    } else if (mon->m_ap_type) {
+        seemimic(mon);
+    }
     if (helpless(mon)) {
         /* transformation wakens and/or revitalizes */
         mon->msleeping = 0;

@@ -279,6 +279,9 @@ attack_checks(struct monst *mtmp) /* target */
             return FALSE;
         }
         stumble_onto_mimic(mtmp);
+        /* Werecreatures should not cost the player a turn... */
+        if (is_were(mtmp->data))
+            return FALSE;
         return TRUE;
     }
 
