@@ -817,6 +817,7 @@ extern void finish_meating(struct monst *) NONNULLARG1;
 extern void quickmimic(struct monst *) NONNULLARG1;
 extern boolean acceptable_pet_target(struct monst *, struct monst *, boolean);
 extern boolean could_use_item(struct monst*, struct obj*, boolean, boolean);
+extern boolean m_eat_grass(struct monst*);
 
 /* ### dokick.c ### */
 

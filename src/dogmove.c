@@ -1090,6 +1090,13 @@ dog_move(
         return MMOVE_NOTHING;
     }
 
+    if (svm.moves > (edog->hungrytime + 20)
+        && levl[mtmp->mx][mtmp->my].typ == GRASS
+        && can_eat_grass(mtmp->data)) {
+        m_eat_grass(mtmp);
+        return 1;
+    }
+
     nix = omx; /* set before newdogpos */
     niy = omy;
     cursemsg[0] = FALSE; /* lint suppression */
@@ -1902,6 +1909,31 @@ hero_dupe_check:
         return TRUE;
     }
     return FALSE;
+}
+
+/* returns 0 if pet eats the grass, otherwise 1 */
+boolean
+m_eat_grass(struct monst *mtmp)
+{
+    struct edog *edog = EDOG(mtmp);
+    struct rm *here;
+    int hungry;
+
+    here = &levl[mtmp->mx][mtmp->my];
+    hungry = (svm.moves > (edog->hungrytime + 20));
+
+    if (!IS_GRASS(here->typ))
+        return 1;
+
+    if (hungry && IS_GRASS(here->typ) && can_eat_grass(mtmp->data)) {
+        here->typ = ROOM, here->flags = 0;
+        if (canseemon(mtmp) && flags.verbose)
+            pline("%s eats some grass.", Monnam(mtmp));
+        }
+    edog->hungrytime += 50; /* nutrition gain */
+    newsym(mtmp->mx, mtmp->my);
+
+    return 0;
 }
 
 /*dogmove.c*/

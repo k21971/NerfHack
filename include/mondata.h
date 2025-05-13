@@ -406,6 +406,16 @@
      || (ptr) == &mons[PM_GRUNG] \
      || (ptr) == &mons[PM_ELF] || (ptr) == &mons[PM_HUMAN])
 
+#define can_eat_grass(ptr) \
+    (((ptr)->mlet == S_UNICORN && !is_undead(ptr)) \
+     || (ptr) == &mons[PM_ROTHE] \
+     || (ptr) == &mons[PM_TITANOTHERE]             \
+     || (ptr) == &mons[PM_BALUCHITHERIUM]          \
+     || (ptr) == &mons[PM_MUMAK]                   \
+     || (ptr) == &mons[PM_MASTODON]                \
+     || (ptr) == &mons[PM_WOODCHUCK]               \
+     || (ptr) == &mons[PM_GELATINOUS_CUBE])
+
 /* Is an iron piercer really made of iron?? */
 #define can_corrode(ptr) \
 ((ptr) == &mons[PM_IRON_GOLEM] || (ptr) == &mons[PM_IRON_PIERCER])
