@@ -1241,7 +1241,7 @@
      * nymphs
      */
     MON(NAM("wood nymph"), S_NYMPH,
-        LVL(3, 10, 9, 20, 0), (G_GENO | 2),
+        LVL(3, 10, 9, 20, 0), (G_GENO | G_NOCORPSE | 2),
         A(ATTK(AT_CLAW, AD_SITM, 0, 0),
           ATTK(AT_CLAW, AD_SEDU, 0, 0),
           NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),

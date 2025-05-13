@@ -3954,6 +3954,23 @@ corpse_chance(
         return FALSE;
     }
 
+    /* Wood nymphs do not leave corpses,
+     they leave a patch of grass if possible (from CrecelleHack) */
+    if (mdat == &mons[PM_WOOD_NYMPH]) {
+        if (cansee(mon->mx, mon->my) && !was_swallowed) {
+            pline_mon(mon, "%s body returns to the earth.",
+                      s_suffix(Monnam(mon)));
+            if (levl[mon->mx][mon->my].typ == ROOM
+                  || levl[mon->mx][mon->my].typ == CORR
+                  || levl[mon->mx][mon->my].typ == GRAVE
+                  || levl[mon->mx][mon->my].typ == PUDDLE) {
+                set_levltyp(mon->mx, mon->my, GRASS);
+                del_engr_at(mon->mx, mon->my);
+                maybe_unhide_at(mon->mx, mon->my);
+            }
+        }
+        return FALSE;
+    }
     /* Gas spores always explode upon death */
     for (i = 0; i < NATTK; i++) {
         if (mdat->mattk[i].aatyp == AT_BOOM) {
