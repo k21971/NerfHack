@@ -152,7 +152,6 @@
     || (ptr)->mlet == S_ANGEL \
     || is_mplayer(ptr) \
     || is_rider(ptr) \
-    || is_zombie(ptr) \
     || unique_corpstat(ptr) \
     || (ptr) == &mons[PM_GIANT_PRAYING_MANTIS] \
     || (ptr) == &mons[PM_CTHULHU] \
@@ -161,6 +160,7 @@
 #define disrespects_elbereth(ptr) \
     ((ptr)->mlet == S_HUMAN      \
     || unique_corpstat(ptr) \
+    || is_zombie(ptr) \
     || (ptr) == &mons[PM_MINOTAUR] \
     || (ptr) == &mons[PM_ELDER_MINOTAUR]  \
     || (ptr) == &mons[PM_GIANT_PRAYING_MANTIS])
