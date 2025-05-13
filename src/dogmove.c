@@ -23,6 +23,7 @@ staticfn boolean can_reach_location(struct monst *, coordxy, coordxy, coordxy,
                                   coordxy) NONNULLARG1;
 staticfn boolean is_better_armor(struct monst *, struct obj *);
 staticfn boolean mnum_leashable(int);
+staticfn int have_treats(struct monst *);
 
 /* pick a carried item for pet to drop */
 struct obj *
@@ -640,11 +641,7 @@ dog_goal(
             if (On_stairs(u.ux, u.uy)) {
                 appr = 1;
             } else {
-                for (obj = gi.invent; obj; obj = obj->nobj)
-                    if (dogfood(mtmp, obj) == DOGFOOD) {
-                        appr = 1;
-                        break;
-                    }
+                appr = have_treats(mtmp);
                 if (appr == 0) {
                     struct trap *t;
 
@@ -1214,10 +1211,19 @@ dog_move(
         }
 
         /* allow pets to awaken the player */
-        if (u.usleep && !rn2(4)) {
-            Sprintf(buf, "%s gently nudges you awake.", Monnam(mtmp));
-            unmul(buf);
-            return MMOVE_DONE;
+        if (u.usleep) {
+            if (have_treats(mtmp) && !rn2(4)) {
+                Sprintf(buf, "%s gently nudges you awake.", Monnam(mtmp));
+                unmul(buf);
+                return MMOVE_DONE;
+            } else if (!Deaf && !rn2(8)) {
+                growl(mtmp);
+                unmul("You suddenly wake up.");
+                return MMOVE_DONE;
+            } else if (!rn2(12)) {
+                /* No effect, but neat flavor text */
+                whimper(mtmp);
+            }
         }
     }
 
@@ -2067,4 +2073,15 @@ m_eat_grass(struct monst *mtmp)
     return 0;
 }
 
+/* Are we carrying treats for this pet? */
+staticfn int
+have_treats(struct monst *mtmp)
+{
+    struct obj *obj;
+    for (obj = gi.invent; obj; obj = obj->nobj)
+        if (dogfood(mtmp, obj) == DOGFOOD) {
+            return 1;
+        }
+    return 0;
+}
 /*dogmove.c*/
