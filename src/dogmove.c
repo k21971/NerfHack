@@ -1622,6 +1622,13 @@ acceptable_pet_target(
                                    || mtmp2->data == &mons[PM_YELLOW_MOLD]
                                    || mtmp2->data == &mons[PM_GREEN_SLIME]) && rn2(10));
 
+    boolean vs_grung = (!ranged &&
+                        (((mtmp2->data == &mons[PM_GREEN_GRUNG] || mtmp2->data == &mons[PM_BLUE_GRUNG]
+                               || mtmp2->data == &mons[PM_RED_GRUNG]) && !resists_poison(mtmp))
+                               || (mtmp2->data == &mons[PM_GOLD_GRUNG] && !resists_sleep(mtmp))
+                               || mtmp2->data == &mons[PM_PURPLE_GRUNG]
+                               || mtmp2->data == &mons[PM_ORANGE_GRUNG]) && rn2(10));
+
     boolean vs_spiker = attacktype_fordmg(mtmp2->data, AT_NONE, AD_QUIL) != 0;
 
     boolean passive_kill = (!ranged && max_passive_dmg(mtmp2, mtmp) >= mtmp->mhp);
@@ -1641,7 +1648,7 @@ acceptable_pet_target(
             && distu(mtmp2->mx, mtmp2->my) < 3);
 
     return !((bad_eye && !mon_reflectsrc(mtmp))
-             || scared || vs_passive || passive_kill || vs_spiker
+             || scared || vs_passive || vs_grung || passive_kill || vs_spiker
               || vs_stoner || vs_dise || vs_peaceful || vs_boomer);
 }
 
