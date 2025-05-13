@@ -155,7 +155,7 @@ m_initthrow(struct monst *mtmp, int otyp, int oquan)
     otmp = mksobj(otyp, TRUE, FALSE);
     otmp->quan = (long) rn1(oquan, 3);
     otmp->owt = weight(otmp);
-    if (otyp == ORCISH_ARROW)
+    if (otyp == ORCISH_ARROW || is_grung(mtmp->data))
         otmp->opoisoned = TRUE;
     (void) mpickobj(mtmp, otmp);
 }
