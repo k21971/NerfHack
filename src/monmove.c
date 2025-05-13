@@ -392,7 +392,8 @@ disturb(struct monst *mtmp)
      *      (1/7 and mon is not mimicking furniture or object)
      */
     if (couldsee(mtmp->mx, mtmp->my) && mdistu(mtmp) <= 100
-        && (!Stealth || (mtmp->data == &mons[PM_ETTIN] && rn2(10)))
+        && (!(Stealth || IS_GRASS(levl[u.ux][u.uy].typ))
+            || (mtmp->data == &mons[PM_ETTIN] && rn2(10)))
         && (!(mtmp->data->mlet == S_NYMPH
               || mtmp->data == &mons[PM_JABBERWOCK]
               || mtmp->data == &mons[PM_SLUMBER_HULK]

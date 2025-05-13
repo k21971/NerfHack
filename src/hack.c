@@ -2988,6 +2988,7 @@ domove_core(void)
 
     /* your tread on the ground may disturb the slumber of nearby zombies */
     if (!Levitation && !Flying && !Stealth
+        && tmpr->typ != GRASS
         && gy.youmonst.data->cwt >= (WT_ELF / 2))
         disturb_buried_zombies(u.ux, u.uy);
 
