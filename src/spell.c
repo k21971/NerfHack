@@ -46,7 +46,6 @@ staticfn boolean dospellmenu(const char *, int, int *);
 staticfn int percent_success(int);
 staticfn long spellretention(int, char *);
 staticfn int throwspell(void);
-staticfn void cast_protection(void);
 staticfn void spell_backfire(int);
 staticfn int spell_hunger(int);
 staticfn boolean spelleffects_check(int, int *, int *);
@@ -1171,7 +1170,7 @@ cast_chain_lightning(void)
 }
 
 
-staticfn void
+void
 cast_protection(void)
 {
     int l = u.ulevel, loglev = 0,

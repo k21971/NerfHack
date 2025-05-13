@@ -3150,6 +3150,7 @@ extern void age_spells(void);
 extern int dowizcast(void);
 extern int docast(void);
 extern int spell_skilltype(int);
+extern void cast_protection(void);
 extern int spelleffects(int, boolean, boolean);
 extern int tport_spell(int);
 extern void losespells(void);
