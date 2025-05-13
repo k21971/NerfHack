@@ -1238,7 +1238,12 @@ add_mon_info(winid datawin, struct permonst * pm)
     MONPUTSTR(buf);
     if (hates_silver(pm))
         MONPUTSTR("Hates silver.");
-
+    if (disrespects_elbereth(pm)) {
+        MONPUTSTR("Does not respect Elbereth.");
+    }
+    if (immune_mgc_scare(pm)) {
+        MONPUTSTR("Immune to magical scaring.");
+    }
     /* Dazzle info */
     if (Race_if(PM_DHAMPIR)) {
         if (has_blood(pm)) {

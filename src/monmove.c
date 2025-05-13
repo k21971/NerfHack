@@ -286,14 +286,10 @@ onscary(coordxy x, coordxy y, struct monst *mtmp)
      * Rodney, lawful minions, Angels, the Riders, zombies/revenants,
      * shopkeepers, inside their own shop, priests inside their own
      * temple */
-    if (mtmp->iswiz || mtmp->iscthulhu || is_lminion(mtmp)
-        || mtmp->data == &mons[PM_ANGEL]
-        || is_rider(mtmp->data)
-        || mtmp->data == &mons[PM_GIANT_PRAYING_MANTIS]
-        || mtmp->data->mlet == S_HUMAN || unique_corpstat(mtmp->data)
+    if (mtmp->iswiz || mtmp->iscthulhu
+        || immune_mgc_scare(mtmp->data)
         || (mtmp->isshk && inhishop(mtmp))
         || (mtmp->ispriest && inhistemple(mtmp))
-        || is_zombie(mtmp->data)
         || mtmp->mberserk || mtmp->mrabid)
         return FALSE;
 
@@ -335,9 +331,8 @@ onscary(coordxy x, coordxy y, struct monst *mtmp)
                 || (Displaced && mtmp->mux == x && mtmp->muy == y)
                 || (ep->guardobjects && vobj_at(x, y)))
             && !(mtmp->isshk || mtmp->isgd || !mtmp->mcansee
-                 || mtmp->mpeaceful || mtmp->data->mlet == S_HUMAN
-                 || mtmp->data == &mons[PM_MINOTAUR]
-                 || mtmp->data == &mons[PM_ELDER_MINOTAUR]
+                 || mtmp->mpeaceful
+                 || disrespects_elbereth(mtmp->data)
                  || Inhell || In_endgame(&u.uz)));
 }
 

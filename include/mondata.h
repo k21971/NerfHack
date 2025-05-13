@@ -147,6 +147,24 @@
      || ptr == &mons[PM_DEATH])
 /* is_were() doesn't handle hero in human form */
 
+#define immune_mgc_scare(ptr) \
+    ((ptr)->mlet == S_HUMAN \
+    || (ptr)->mlet == S_ANGEL \
+    || is_mplayer(ptr) \
+    || is_rider(ptr) \
+    || is_zombie(ptr) \
+    || unique_corpstat(ptr) \
+    || (ptr) == &mons[PM_GIANT_PRAYING_MANTIS] \
+    || (ptr) == &mons[PM_CTHULHU] \
+    || (ptr) == &mons[PM_WIZARD_OF_YENDOR])
+
+#define disrespects_elbereth(ptr) \
+    ((ptr)->mlet == S_HUMAN      \
+    || unique_corpstat(ptr) \
+    || (ptr) == &mons[PM_MINOTAUR] \
+    || (ptr) == &mons[PM_ELDER_MINOTAUR]  \
+    || (ptr) == &mons[PM_GIANT_PRAYING_MANTIS])
+
 #define non_tameable(ptr) (unique_corpstat(ptr) \
      || ((ptr)->mflags3 & M3_WANTSARTI) \
      || (ptr->mflags3 & M3_NOTAME))
