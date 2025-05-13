@@ -1544,6 +1544,9 @@ skill_advance(int skill)
         P_SKILL(skill) >= P_MAX_SKILL(skill) ? "most" : "more",
         P_NAME(skill));
 
+    if (skill == P_SHIELD) /* May affect AC shown for worn shield/bracers */
+        update_inventory();
+
     /* wizards discover spellbook IDs depending on spell 'school' skill limits;
        this allows them to successfully write books for unknown spells without
        the Luck bias they used to have over other roles */
