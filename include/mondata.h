@@ -627,8 +627,8 @@
     || (ptr) == &mons[PM_HIGH_CLERIC])
 
 #define tameable_by_orc(ptr) \
-    ((ptr) == &mons[PM_WARG] || (ptr) == &mons[PM_BARGHEST] \
-    || (ptr) == &mons[PM_TROLL] || (ptr) == &mons[PM_OGRE] \
-    || (ptr) == &mons[PM_GOBLIN])
+    ((ptr) == &mons[PM_WARG] || (ptr) == &mons[PM_WARG_PUP] \
+    || (ptr) == &mons[PM_BARGHEST] || (ptr) == &mons[PM_GOBLIN] \
+    || (ptr) == &mons[PM_TROLL] || (ptr) == &mons[PM_OGRE])
 
 #endif /* MONDATA_H */
