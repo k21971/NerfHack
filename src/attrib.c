@@ -87,6 +87,7 @@ static const struct innate {
   und_abil[] = { { 1, &(HUndead_warning), "", "" },
                  { 1, &(HDrain_resistance), "", "" },
                  { 1, &(HSick_resistance), "", "" },
+                 { 1, &(HStealth), "", "" },
                  { 10, &(HFast), "quick", "slow" },
                  { 15, &(HPoison_resistance), "hardy", "" },
                  { 0, 0, 0, 0 } },
