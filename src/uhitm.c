@@ -375,13 +375,13 @@ check_caitiff(struct monst *mtmp)
             if (rn2(3))
                 return;
             switch (rnd(5)) {
-            case 1: You("revel in the slaughter of the weak.");
+            case 1: You("revel in the slaughter.");
                 break;
-            case 2: Your("god approves of this carnage.");
+            case 2: pline("%s approves of this carnage.", u_gname());
                 break;
             case 3: pline("The cries of the meek fuel your bloodlust.");
                 break;
-            case 4:verbalize("Might makes right. This world belongs to the strong.");
+            case 4:verbalize("Might makes right.");
                 break;
             case 5: verbalize("The weak exist only to be crushed.");
                 break;
@@ -393,16 +393,15 @@ check_caitiff(struct monst *mtmp)
             if (rn2(3))
                 return;
             switch (rnd(5)) {
-            case 1: pline("The weak flounder before you - an easy kill.");
+            case 1: pline("The weak flounder before you!");
                 break;
-            case 2: You("strike with brutal precision as %s struggles helplessly.",
-                    mon_nam(mtmp));
+            case 2: pline_mon(mtmp, "%s struggles helplessly.", Monnam(mtmp));
                 break;
-            case 3: You("strike down the defenseless without a second thought.");
+            case 3: You("strike down the defenseless!");
                 break;
             case 4: verbalize("No mercy!");
                 break;
-            case 5: verbalize("The helpless make the best prey.");
+            case 5: verbalize("An easy kill!");
                 break;
             }
             return;
@@ -411,14 +410,12 @@ check_caitiff(struct monst *mtmp)
             adjalign(1);
             if (rn2(3))
                 return;
-            switch (rnd(4)) {
-            case 1: You("chase down the coward, eager to spill their blood.");
+            switch (rnd(3)) {
+            case 1: You("chase down the coward");
                 break;
-            case 2: pline("Their flight only drives you to strike harder.");
+            case 2: verbalize("Fleeing only makes them easier to catch.");
                 break;
-            case 3: verbalize("Fleeing only makes them easier to catch and kill.");
-                break;
-            case 4: verbalize("A fleeing monster is an easy target");
+            case 3: verbalize("A fleeing monster is an easy target");
                 break;
             }
             return;
