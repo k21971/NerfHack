@@ -588,7 +588,7 @@ static const struct def_skill Skill_U[] = {
     { P_DAGGER, P_EXPERT },              /* Stakes */
     { P_LONG_SWORD, P_BASIC },           /* Buffy */
     { P_SHORT_SWORD, P_BASIC },
-    { P_MACE, P_SKILLED },
+    { P_MACE, P_EXPERT },                /* Sac gift is Disrupter */
     { P_MORNING_STAR, P_EXPERT },
     { P_FLAIL, P_EXPERT },
     { P_HAMMER, P_SKILLED },

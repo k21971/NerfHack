@@ -222,7 +222,7 @@ static NEARDATA struct artifact artilist[] = {
     A("Disrupter", MACE,
       (SPFX_RESTR | SPFX_WARN | SPFX_DFLAGH), 0, MH_UNDEAD,
       PHYS(5, 30), NO_DFNS, NO_CARY, 0,
-      A_NEUTRAL, NON_PM, NON_PM,
+      A_NEUTRAL, PM_UNDEAD_SLAYER, NON_PM,
       DFLT_SPE, ARTVAL, 500L, CLR_RED, DISRUPTER),
 
     /* When wielded:
