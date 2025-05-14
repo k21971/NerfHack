@@ -2790,7 +2790,7 @@ mfndpos(
     int cnt = 0;
     uchar ntyp;
     uchar nowtyp;
-    boolean wantpool, wantpuddle, poolok, lavaok, nodiag;
+    boolean wantpool, puddleok, poolok, lavaok, nodiag;
     boolean rockok = FALSE, treeok = FALSE, thrudoor;
     int maxx, maxy;
     boolean poisongas_ok, in_poisongas;
@@ -2802,9 +2802,11 @@ mfndpos(
     nowtyp = levl[x][y].typ;
 
     nodiag = NODIAG(mdat - mons);
-    wantpool = wantpuddle = (mdat->mlet == S_EEL);
+    wantpool = (mdat->mlet == S_EEL);
     poolok = ((!Is_waterlevel(&u.uz) && (m_in_air(mon) || can_wwalk(mon)))
               || (is_swimmer(mdat) && !wantpool));
+    puddleok = (m_in_air(mon) || can_wwalk(mon) || is_swimmer(mdat))
+               || (mdat != &mons[PM_IRON_GOLEM] && !tiny_groundedmon(mdat));
     /* note: floating eye is the only is_floater() so this could be
        simplified, but then adding another floater would be error prone */
     lavaok = (m_in_air(mon) || likes_lava(mdat));
@@ -2898,11 +2900,9 @@ mfndpos(
                 continue;
             if ((!lavaok || !(flag & ALLOW_WALL)) && ntyp == LAVAWALL)
                 continue;
-            if ((poolok || is_damp_terrain(nx, ny) == wantpool)
-                && (lavaok || !is_lava(nx, ny))
-                /* iron golems and longworms avoid shallow water */
-                && ((mon->data != &mons[PM_IRON_GOLEM] && !tiny_groundedmon(mdat))
-                    || !is_puddle(nx, ny))) {
+            if ((poolok || is_pool(nx, ny) == wantpool)
+                && (puddleok || is_puddle(nx, ny) == wantpool)
+                && (lavaok || !is_lava(nx, ny))) {
                 int dispx, dispy;
                 boolean monseeu = (mon->mcansee
                                    && (!Invis || mon_prop(mon, SEE_INVIS)));
@@ -3021,10 +3021,6 @@ mfndpos(
         }
     if (!cnt && wantpool && !is_pool(x, y)) {
         wantpool = FALSE;
-        goto nexttry;
-    }
-    if (!cnt && wantpuddle && !is_puddle(x, y)) {
-        wantpuddle = FALSE;
         goto nexttry;
     }
     return cnt;
