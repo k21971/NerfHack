@@ -3156,7 +3156,7 @@ use_misc(struct monst *mtmp)
 
         if (is_poisonable(otmp2) && !otmp2->opoisoned) {
             if (vismon)
-                pline("%s dips a %s into a %s!", Monnam(mtmp),
+                pline("%s dips %s %s into a %s!", Monnam(mtmp), mhis(mtmp),
                 xname(otmp2), xname(otmp));
             otmp2->opoisoned = TRUE;
             m_useup(mtmp, otmp);
