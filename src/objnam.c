@@ -1052,6 +1052,8 @@ xname_flags(
             if (GemStone(typ))
                 Strcat(buf, !carto ? " stone" : typ == FLINT
                                               ? " dice" : " token");
+            else if (carto && objects[typ].oc_material == GEMSTONE)
+                Strcat(buf, " token");
         }
         break;
     } /* gem */
