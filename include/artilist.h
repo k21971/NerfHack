@@ -222,7 +222,7 @@ static NEARDATA struct artifact artilist[] = {
     A("Disrupter", MACE,
       (SPFX_RESTR | SPFX_WARN | SPFX_DFLAGH), 0, MH_UNDEAD,
       PHYS(5, 30), NO_DFNS, NO_CARY, 0,
-      A_NEUTRAL, NON_PM, NON_PM,
+      A_NEUTRAL, PM_UNDEAD_SLAYER, NON_PM,
       DFLT_SPE, ARTVAL, 500L, CLR_RED, DISRUPTER),
 
     /* When wielded:
@@ -542,7 +542,7 @@ static NEARDATA struct artifact artilist[] = {
   /* The treasure of the Wyrm Caves, this stone lets the player
      branchport to a single location. It can be "keyed" to a
      level by applying it. */
-    A("Glyph Shard", OBSIDIAN,
+    A("The Glyph Shard", OBSIDIAN,
       (SPFX_NOGEN | SPFX_RESTR | SPFX_NOWISH), 0, 0,
       NO_ATTK, NO_DFNS, NO_CARY, CREATE_PORTAL,
       A_NONE, NON_PM, NON_PM,

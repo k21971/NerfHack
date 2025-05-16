@@ -155,7 +155,7 @@ m_initthrow(struct monst *mtmp, int otyp, int oquan)
     otmp = mksobj(otyp, TRUE, FALSE);
     otmp->quan = (long) rn1(oquan, 3);
     otmp->owt = weight(otmp);
-    if (otyp == ORCISH_ARROW)
+    if (otyp == ORCISH_ARROW || is_grung(mtmp->data))
         otmp->opoisoned = TRUE;
     (void) mpickobj(mtmp, otmp);
 }
@@ -1721,6 +1721,8 @@ makemon(
     if ((ct = emits_light(mtmp->data)) > 0)
         new_light_source(mtmp->mx, mtmp->my, ct, LS_MONSTER,
                          monst_to_any(mtmp));
+    if (is_were(mtmp->data))
+        disguise_were(mtmp);
     mitem = STRANGE_OBJECT; /* extra inventory item for this monster */
 
     if (mndx == PM_VLAD_THE_IMPALER)
@@ -1853,7 +1855,7 @@ makemon(
     if (allow_minvent && gm.migrating_objs)
         deliver_obj_to_mon(mtmp, 1, DF_NONE); /* in case of waiting items */
 
-    if (!gi.in_mklev) {
+    if (!gi.in_mklev && svm.moves > 1) {
         newsym(mtmp->mx, mtmp->my); /* make sure the mon shows up */
         if (!(mmflags & MM_NOMSG)) {
             char mbuf[BUFSZ], *what = 0;

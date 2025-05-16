@@ -2094,11 +2094,8 @@ bestow_artifact(uchar max_giftvalue)
                                 "was bestowed with %s by %s",
                                 artiname(otmp->oartifact),
                                 align_gname(u.ualign.type));
-                /* make sure we can use this weapon - only one skill unrestricted! */
-                if (!u.uevent.uskilled) {
-                    unrestrict_weapon_skill(weapon_type(otmp));
-                    u.uevent.uskilled = TRUE;
-                }
+                unrestrict_weapon_skill(weapon_type(otmp));
+
                 if (!Hallucination && !Blind) {
                     otmp->dknown = 1;
                     makeknown(otmp->otyp);

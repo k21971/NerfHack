@@ -6542,7 +6542,10 @@ zap_over_floor(
                         newsym(x, y);
                     }
                 }
-                if (!lava) {
+                /* Do not let the ice in Soko re-melt, this can cause
+                   very difficult situations for the player if they are
+                   trying to fix ice that was melted. */
+                if (!lava && !In_sokoban(&u.uz)) {
                     start_melt_ice_timeout(x, y, 0L);
                     obj_ice_effects(x, y, TRUE);
                 }

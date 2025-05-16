@@ -1052,6 +1052,8 @@ xname_flags(
             if (GemStone(typ))
                 Strcat(buf, !carto ? " stone" : typ == FLINT
                                               ? " dice" : " token");
+            else if (carto && objects[typ].oc_material == GEMSTONE)
+                Strcat(buf, " token");
         }
         break;
     } /* gem */
@@ -2845,7 +2847,7 @@ static const char *const as_is[] = {
     "moose",   "ninja",     "sheep",     "ronin",     "roshi",
     "shito",   "tengu",     "ki-rin",    "Nazgul",    "gunyoki",
     "piranha", "samurai",   "shuriken",  "haggis",    "Bordeaux",
-    "undead",
+    "undead", "bracers vs shapechangers",
     0,
     /* Note:  "fish" and "piranha" are collective plurals, suitable
        for "wiped out all <foo>".  For "3 <foo>", they should be

@@ -3897,16 +3897,20 @@ takeoff_ok(struct obj *obj)
 int
 race_bonus(struct obj *obj)
 {
-    /* Wearing racial armor is worth +x to the armor's AC; orcs get a slightly
-    * larger bonus to compensate their sub-standard equipment, lack of equipment,
-    * and the stats-challenged orc itself. Taken from SporkHack.
+    /* Wearing racial armor is worth +1 to the armor's AC; Taken from SporkHack.
     */
-    if (Race_if(PM_ORC) && is_orcish_armor(obj->otyp))
+    if (Race_if(PM_ORC) && is_orcish_obj(obj->otyp))
+        return 1;
+    if (Race_if(PM_GNOME) && is_gnomish_obj(obj->otyp))
+        return 1;
+    if (Race_if(PM_ELF) && is_elven_obj(obj->otyp))
+        return 1;
+    if (Race_if(PM_DWARF) && is_dwarvish_obj(obj->otyp))
         return 1;
 
     /* Racial preferences in armor. Some races really hate wearing the armor
      * of other races, it's unfamiliar and uncomfortable - maybe it smells bad
-     * too. For each piece of hated armor, the player gets a +2AC penalty. */
+     * too. For each piece of hated armor, the player gets a +3AC penalty. */
     if (hates_item(&gy.youmonst, obj->otyp))
         return -3;
 

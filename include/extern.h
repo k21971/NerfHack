@@ -817,6 +817,7 @@ extern void finish_meating(struct monst *) NONNULLARG1;
 extern void quickmimic(struct monst *) NONNULLARG1;
 extern boolean acceptable_pet_target(struct monst *, struct monst *, boolean);
 extern boolean could_use_item(struct monst*, struct obj*, boolean, boolean);
+extern boolean m_eat_grass(struct monst*);
 
 /* ### dokick.c ### */
 
@@ -3149,6 +3150,7 @@ extern void age_spells(void);
 extern int dowizcast(void);
 extern int docast(void);
 extern int spell_skilltype(int);
+extern void cast_protection(void);
 extern int spelleffects(int, boolean, boolean);
 extern int tport_spell(int);
 extern void losespells(void);
@@ -3843,6 +3845,7 @@ extern const struct throw_and_return_weapon *autoreturn_weapon(struct obj *)
 extern void were_change(struct monst *) NONNULLARG1;
 extern int counter_were(int);
 extern int were_beastie(int);
+extern void disguise_were(struct monst *) NONNULLARG1;
 extern void new_were(struct monst *) NONNULLARG1;
 extern int were_summon(struct permonst *, boolean, int *, char *) NONNULLARG13;
 extern void you_were(void);

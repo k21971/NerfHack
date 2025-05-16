@@ -147,6 +147,24 @@
      || ptr == &mons[PM_DEATH])
 /* is_were() doesn't handle hero in human form */
 
+#define immune_mgc_scare(ptr) \
+    ((ptr)->mlet == S_HUMAN \
+    || (ptr)->mlet == S_ANGEL \
+    || is_mplayer(ptr) \
+    || is_rider(ptr) \
+    || unique_corpstat(ptr) \
+    || (ptr) == &mons[PM_GIANT_PRAYING_MANTIS] \
+    || (ptr) == &mons[PM_CTHULHU] \
+    || (ptr) == &mons[PM_WIZARD_OF_YENDOR])
+
+#define disrespects_elbereth(ptr) \
+    ((ptr)->mlet == S_HUMAN      \
+    || unique_corpstat(ptr) \
+    || is_zombie(ptr) \
+    || (ptr) == &mons[PM_MINOTAUR] \
+    || (ptr) == &mons[PM_ELDER_MINOTAUR]  \
+    || (ptr) == &mons[PM_GIANT_PRAYING_MANTIS])
+
 #define non_tameable(ptr) (unique_corpstat(ptr) \
      || ((ptr)->mflags3 & M3_WANTSARTI) \
      || (ptr->mflags3 & M3_NOTAME))
@@ -388,6 +406,16 @@
      || (ptr) == &mons[PM_GRUNG] \
      || (ptr) == &mons[PM_ELF] || (ptr) == &mons[PM_HUMAN])
 
+#define can_eat_grass(ptr) \
+    (((ptr)->mlet == S_UNICORN && !is_undead(ptr)) \
+     || (ptr) == &mons[PM_ROTHE] \
+     || (ptr) == &mons[PM_TITANOTHERE]             \
+     || (ptr) == &mons[PM_BALUCHITHERIUM]          \
+     || (ptr) == &mons[PM_MUMAK]                   \
+     || (ptr) == &mons[PM_MASTODON]                \
+     || (ptr) == &mons[PM_WOODCHUCK]               \
+     || (ptr) == &mons[PM_GELATINOUS_CUBE])
+
 /* Is an iron piercer really made of iron?? */
 #define can_corrode(ptr) \
 ((ptr) == &mons[PM_IRON_GOLEM] || (ptr) == &mons[PM_IRON_PIERCER])
@@ -599,8 +627,8 @@
     || (ptr) == &mons[PM_HIGH_CLERIC])
 
 #define tameable_by_orc(ptr) \
-    ((ptr) == &mons[PM_WARG] || (ptr) == &mons[PM_BARGHEST] \
-    || (ptr) == &mons[PM_TROLL] || (ptr) == &mons[PM_OGRE] \
-    || (ptr) == &mons[PM_GOBLIN])
+    ((ptr) == &mons[PM_WARG] || (ptr) == &mons[PM_WARG_PUP] \
+    || (ptr) == &mons[PM_BARGHEST] || (ptr) == &mons[PM_GOBLIN] \
+    || (ptr) == &mons[PM_TROLL] || (ptr) == &mons[PM_OGRE])
 
 #endif /* MONDATA_H */

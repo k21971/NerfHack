@@ -1054,7 +1054,7 @@ dogfood(struct monst *mon, struct obj *obj)
 
     /* KMH -- Koalas can only eat eucalyptus */
     if (mon->data == &mons[PM_KOALA])
-	return (obj->otyp == EUCALYPTUS_LEAF ? DOGFOOD : APPORT);
+	    return (obj->otyp == EUCALYPTUS_LEAF ? DOGFOOD : APPORT);
 
     /* skip shop food and other items */
     if (obj->unpaid || (obj->where == OBJ_FLOOR && !obj->no_charge
@@ -1113,18 +1113,20 @@ dogfood(struct monst *mon, struct obj *obj)
         }
 
         /* lizards cure stoning. ghouls won't eat them even then, though,
-          just like elves prefer starvation to cannibalism. */
-        if (obj->otyp == CORPSE && fptr == &mons[PM_LIZARD] && mon->mstone)
+           just like elves prefer starvation to cannibalism. */
+        if (obj->otyp == CORPSE && fptr == &mons[PM_LIZARD] && mon->mstone) {
             return DOGFOOD;
+        }
 
-	/* vampires only "eat" very fresh corpses ...
-	 * Assume meat -> blood */
-	if (is_vampire(mptr)) {
-	    return (obj->otyp == CORPSE &&
-		    has_blood(&mons[obj->corpsenm]) && !obj->oeaten &&
-		peek_at_iced_corpse_age(obj) + 5 >= svm.moves) ?
-		DOGFOOD : TABU;
-	}
+	    /* vampires only "eat" very fresh corpses ...
+	     * Assume meat -> blood */
+	    if (is_vampire(mptr)) {
+	        return (obj->otyp == CORPSE &&
+		        has_blood(&mons[obj->corpsenm]) && !obj->oeaten &&
+		    peek_at_iced_corpse_age(obj) + 5 >= svm.moves) ?
+		    DOGFOOD : TABU;
+	    }
+
         switch (obj->otyp) {
         case TRIPE_RATION:
         case MEATBALL:
@@ -1256,10 +1258,10 @@ tamedog(
         return FALSE;
 
     /* Orcs are limited to taming evilish monsters */
-    if (Race_if(PM_ORC) &&
-        (mtmp->data->mlet != S_TROLL && mtmp->data->mlet != S_OGRE
+    if (Race_if(PM_ORC) && !tameable_by_orc(mtmp->data)
+        && mtmp->data->mlet != S_TROLL && mtmp->data->mlet != S_OGRE
         && mtmp->data->mlet != S_ORC && mtmp->data->mlet != S_DRAGON
-        && mtmp->data->mlet != S_UMBER))
+        && mtmp->data->mlet != S_UMBER && mtmp->data->mlet != S_TROLL)
         return FALSE;
 
     if (mtmp->mberserk) {

@@ -224,12 +224,11 @@ ready_weapon(struct obj *wep)
     } else {
         /* Allow anyone who gets expert in a weapon skill to identify those
          * weapons easily as soon as they wield them. We can easily justify
-         * this with the extra effort it takes to train up now. Similar to
-         * rangers, you need to be XP10+
+         * this with the extra effort it takes to train up now.
          * Check this before setworn so the enchantment shows up in the
          * wear message. */
-        if (wep && wep->oclass == WEAPON_CLASS && u.ulevel >= 10
-            && !is_ammo(wep) && P_SKILL(objects[wep->otyp].oc_skill) >= P_EXPERT) {
+        if (wep && wep->oclass == WEAPON_CLASS && !is_ammo(wep)
+            && P_SKILL(objects[wep->otyp].oc_skill) >= P_EXPERT) {
             wep->known = 1;
         }
 

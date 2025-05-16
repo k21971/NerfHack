@@ -1241,7 +1241,7 @@
      * nymphs
      */
     MON(NAM("wood nymph"), S_NYMPH,
-        LVL(3, 10, 9, 20, 0), (G_GENO | 2),
+        LVL(3, 10, 9, 20, 0), (G_GENO | G_NOCORPSE | 2),
         A(ATTK(AT_CLAW, AD_SITM, 0, 0),
           ATTK(AT_CLAW, AD_SEDU, 0, 0),
           NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
@@ -3461,7 +3461,7 @@
         MR_POISON | MR_FIRE | MR_COLD | MR_ELEC | MR_ACID, 0,
         M1_HUMANOID | M1_OMNIVORE | M1_POIS,
         M2_HOSTILE, M3_INFRAVISIBLE,
-        NO_RACE, 10, CLR_YELLOW, ORB_WEAVER),
+        NO_RACE, 16, CLR_YELLOW, ORB_WEAVER),
     /* 3.7: from slash'em, to expand Q class; hit polymorphs target */
     MON(NAM("genetic engineer"), S_QUANTMECH,
         LVL(12, 12, 3, 10, 0), (G_GENO | 1),
@@ -3470,7 +3470,7 @@
         SIZ(WT_HUMAN, 20, MS_HUMANOID, MZ_HUMAN), MR_POISON, 0,
         M1_HUMANOID | M1_OMNIVORE | M1_POIS | M1_TPORT, M2_HOSTILE | M2_NASTY,
         M3_INFRAVISIBLE,
-        NO_RACE, 14, CLR_GREEN, GENETIC_ENGINEER),
+        NO_RACE, 16, CLR_GREEN, GENETIC_ENGINEER),
     /* From SpliceHack with changes
      * - Alchemists spawn with 2 potions of acid. When they run out, they
      *   are able to produce more at random intervals.
@@ -3763,7 +3763,7 @@
         M2_STRONG | M2_WANDER, M3_INFRAVISIBLE | M3_INFRAVISION,
         NO_RACE, 22, CLR_BRIGHT_GREEN, GORGON_HULK),
     MON(NAM("fire vampire"), S_UMBER,
-        LVL(12, 24, 0, 50, -5), (G_GENO | G_NOCORPSE | 1),
+        LVL(12, 24, 0, 50, -5), (G_HELL | G_GENO | G_NOCORPSE | 1),
         A(ATTK(AT_CLAW, AD_FIRE, 2, 4),
           ATTK(AT_CLAW, AD_FIRE, 2, 4),
           ATTK(AT_BITE, AD_DREN, 2, 4),
@@ -3778,7 +3778,7 @@
         M3_INFRAVISIBLE,
         NO_RACE, 22, CLR_RED,FIRE_VAMPIRE),
     MON(NAM("star vampire"), S_UMBER,
-        LVL(18, 18, -5, 60, -5), (G_GENO | G_NOCORPSE | 1),
+        LVL(18, 18, -5, 60, -5), (G_HELL | G_GENO | G_NOCORPSE | 1),
         A(ATTK(AT_CLAW, AD_PHYS, 6, 6),
           ATTK(AT_TENT, AD_VAMP, 2, 6),
           ATTK(AT_TENT, AD_VAMP, 2, 6),
@@ -3910,7 +3910,7 @@
         M3_ACCURATE,
         MH_UNDEAD, 19, HI_LORD, NAZGUL),
     MON(NAM("slaughter wight"), S_WRAITH,
-       LVL(18, 18, -8, 18, -4), (G_NOCORPSE | G_GENO | 1 | G_SGROUP),
+       LVL(18, 18, -8, 18, -4), (G_HELL | G_NOCORPSE | G_GENO | 1 | G_SGROUP),
        A(ATTK(AT_TUCH, AD_DRLI, 1, 4),
          ATTK(AT_CLAW, AD_PHYS, 2, 18),
          ATTK(AT_CLAW, AD_PHYS, 2, 18),
@@ -5296,7 +5296,7 @@
             | M1_POIS | M1_OVIPAROUS,
         M2_HOSTILE | M2_COLLECT,
         M3_JUMPER | M3_ACCURATE,
-        MH_GRUNG, 7, CLR_GREEN, GREEN_GRUNG),
+        MH_GRUNG, 8, CLR_GREEN, GREEN_GRUNG),
     MON(NAM("blue grung"), S_GRUNG,
         LVL(5, 10, 9, 20, -3), (G_GENO | G_NOHELL | G_SGROUP | 2),
         A(ATTK(AT_BITE, AD_DRCO, 1, 6),
@@ -5308,7 +5308,7 @@
             | M1_POIS | M1_OVIPAROUS,
         M2_HOSTILE | M2_COLLECT | M2_MAGIC,
         M3_JUMPER | M3_ACCURATE,
-        MH_GRUNG, 8, CLR_BRIGHT_BLUE, BLUE_GRUNG),
+        MH_GRUNG, 12, CLR_BRIGHT_BLUE, BLUE_GRUNG),
     MON(NAM("purple grung"), S_GRUNG,
         LVL(6, 12, 8, 30, -3), (G_GENO | G_NOHELL | G_SGROUP | 2),
         A(ATTK(AT_BITE, AD_STUN, 1, 6),
@@ -5320,7 +5320,7 @@
             | M1_POIS | M1_OVIPAROUS,
         M2_HOSTILE | M2_COLLECT | M2_MAGIC,
         M3_JUMPER | M3_ACCURATE,
-        MH_GRUNG, 9, CLR_BRIGHT_MAGENTA, PURPLE_GRUNG),
+        MH_GRUNG, 14, CLR_BRIGHT_MAGENTA, PURPLE_GRUNG),
     MON(NAM("red grung"), S_GRUNG,
         LVL(8, 14, 5, 0, -3), (G_GENO | G_NOHELL | G_SGROUP | 2),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 4),
@@ -5332,7 +5332,7 @@
             | M1_POIS | M1_OVIPAROUS,
         M2_HOSTILE | M2_COLLECT | M2_STRONG,
         M3_JUMPER | M3_ACCURATE,
-        MH_GRUNG, 11, CLR_RED, RED_GRUNG),
+        MH_GRUNG, 10, CLR_RED, RED_GRUNG),
     MON(NAM("orange grung"), S_GRUNG,
         LVL(9, 10, 4, 0, -3), (G_GENO | G_NOHELL | G_SGROUP | 2),
         A(ATTK(AT_WEAP, AD_PHYS, 1, 6),
@@ -5344,7 +5344,7 @@
             | M1_POIS | M1_OVIPAROUS,
         M2_HOSTILE | M2_COLLECT | M2_LORD,
         M3_JUMPER | M3_ACCURATE,
-        MH_GRUNG, 11, CLR_ORANGE, ORANGE_GRUNG),
+        MH_GRUNG, 14, CLR_ORANGE, ORANGE_GRUNG),
     MON(NAM("gold grung"), S_GRUNG,
         LVL(10, 12, 2, 0, -3), (G_GENO | G_NOHELL | G_SGROUP | 2),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 6),
@@ -5357,7 +5357,7 @@
             | M1_POIS | M1_OVIPAROUS,
         M2_HOSTILE | M2_COLLECT | M2_PRINCE,
         M3_JUMPER | M3_ACCURATE,
-        MH_GRUNG, 13, CLR_YELLOW, GOLD_GRUNG),
+        MH_GRUNG, 16, CLR_YELLOW, GOLD_GRUNG),
     /*
      * dummy monster needed for visual interface
      * (marking it unique prevents figurines)

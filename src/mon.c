@@ -221,7 +221,7 @@ sanity_check_single_mon(
            some other monster; pet's quickmimic effect can temporarily take
            on furniture, object, or monster shape, but only until the pet
            finishes eating a mimic corpse */
-        if (!(is_mimic || mtmp->meating
+        if (!(is_mimic || mtmp->meating || is_were(mtmp->data)
               || (mtmp->iswiz && M_AP_TYPE(mtmp) == M_AP_MONSTER)))
             impossible("non-mimic (%s) posing as %s (%s)",
                        mptr->pmnames[NEUTRAL], what, msg);
@@ -2790,7 +2790,7 @@ mfndpos(
     int cnt = 0;
     uchar ntyp;
     uchar nowtyp;
-    boolean wantpool, wantpuddle, poolok, lavaok, nodiag;
+    boolean wantpool, puddleok, poolok, lavaok, nodiag;
     boolean rockok = FALSE, treeok = FALSE, thrudoor;
     int maxx, maxy;
     boolean poisongas_ok, in_poisongas;
@@ -2802,9 +2802,11 @@ mfndpos(
     nowtyp = levl[x][y].typ;
 
     nodiag = NODIAG(mdat - mons);
-    wantpool = wantpuddle = (mdat->mlet == S_EEL);
+    wantpool = (mdat->mlet == S_EEL);
     poolok = ((!Is_waterlevel(&u.uz) && (m_in_air(mon) || can_wwalk(mon)))
               || (is_swimmer(mdat) && !wantpool));
+    puddleok = (m_in_air(mon) || can_wwalk(mon) || is_swimmer(mdat))
+               || (mdat != &mons[PM_IRON_GOLEM] && !tiny_groundedmon(mdat));
     /* note: floating eye is the only is_floater() so this could be
        simplified, but then adding another floater would be error prone */
     lavaok = (m_in_air(mon) || likes_lava(mdat));
@@ -2898,11 +2900,9 @@ mfndpos(
                 continue;
             if ((!lavaok || !(flag & ALLOW_WALL)) && ntyp == LAVAWALL)
                 continue;
-            if ((poolok || is_damp_terrain(nx, ny) == wantpool)
-                && (lavaok || !is_lava(nx, ny))
-                /* iron golems and longworms avoid shallow water */
-                && ((mon->data != &mons[PM_IRON_GOLEM] && !tiny_groundedmon(mdat))
-                    || !is_puddle(nx, ny))) {
+            if ((poolok || is_pool(nx, ny) == wantpool)
+                && (puddleok || is_puddle(nx, ny) == wantpool)
+                && (lavaok || !is_lava(nx, ny))) {
                 int dispx, dispy;
                 boolean monseeu = (mon->mcansee
                                    && (!Invis || mon_prop(mon, SEE_INVIS)));
@@ -3021,10 +3021,6 @@ mfndpos(
         }
     if (!cnt && wantpool && !is_pool(x, y)) {
         wantpool = FALSE;
-        goto nexttry;
-    }
-    if (!cnt && wantpuddle && !is_puddle(x, y)) {
-        wantpuddle = FALSE;
         goto nexttry;
     }
     return cnt;
@@ -3954,6 +3950,23 @@ corpse_chance(
         return FALSE;
     }
 
+    /* Wood nymphs do not leave corpses,
+     they leave a patch of grass if possible (from CrecelleHack) */
+    if (mdat == &mons[PM_WOOD_NYMPH]) {
+        if (cansee(mon->mx, mon->my) && !was_swallowed) {
+            pline_mon(mon, "%s body returns to the earth.",
+                      s_suffix(Monnam(mon)));
+            if (levl[mon->mx][mon->my].typ == ROOM
+                  || levl[mon->mx][mon->my].typ == CORR
+                  || levl[mon->mx][mon->my].typ == GRAVE
+                  || levl[mon->mx][mon->my].typ == PUDDLE) {
+                set_levltyp(mon->mx, mon->my, GRASS);
+                del_engr_at(mon->mx, mon->my);
+                maybe_unhide_at(mon->mx, mon->my);
+            }
+        }
+        return FALSE;
+    }
     /* Gas spores always explode upon death */
     for (i = 0; i < NATTK; i++) {
         if (mdat->mattk[i].aatyp == AT_BOOM) {

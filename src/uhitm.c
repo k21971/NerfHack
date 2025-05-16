@@ -279,6 +279,9 @@ attack_checks(struct monst *mtmp) /* target */
             return FALSE;
         }
         stumble_onto_mimic(mtmp);
+        /* Werecreatures should not cost the player a turn... */
+        if (is_were(mtmp->data))
+            return FALSE;
         return TRUE;
     }
 
@@ -372,13 +375,13 @@ check_caitiff(struct monst *mtmp)
             if (rn2(3))
                 return;
             switch (rnd(5)) {
-            case 1: You("revel in the slaughter of the weak.");
+            case 1: You("revel in the slaughter.");
                 break;
-            case 2: Your("god approves of this carnage.");
+            case 2: pline("%s approves of this carnage.", u_gname());
                 break;
             case 3: pline("The cries of the meek fuel your bloodlust.");
                 break;
-            case 4:verbalize("Might makes right. This world belongs to the strong.");
+            case 4:verbalize("Might makes right.");
                 break;
             case 5: verbalize("The weak exist only to be crushed.");
                 break;
@@ -390,16 +393,15 @@ check_caitiff(struct monst *mtmp)
             if (rn2(3))
                 return;
             switch (rnd(5)) {
-            case 1: pline("The weak flounder before you - an easy kill.");
+            case 1: pline("The weak flounder before you!");
                 break;
-            case 2: You("strike with brutal precision as %s struggles helplessly.",
-                    mon_nam(mtmp));
+            case 2: pline_mon(mtmp, "%s struggles helplessly.", Monnam(mtmp));
                 break;
-            case 3: You("strike down the defenseless without a second thought.");
+            case 3: You("strike down the defenseless!");
                 break;
             case 4: verbalize("No mercy!");
                 break;
-            case 5: verbalize("The helpless make the best prey.");
+            case 5: verbalize("An easy kill!");
                 break;
             }
             return;
@@ -408,14 +410,12 @@ check_caitiff(struct monst *mtmp)
             adjalign(1);
             if (rn2(3))
                 return;
-            switch (rnd(4)) {
-            case 1: You("chase down the coward, eager to spill their blood.");
+            switch (rnd(3)) {
+            case 1: You("chase down the coward");
                 break;
-            case 2: pline("Their flight only drives you to strike harder.");
+            case 2: verbalize("Fleeing only makes them easier to catch.");
                 break;
-            case 3: verbalize("Fleeing only makes them easier to catch and kill.");
-                break;
-            case 4: verbalize("A fleeing monster is an easy target");
+            case 3: verbalize("A fleeing monster is an easy target");
                 break;
             }
             return;
@@ -545,6 +545,12 @@ find_roll_to_hit(
     /* level adjustment. maxing out has some benefits */
     if (u.ulevel > 20)
         tmp += rn2((u.ulevel - 20) / 2 + 1);
+
+    /* Racial weapon bonuses */
+    if (uwep && race_bonus(uwep) > 0)
+        tmp++;
+    if (u.twoweap && uswapwep && race_bonus(uswapwep) > 0)
+        tmp++;
 
     /* Some races really don't like wearing other racial armor, if they
      * do they get a severe to-hit penalty */
@@ -1369,10 +1375,10 @@ hmon_hitmon_barehands(struct _hitmon_data *hmd, struct monst *mon)
     }
 
     /* Grung have a poison touch that is effective when the hero is
-     * fighting barehanded */
+     * fighting barehanded with no gloves */
     if (maybe_polyd(is_grung(gy.youmonst.data), Race_if(PM_GRUNG))
         && !(resists_poison(mon) || defended(mon, AD_DRST))
-        && !negated && !rn2(2)) {
+        && !negated && !rn2(2) && !uarmg) {
         You("splash %s with your %s!", mon_nam(mon),
             rn2(2) ? "toxic slime" : "poison");
         if (resists_poison(mon)) {
@@ -1763,6 +1769,7 @@ hmon_hitmon_misc_obj(
                 canseemon(mon) ? exclam(hmd->dmg) : ".");
             hmd->dmg = shield_dmg(obj, mon);
         }
+        hmd->hittxt = TRUE;
         break;
     case BOULDER:         /* 1d20 */
     case HEAVY_IRON_BALL: /* 1d25 */

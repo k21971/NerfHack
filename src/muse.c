@@ -287,6 +287,10 @@ mzapwand(
 
     if (otmp->spe < 0 && !zapcard) {
         ; /* No wresting cancelled wands, it turns to dust below. */
+        if (canseemon(mtmp)) {
+            pline("%s starts to wave %s... but it turns to dust.",
+                          Monnam(mtmp), doname(otmp));
+        }
     } else {
         /* Monsters can also wrest wands */
         if (!zapcard && otmp->spe == 0) {
@@ -325,10 +329,6 @@ mzapwand(
     }
 
     if (!zapcard && otmp->spe <= 0) {
-        if (canseemon(mtmp)) {
-            pline("%s starts to wave %s... but it turns to dust.",
-                          Monnam(mtmp), doname(otmp));
-        }
         m_useup(mtmp, otmp);
         return wrested;
     }
@@ -3156,7 +3156,7 @@ use_misc(struct monst *mtmp)
 
         if (is_poisonable(otmp2) && !otmp2->opoisoned) {
             if (vismon)
-                pline("%s dips a %s into a %s!", Monnam(mtmp),
+                pline("%s dips %s %s into a %s!", Monnam(mtmp), mhis(mtmp),
                 xname(otmp2), xname(otmp));
             otmp2->opoisoned = TRUE;
             m_useup(mtmp, otmp);

@@ -266,16 +266,17 @@ static struct inv_sub {
     short race_pm, item_otyp, subs_otyp;
 } inv_subs[] = {
     { PM_ELF, DAGGER, ELVEN_DAGGER },
-    /*{ PM_ELF, SPEAR, ELVEN_SPEAR },*/
+    { PM_ELF, SPEAR, ELVEN_SPEAR },
     { PM_ELF, SHORT_SWORD, ELVEN_SHORT_SWORD },
     { PM_ELF, BOW, ELVEN_BOW },
     { PM_ELF, ARROW, ELVEN_ARROW },
     { PM_ELF, HELMET, ELVEN_LEATHER_HELM },
     /* { PM_ELF, SMALL_SHIELD, ELVEN_SHIELD }, */
     { PM_ELF, CLOAK_OF_DISPLACEMENT, ELVEN_CLOAK },
+    { PM_ELF, LEATHER_CLOAK, ELVEN_CLOAK },
     { PM_ELF, CRAM_RATION, LEMBAS_WAFER },
     { PM_ORC, DAGGER, ORCISH_DAGGER },
-    /*{ PM_ORC, SPEAR, ORCISH_SPEAR },*/
+    { PM_ORC, SPEAR, ORCISH_SPEAR },
     { PM_ORC, SHORT_SWORD, ORCISH_SHORT_SWORD },
     { PM_ORC, BOW, ORCISH_BOW },
     { PM_ORC, ARROW, ORCISH_ARROW },
@@ -285,11 +286,12 @@ static struct inv_sub {
     { PM_ORC, CHAIN_MAIL, ORCISH_CHAIN_MAIL },
     { PM_ORC, CRAM_RATION, TRIPE_RATION },
     { PM_ORC, LEMBAS_WAFER, TRIPE_RATION },
-    /*{ PM_DWARF, SPEAR, DWARVISH_SPEAR },*/
+    { PM_DWARF, SPEAR, DWARVISH_SPEAR },
     { PM_DWARF, SHORT_SWORD, DWARVISH_SHORT_SWORD },
     { PM_DWARF, HELMET, DWARVISH_IRON_HELM },
     /* { PM_DWARF, SMALL_SHIELD, DWARVISH_ROUNDSHIELD }, */
     /* { PM_DWARF, PICK_AXE, DWARVISH_MATTOCK }, */
+    { PM_DWARF, LEATHER_CLOAK, DWARVISH_CLOAK },
     { PM_DWARF, LEMBAS_WAFER, CRAM_RATION },
     { PM_GNOME, BOW, CROSSBOW },
     { PM_GNOME, ARROW, CROSSBOW_BOLT },
@@ -586,9 +588,9 @@ static const struct def_skill Skill_U[] = {
     { P_DAGGER, P_EXPERT },              /* Stakes */
     { P_LONG_SWORD, P_BASIC },           /* Buffy */
     { P_SHORT_SWORD, P_BASIC },
-    { P_MACE, P_SKILLED },
+    { P_MACE, P_EXPERT },                /* Sac gift is Disrupter */
     { P_MORNING_STAR, P_EXPERT },
-    { P_FLAIL, P_SKILLED },
+    { P_FLAIL, P_EXPERT },
     { P_HAMMER, P_SKILLED },
     { P_POLEARMS, P_SKILLED },
     { P_SPEAR, P_BASIC },
@@ -602,6 +604,7 @@ static const struct def_skill Skill_U[] = {
     /* This counts as martial arts for undead slayers */
     { P_BARE_HANDED_COMBAT, P_SKILLED }, /* Buffy the Vampire Slayer */
     { P_SHIELD, P_SKILLED },
+    { P_RIDING, P_SKILLED },
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_V[] = {
@@ -889,6 +892,7 @@ u_init_role(void)
         switch (kit) {
         case 0:	/* Crossbow and bolts */
             UndeadSlayer[U_MINOR].trotyp = CROSSBOW;
+            UndeadSlayer[U_MINOR].trspe = 3;
             UndeadSlayer[U_RANGE].trotyp = CROSSBOW_BOLT;
             UndeadSlayer[U_RANGE].trquan = rn1(25, 40);
             UndeadSlayer[U_MISC].trotyp = LOW_BOOTS;
@@ -949,9 +953,8 @@ u_init_role(void)
     case PM_VALKYRIE:
         if (rn2(100) >= 50) { /* see above comment */
             Valkyrie[V_MAJOR].trotyp = WAR_HAMMER;
-            Valkyrie[V_MAJOR].trspe = 0;
             Valkyrie[V_ARMOR].trotyp = LEATHER_CLOAK;
-            Valkyrie[V_ARMOR].trspe = 0;
+            Valkyrie[V_ARMOR].trspe = 2;
         }
         ini_inv(Valkyrie);
         if (!rn2(6))

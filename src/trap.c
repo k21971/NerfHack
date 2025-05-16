@@ -5305,6 +5305,43 @@ lava_damage(struct obj *obj, coordxy x, coordxy y)
         }
         delobj(obj);
         return TRUE;
+    } else if (obj->oclass == POTION_CLASS && obj->otyp != POT_REFLECTION) {
+        if (cansee(x, y)) {
+            if (carried(obj)) { /* shouldn't happen */
+                remove_worn_item(obj, TRUE);
+            }
+            /* this feedback is pretty clunky and can become very verbose
+               when former contents of a burned container get here via
+               flooreffects() */
+            if (obj == gt.thrownobj)
+                pline("%s %s!", is_plural(obj) ? "They" : "It",
+                      otense(obj, "explode"));
+            else
+                You_see("%s hit lava and explode!",
+                        distant_name(obj, doname));
+            /* Copied from dothrow.c - perhaps refactor? */
+            if (next2u(x, y)) {
+                if (!Breathless || haseyes(gy.youmonst.data)) {
+                    /* wet towel protects both eyes and breathing */
+                    if (obj->otyp != POT_WATER && !No_gas_damage) {
+                        if (!Breathless) {
+                            /* [what about "familiar odor" when known?] */
+                            You("smell a peculiar odor...");
+                        } else {
+                            const char *eyes = body_part(EYE);
+
+                            if (eyecount(gy.youmonst.data) != 1)
+                                eyes = makeplural(eyes);
+                            Your("%s %s.", eyes, vtense(eyes, "water"));
+                        }
+                    }
+                    potionbreathe(obj);
+                }
+            }
+        }
+
+    delobj(obj);
+    return TRUE;
     }
     return fire_damage(obj, TRUE, x, y);
 }

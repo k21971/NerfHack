@@ -2468,7 +2468,6 @@ seffect_flood(struct obj **sobjp, struct monst *mtmp)
         }
 
         if (madepools || !stilldry) {
-            gk.known = TRUE;
             if (Hallucination)
                 pline("A totally gnarly wave comes in!");
             else
@@ -2476,6 +2475,7 @@ seffect_flood(struct obj **sobjp, struct monst *mtmp)
         } else {
             pline("The air around you suddenly feels very humid.");
         }
+        gk.known = TRUE;
         rehydrate(rn1(1500, 4500));
         /* Cleanup when used in muse.c */
         if (!isyou)
@@ -2543,13 +2543,15 @@ staticfn void
 seffect_knowledge(struct obj **sobjp)
 {
     struct obj *sobj = *sobjp;
-    int otyp = sobj->otyp, learnabout;
+    int otyp = sobj->otyp, learnabout, i;
 
     boolean sblessed = sobj->blessed;
     boolean scursed = sobj->cursed;
     boolean confused = (Confusion != 0);
     boolean already_known = (objects[otyp].oc_name_known);
     boolean learned_something = FALSE;
+
+    i = (sblessed && rnl(5) == 0) ? 2 : 1;
 
     /* known = TRUE; -- handled inline here */
     /* use up the scroll first, before learnscrolltyp() -> makeknown()
@@ -2573,15 +2575,17 @@ seffect_knowledge(struct obj **sobjp)
     if (!already_known)
         (void) learnscrolltyp(SCR_KNOWLEDGE);
 
-    if ((learnabout = learnme())) {
-        You("now know more about %s.", makeplural(simple_typename(learnabout)));
-        learned_something = TRUE;
-    }
-
-    /* Get a random bonus based on luck. */
-    if (sblessed && rnl(5) == 0 && (learnabout = learnme())) {
-        You("now know more about %s.", makeplural(simple_typename(learnabout)));
-        learned_something = TRUE;
+    for (; i>0;i--) {
+        if ((learnabout = learnme())) {
+            pline_The("image of %s %s.",
+                an(simple_typename(learnabout)),
+                !rn2(3) ? "etches itself into your mind"
+                      : rn2(2) ? "imprints itself on your mind"
+                               : "sears into your memory");
+            learned_something = TRUE;
+        } else {
+            break;
+        }
     }
     if (!learned_something)
         You("don't learn anything new...");

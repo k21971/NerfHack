@@ -429,6 +429,15 @@ static const char *bogus_elbereth[N_BOGUS_ELBERETH] = {
     "Elberithius", /* latinized */
 };
 
+#define N_SCRIBBLES 5
+static const char *scribbles[N_SCRIBBLES] = {
+    "xxxxxxxxx",
+    "xoxoxoxox",
+    "~~~~~~~~~",
+    "-=-=-=-=-",
+    "{}{}{}{}{}",
+};
+
 void
 make_engr_at(
     coordxy x, coordxy y,
@@ -446,9 +455,15 @@ make_engr_at(
     if (!gi.in_mklev && e_type != HEADSTONE && strstri(s, "Elbereth")) {
         if (Race_if(PM_DHAMPIR) || Race_if(PM_ORC)) {
             s = bogus_elbereth[rn2(N_BOGUS_ELBERETH)];
+            smem = Strlen(s) + 1;
             pline("%s", refuse_write[rn2(N_REFUSE_WRITE)]);
             You("%swrite `%s` instead.",
                 (ep ? "wipe out the message and " : ""),  s);
+        } else if (ACURR(A_INT) < 6) {
+            s = scribbles[rn2(N_SCRIBBLES)];
+            smem = Strlen(s) + 1;
+            You("%swrite some weird scribbles instead.",
+                (ep ? "wipe out the message and " : ""));
         }
     }
 

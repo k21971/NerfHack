@@ -514,6 +514,7 @@ really_kick_object(coordxy x, coordxy y)
     struct monst *mon, *shkp = 0;
     struct trap *trap;
     char bhitroom;
+    char buf[BUFSZ];
     boolean costly, isgold, slide = FALSE;
 
     /* gk.kickedobj should always be set due to conditions of call */
@@ -614,6 +615,14 @@ really_kick_object(coordxy x, coordxy y)
        messages refer to "it" */
     Norep("You kick %s.",
           !isgold ? singular(gk.kickedobj, doname) : doname(gk.kickedobj));
+
+    if ((is_pick(gk.kickedobj)
+         || (objects[gk.kickedobj->otyp].oc_dir & (PIERCE | SLASH)))
+        && (!uarmf || !is_metallic(uarmf))) {
+        pline("Ouch! That was sharp!");
+        losehp(Maybe_Half_Phys(dmgval(gk.kickedobj, &gy.youmonst)),
+               kickstr(buf, killer_xname(gk.kickedobj)), KILLED_BY);
+    }
 
     if (IS_OBSTRUCTED(levl[x][y].typ) || closed_door(x, y)) {
         if ((!martial() && rn2(20) > ACURR(A_DEX))
