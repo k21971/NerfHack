@@ -10,13 +10,14 @@ SOURCEINSTALL=1
 # -----------------------------------------
 ifeq "$(WHICH_OS)" "Linux"
 
-HACKDIR ?=$(PREFIX)/playground
-INSTDIR ?=$(HACKDIR)
-VARDIR ?=$(HACKDIR)
+PREFIX ?=/opt/nethack/chroot
+HACKDIR ?=/nerfhack-3.0.0
+INSTDIR ?=$(PREFIX)$(HACKDIR)
+VARDIR ?=$(INSTDIR)/var
 
-GAMEPERM ?= 0700
+GAMEPERM ?= 0755
 VARFILEPERM ?= 0600
-VARDIRPERM ?= 0700
+VARDIRPERM ?= 0755
 
 else   # macOS
 #
